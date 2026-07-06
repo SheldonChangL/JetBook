@@ -1,0 +1,13 @@
+{
+  "common": {
+    "appName": "JetBook",
+    "appDescription": "Jet Opto 內部知識管理系統"
+  },
+  "nav": {
+    "home": "首頁"
+  },
+  "home": {
+    "title": "JetBook",
+    "subtitle": "Jet Opto 內部知識管理系統 — 建置中（M0）。"
+  }
+}

@@ -20,6 +20,7 @@ Next.js（App Router、TS strict）全端 + PostgreSQL 16/pgvector + Docker Comp
 - [x] 完整性審查報告（28 項發現 C1–C12／G1–G11／R1–R6，修正決議已套用至各文件）：`docs/design/review-report.md`
 - [x] 交付拆解（M0–M4、14 epics、70+ tasks、dependency map）：`docs/plans/issue-plan.md`、`docs/plans/milestones.md`、`docs/plans/dependency-map.md`
 - [x] 工作流文件：`CLAUDE.md`、`constraints.md`、`definition-of-done.md`、本檔
+- [x] **A-09 i18n 骨架（next-intl）**：單語系 zh-TW（無路由前綴）、`src/i18n/request.ts`、`messages/zh-TW.json`（common/nav/home 命名空間）、layout 掛 `NextIntlClientProvider`、ESLint `react/jsx-no-literals` 禁 JSX 硬編碼 UI 字串（`src/**/*.tsx`）
 
 ## 關鍵已拍板決策（摘要，全文見 ADR）
 
