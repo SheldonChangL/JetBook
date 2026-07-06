@@ -1,0 +1,406 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>JetBook — 全域搜尋（⌘K）</title>
+<script>
+(function () {
+  var t = localStorage.getItem('jetbook-theme');
+  if (t === 'dark' || (!t && matchMedia('(prefers-color-scheme: dark)').matches)) {
+    document.documentElement.classList.add('dark');
+  }
+})();
+</script>
+<style>
+/* ============ JetBook Design Tokens（§4.1–4.3）============ */
+:root {
+  --primary-50:#EEF4FC; --primary-100:#D8E6F8; --primary-300:#84AEE6; --primary-400:#5590DB;
+  --primary-500:#2E72CB; --primary-600:#1D5DB4; --primary-700:#17498F; --primary-900:#0E2C58;
+  --ai-50:#F1EDFB; --ai-400:#9B82E8; --ai-500:#7C5CDB;
+  --primary:var(--primary-600); --primary-hover:var(--primary-700);
+  --primary-tint:var(--primary-50);
+  --ai:var(--ai-500); --ai-tint:var(--ai-50);
+  --mark-bg:var(--primary-100);
+  --bg-base:#FFFFFF; --bg-sidebar:#F7F9FB; --bg-raised:#FFFFFF; --bg-hover:#EFF2F5;
+  --border-default:#E2E7EC; --border-strong:#CBD3DB;
+  --text-primary:#242D37; --text-secondary:#4D5966; --text-tertiary:#6B7885; --text-disabled:#9AA6B2;
+  --success:#1F9D5B; --success-tint:#E9F7F0;
+  --warning:#B97D10; --warning-tint:#FBF3E2;
+  --danger:#D2453B;  --danger-tint:#FCEEED;
+  --info:#1D5DB4;    --info-tint:#EEF4FC;
+  --shadow-sm:0 1px 2px rgb(16 24 32 / .06);
+  --shadow-md:0 4px 12px rgb(16 24 32 / .10);
+  --shadow-lg:0 8px 24px rgb(16 24 32 / .14);
+  --shadow-xl:0 16px 48px rgb(16 24 32 / .18);
+  --font-sans:"Inter","Noto Sans TC",-apple-system,"PingFang TC","Microsoft JhengHei",sans-serif;
+  --font-mono:"JetBrains Mono",Menlo,Consolas,monospace;
+  --radius-sm:4px; --radius-md:6px; --radius-lg:8px; --radius-xl:12px;
+}
+html.dark {
+  --primary:var(--primary-400); --primary-hover:var(--primary-300);
+  --primary-tint:#122033;
+  --ai:var(--ai-400); --ai-tint:#221A38;
+  --mark-bg:#1B3A66;
+  --bg-base:#0F141A; --bg-sidebar:#141B22; --bg-raised:#1C242E; --bg-hover:#232D38;
+  --border-default:#2A3441; --border-strong:#3A4654;
+  --text-primary:#E5EAF0; --text-secondary:#A7B2BF; --text-tertiary:#7A8694; --text-disabled:#556170;
+  --success:#3FBF7C; --success-tint:#12291D;
+  --warning:#E0A93E; --warning-tint:#2E2510;
+  --danger:#F0716A;  --danger-tint:#331715;
+  --info:#5590DB;    --info-tint:#122033;
+  --shadow-sm:0 1px 2px rgb(0 0 0 / .12);
+  --shadow-md:0 4px 12px rgb(0 0 0 / .20);
+  --shadow-lg:0 8px 24px rgb(0 0 0 / .28);
+  --shadow-xl:0 16px 48px rgb(0 0 0 / .36);
+}
+* { box-sizing:border-box; margin:0; padding:0; }
+html, body { height:100%; }
+body {
+  font-family:var(--font-sans);
+  font-size:14px; line-height:22px;
+  color:var(--text-primary);
+  background:var(--bg-base);
+  -webkit-font-smoothing:antialiased;
+  overflow-wrap:break-word; line-break:strict;
+  overflow:hidden; /* mockup：modal 開啟時鎖捲動 */
+}
+:focus-visible { outline:2px solid var(--primary); outline-offset:2px; border-radius:var(--radius-sm); }
+
+.theme-toggle {
+  position:fixed; top:10px; right:16px; z-index:400;
+  width:36px; height:36px; border-radius:9999px;
+  border:1px solid var(--border-default); background:var(--bg-raised);
+  box-shadow:var(--shadow-sm); cursor:pointer; font-size:16px; line-height:1;
+  display:flex; align-items:center; justify-content:center;
+}
+.theme-toggle:hover { background:var(--bg-hover); }
+
+/* ============ 背景：簡化閱讀頁（三欄）============ */
+.topbar {
+  position:fixed; top:0; left:0; right:0; height:56px; z-index:10;
+  display:flex; align-items:center; gap:16px; padding:0 64px 0 16px;
+  background:var(--bg-base); border-bottom:1px solid var(--border-default);
+}
+.logo-link { display:flex; align-items:center; gap:8px; font-weight:700; font-size:16px; }
+.tb-spacer { flex:1; }
+.avatar {
+  width:28px; height:28px; border-radius:9999px; flex:none;
+  display:flex; align-items:center; justify-content:center;
+  font-size:10px; font-weight:500; color:#FFFFFF; background:#2E72CB;
+}
+.layout { display:flex; padding-top:56px; height:100vh; }
+.side {
+  width:280px; flex:none; background:var(--bg-sidebar);
+  border-right:1px solid var(--border-default); padding:16px 12px;
+}
+.tree-item {
+  height:30px; display:flex; align-items:center; gap:8px; padding:0 8px;
+  border-radius:var(--radius-md); color:var(--text-secondary); font-size:14px;
+  white-space:nowrap; overflow:hidden; text-overflow:ellipsis;
+}
+.tree-item.lv2 { padding-left:24px; }
+.tree-item.current { background:var(--primary-tint); color:var(--primary); font-weight:500; }
+.content { flex:1; min-width:0; padding:40px 48px; overflow:hidden; }
+.article { max-width:720px; margin:0 auto; }
+.crumb { font-size:12px; color:var(--text-tertiary); margin-bottom:16px; }
+.article h1 { font-size:28px; line-height:40px; font-weight:700; margin-bottom:8px; }
+.meta { font-size:12px; color:var(--text-tertiary); padding-bottom:16px; border-bottom:1px solid var(--border-default); margin-bottom:24px; }
+.article p { font-size:16px; line-height:28px; color:var(--text-secondary); margin-bottom:16px; }
+.article h2 { font-size:22px; line-height:34px; font-weight:600; margin:32px 0 12px; }
+.toc {
+  width:240px; flex:none; padding:40px 24px 0 0; font-size:12px; line-height:18px;
+  color:var(--text-tertiary);
+}
+.toc .toc-title { font-weight:600; color:var(--text-secondary); margin-bottom:10px; }
+.toc div + div { margin-top:8px; }
+@media (max-width:1279px) { .toc { display:none; } }
+@media (max-width:1023px) { .side { display:none; } }
+
+/* ============ 遮罩 40% ============ */
+.overlay {
+  position:fixed; inset:0; z-index:200;
+  background:rgba(0,0,0,.4);
+}
+
+/* ============ Cmd+K Modal ============ */
+.palette {
+  position:fixed; z-index:300;
+  top:15vh; left:50%; transform:translateX(-50%);
+  width:640px; max-width:calc(100vw - 32px);
+  background:var(--bg-raised);
+  border:1px solid var(--border-default);
+  border-radius:var(--radius-xl);
+  box-shadow:var(--shadow-xl);
+  display:flex; flex-direction:column;
+  max-height:70vh; overflow:hidden;
+}
+.palette-input-row {
+  display:flex; align-items:center; gap:10px;
+  padding:14px 16px;
+  border-bottom:1px solid var(--border-default);
+}
+.palette-input-row .s-icon { color:var(--text-tertiary); flex:none; display:flex; }
+.palette-input {
+  flex:1; min-width:0; border:none; background:transparent;
+  font-family:var(--font-sans); font-size:16px; color:var(--text-primary);
+}
+.palette-input:focus { outline:none; }
+.scope-select {
+  flex:none; display:flex; align-items:center; gap:4px;
+  height:28px; padding:0 10px;
+  font-size:12px; color:var(--text-secondary);
+  background:var(--bg-sidebar); border:1px solid var(--border-default);
+  border-radius:var(--radius-md); cursor:pointer; font-family:var(--font-sans);
+}
+.scope-select:hover { background:var(--bg-hover); }
+
+.palette-body { overflow-y:auto; }
+
+/* 問 AI 列（恆為第一列） */
+.ask-ai {
+  display:flex; align-items:center; gap:10px;
+  margin:8px; padding:10px 12px;
+  border-radius:var(--radius-lg);
+  background:var(--ai-tint);
+  border:1px solid transparent;
+  cursor:pointer; position:relative;
+}
+.ask-ai.selected { border-color:var(--ai); }
+.ask-ai .spark { color:var(--ai); flex:none; display:flex; }
+.ask-ai .ask-text { flex:1; min-width:0; font-size:14px; }
+.ask-ai .ask-text b { font-weight:600; }
+.ask-ai .hint { display:flex; gap:4px; flex:none; }
+
+.kbd {
+  font-family:var(--font-mono); font-size:11px; line-height:1;
+  color:var(--text-tertiary);
+  background:var(--bg-raised); border:1px solid var(--border-strong);
+  border-radius:var(--radius-sm); padding:3px 5px;
+}
+
+.group-label {
+  display:flex; align-items:center; gap:6px;
+  padding:10px 16px 4px;
+  font-size:12px; line-height:18px; font-weight:500; color:var(--text-tertiary);
+}
+.ai-badge {
+  font-size:10px; line-height:14px; font-weight:600; letter-spacing:.04em;
+  color:var(--ai); background:var(--ai-tint);
+  border:1px solid var(--ai);
+  padding:0 6px; border-radius:9999px;
+}
+.group-label .spark { color:var(--ai); display:flex; }
+
+.result {
+  display:flex; align-items:flex-start; gap:10px;
+  padding:8px 16px; cursor:pointer; position:relative;
+}
+.result:hover { background:var(--bg-hover); }
+.result.selected { background:var(--primary-tint); }
+.result.selected::before {
+  content:""; position:absolute; left:0; top:6px; bottom:6px;
+  width:2px; border-radius:2px; background:var(--primary);
+}
+.result .r-icon { flex:none; font-size:16px; line-height:22px; }
+.result .r-main { flex:1; min-width:0; }
+.result .r-title {
+  font-size:14px; font-weight:500;
+  white-space:nowrap; overflow:hidden; text-overflow:ellipsis;
+}
+.result .r-sub {
+  font-size:12px; line-height:18px; color:var(--text-tertiary);
+  white-space:nowrap; overflow:hidden; text-overflow:ellipsis;
+}
+mark {
+  background:var(--mark-bg); color:inherit;
+  border-radius:2px; padding:0 1px;
+}
+.show-all {
+  display:block; width:100%; text-align:left;
+  padding:8px 16px 12px; border:none; background:transparent;
+  font-family:var(--font-sans); font-size:12px; color:var(--primary); cursor:pointer;
+}
+.show-all:hover { text-decoration:underline; }
+.sep { height:1px; background:var(--border-default); margin:4px 0; }
+
+.palette-footer {
+  display:flex; align-items:center; gap:16px;
+  padding:8px 16px;
+  border-top:1px solid var(--border-default);
+  background:var(--bg-sidebar);
+  font-size:12px; color:var(--text-tertiary);
+  border-radius:0 0 var(--radius-xl) var(--radius-xl);
+}
+.palette-footer .fk { display:flex; align-items:center; gap:5px; }
+</style>
+</head>
+<body>
+<button class="theme-toggle" id="themeToggle" type="button" aria-label="切換深色模式" title="切換深色模式">🌓</button>
+
+<!-- ============ 背景：簡化閱讀頁 ============ -->
+<header class="topbar" aria-hidden="true">
+  <span class="logo-link">
+    <svg width="28" height="28" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <rect width="32" height="32" rx="8" fill="var(--primary)"/>
+      <g stroke="#FFFFFF" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M16 8 L22.5 21.5 L9.5 21.5 Z" fill="rgba(255,255,255,.16)"/>
+        <path d="M4.5 17.5 L11.5 15.5"/>
+        <path d="M20 13.5 L27.5 10"/>
+        <path d="M20.8 15.5 L28 15"/>
+        <path d="M21.4 17.5 L27.5 20.5"/>
+      </g>
+    </svg>
+    <span>JetBook</span>
+  </span>
+  <span class="tb-spacer"></span>
+  <span class="avatar">家豪</span>
+</header>
+
+<div class="layout" aria-hidden="true">
+  <aside class="side">
+    <div class="tree-item">📗 出貨檢驗流程總覽</div>
+    <div class="tree-item current">📘 雷射校準作業指引</div>
+    <div class="tree-item lv2">校準前置檢查</div>
+    <div class="tree-item lv2">校準步驟</div>
+    <div class="tree-item lv2">允收標準與紀錄</div>
+    <div class="tree-item">🧰 校準治具維護紀錄</div>
+    <div class="tree-item">📄 供應商稽核檢查表</div>
+  </aside>
+  <div class="content">
+    <article class="article">
+      <div class="crumb">產品手冊 / 出貨檢驗 / 雷射校準作業指引</div>
+      <h1>雷射校準作業指引</h1>
+      <div class="meta">最後更新：5 分鐘前 · 由 陳美玲 · 約 6 分鐘</div>
+      <p>本指引適用於出貨前光學模組的雷射校準作業，涵蓋前置檢查、校準步驟、允收標準與紀錄要求。執行前請先確認治具編號與校驗有效期限。</p>
+      <h2>校準前置檢查</h2>
+      <p>進行雷射校準前，須確認光學平台水平，並靜置機台至少 30 分鐘使溫度穩定。檢查雷射源功率讀值是否落在標稱值 ±2% 範圍內。</p>
+      <p>若功率讀值超出範圍，先執行光路清潔與準直鏡檢查，再重新量測；連續兩次超標時，依維修流程開立異常單。</p>
+    </article>
+  </div>
+  <aside class="toc">
+    <div class="toc-title">本頁目錄</div>
+    <div>校準前置檢查</div>
+    <div>校準步驟</div>
+    <div>允收標準與紀錄</div>
+  </aside>
+</div>
+
+<!-- ============ 遮罩 ============ -->
+<div class="overlay" aria-hidden="true"></div>
+
+<!-- ============ Cmd+K Modal ============ -->
+<div class="palette" role="dialog" aria-modal="true" aria-label="全域搜尋">
+
+  <div class="palette-input-row">
+    <span class="s-icon">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+           stroke-width="2" stroke-linecap="round" aria-hidden="true">
+        <circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/>
+      </svg>
+    </span>
+    <input class="palette-input" type="text" value="雷射校準" aria-label="搜尋或問 AI">
+    <button class="scope-select" type="button">全部 <span aria-hidden="true">▾</span></button>
+  </div>
+
+  <div class="palette-body">
+
+    <!-- 問 AI（恆為第一列，選擇後轉入 AI 抽屜） -->
+    <div class="ask-ai selected" role="option" aria-selected="true" tabindex="0">
+      <span class="spark">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+          <path d="M12 3l1.9 5.6L19.5 10l-5.6 1.4L12 17l-1.9-5.6L4.5 10l5.6-1.4L12 3Z"/>
+          <path d="M19 15l.9 2.6 2.6.9-2.6.9L19 22l-.9-2.6-2.6-.9 2.6-.9L19 15Z"/>
+        </svg>
+      </span>
+      <span class="ask-text">問 AI：<b>「雷射校準」</b></span>
+      <span class="hint"><span class="kbd">↵</span><span class="kbd">Tab</span></span>
+    </div>
+
+    <div class="sep" role="separator"></div>
+
+    <!-- 文件結果（PG 全文檢索） -->
+    <div class="group-label">文件</div>
+
+    <div class="result" role="option" tabindex="0">
+      <span class="r-icon">📘</span>
+      <span class="r-main">
+        <span class="r-title"><mark>雷射校準</mark>作業指引</span>
+        <span class="r-sub">產品手冊 › 出貨檢驗 · 進行<mark>雷射校準</mark>前，須確認光學平台水平，並靜置機台至少 30 分鐘…</span>
+      </span>
+    </div>
+
+    <div class="result" role="option" tabindex="0">
+      <span class="r-icon">🔬</span>
+      <span class="r-main">
+        <span class="r-title">光學模組<mark>雷射校準</mark> SOP</span>
+        <span class="r-sub">研發知識庫 › 實驗室 SOP · <mark>校準</mark>完成後記錄功率讀值與光軸偏移量，超出允收值需重新對位…</span>
+      </span>
+    </div>
+
+    <div class="result" role="option" tabindex="0">
+      <span class="r-icon">🧰</span>
+      <span class="r-main">
+        <span class="r-title"><mark>校準</mark>治具維護紀錄</span>
+        <span class="r-sub">產品手冊 › 設備維護 · 治具每季送校，<mark>雷射</mark>功率計校驗有效期限為 12 個月…</span>
+      </span>
+    </div>
+
+    <div class="result" role="option" tabindex="0">
+      <span class="r-icon">🖥️</span>
+      <span class="r-main">
+        <span class="r-title"><mark>校準</mark>軟體安裝手冊</span>
+        <span class="r-sub">IT SOP › 軟體部署 · 安裝 CalibSuite 後須匯入<mark>雷射</mark>源設定檔並重新啟動服務…</span>
+      </span>
+    </div>
+
+    <button class="show-all" type="button">顯示全部 12 筆結果 →</button>
+
+    <div class="sep" role="separator"></div>
+
+    <!-- 語意相關（pgvector） -->
+    <div class="group-label">
+      <span class="spark">
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+          <path d="M12 3l1.9 5.6L19.5 10l-5.6 1.4L12 17l-1.9-5.6L4.5 10l5.6-1.4L12 3Z"/>
+        </svg>
+      </span>
+      語意相關
+      <span class="ai-badge">AI</span>
+    </div>
+
+    <div class="result" role="option" tabindex="0">
+      <span class="r-icon">📄</span>
+      <span class="r-main">
+        <span class="r-title">雷射二極體溫漂補償筆記</span>
+        <span class="r-sub">研發知識庫 › 光源設計 · 溫度每變化 1°C，輸出波長漂移約 0.3 nm，需以 TEC 迴路補償…</span>
+      </span>
+    </div>
+
+    <div class="result" role="option" tabindex="0">
+      <span class="r-icon">✅</span>
+      <span class="r-main">
+        <span class="r-title">出貨前光軸對位檢查表</span>
+        <span class="r-sub">產品手冊 › 出貨檢驗 · 對位完成後以十字標靶確認光斑中心偏移小於 0.05 mm…</span>
+      </span>
+    </div>
+
+  </div>
+
+  <!-- 底列快捷鍵說明 -->
+  <div class="palette-footer">
+    <span class="fk"><span class="kbd">↑</span><span class="kbd">↓</span> 選擇</span>
+    <span class="fk"><span class="kbd">↵</span> 開啟</span>
+    <span class="fk"><span class="kbd">⌘↵</span> 新分頁</span>
+    <span class="fk"><span class="kbd">esc</span> 關閉</span>
+  </div>
+</div>
+
+<script>
+document.getElementById('themeToggle').addEventListener('click', function () {
+  var dark = document.documentElement.classList.toggle('dark');
+  localStorage.setItem('jetbook-theme', dark ? 'dark' : 'light');
+});
+</script>
+</body>
+</html>

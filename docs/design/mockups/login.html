@@ -1,0 +1,305 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>JetBook — 登入</title>
+<script>
+(function () {
+  var t = localStorage.getItem('jetbook-theme');
+  if (t === 'dark' || (!t && matchMedia('(prefers-color-scheme: dark)').matches)) {
+    document.documentElement.classList.add('dark');
+  }
+})();
+</script>
+<style>
+/* ============ JetBook Design Tokens（§4.1–4.3）============ */
+:root {
+  --primary-50:#EEF4FC; --primary-100:#D8E6F8; --primary-300:#84AEE6; --primary-400:#5590DB;
+  --primary-500:#2E72CB; --primary-600:#1D5DB4; --primary-700:#17498F; --primary-900:#0E2C58;
+  --ai-50:#F1EDFB; --ai-400:#9B82E8; --ai-500:#7C5CDB;
+  --primary:var(--primary-600); --primary-hover:var(--primary-700);
+  --primary-tint:var(--primary-50);
+  --ai:var(--ai-500); --ai-tint:var(--ai-50);
+  --bg-base:#FFFFFF; --bg-sidebar:#F7F9FB; --bg-raised:#FFFFFF; --bg-hover:#EFF2F5;
+  --border-default:#E2E7EC; --border-strong:#CBD3DB;
+  --text-primary:#242D37; --text-secondary:#4D5966; --text-tertiary:#6B7885; --text-disabled:#9AA6B2;
+  --success:#1F9D5B; --success-tint:#E9F7F0;
+  --warning:#B97D10; --warning-tint:#FBF3E2;
+  --danger:#D2453B;  --danger-tint:#FCEEED;
+  --info:#1D5DB4;    --info-tint:#EEF4FC;
+  --shadow-sm:0 1px 2px rgb(16 24 32 / .06);
+  --shadow-md:0 4px 12px rgb(16 24 32 / .10);
+  --shadow-lg:0 8px 24px rgb(16 24 32 / .14);
+  --shadow-xl:0 16px 48px rgb(16 24 32 / .18);
+  --font-sans:"Inter","Noto Sans TC",-apple-system,"PingFang TC","Microsoft JhengHei",sans-serif;
+  --font-mono:"JetBrains Mono",Menlo,Consolas,monospace;
+  --radius-sm:4px; --radius-md:6px; --radius-lg:8px; --radius-xl:12px;
+}
+html.dark {
+  --primary:var(--primary-400); --primary-hover:var(--primary-300);
+  --primary-tint:#122033;
+  --ai:var(--ai-400); --ai-tint:#221A38;
+  --bg-base:#0F141A; --bg-sidebar:#141B22; --bg-raised:#1C242E; --bg-hover:#232D38;
+  --border-default:#2A3441; --border-strong:#3A4654;
+  --text-primary:#E5EAF0; --text-secondary:#A7B2BF; --text-tertiary:#7A8694; --text-disabled:#556170;
+  --success:#3FBF7C; --success-tint:#12291D;
+  --warning:#E0A93E; --warning-tint:#2E2510;
+  --danger:#F0716A;  --danger-tint:#331715;
+  --info:#5590DB;    --info-tint:#122033;
+  --shadow-sm:0 1px 2px rgb(0 0 0 / .12);
+  --shadow-md:0 4px 12px rgb(0 0 0 / .20);
+  --shadow-lg:0 8px 24px rgb(0 0 0 / .28);
+  --shadow-xl:0 16px 48px rgb(0 0 0 / .36);
+}
+* { box-sizing:border-box; margin:0; padding:0; }
+html, body { height:100%; }
+body {
+  font-family:var(--font-sans);
+  font-size:14px; line-height:22px;
+  color:var(--text-primary);
+  background:var(--bg-base);
+  -webkit-font-smoothing:antialiased;
+  overflow-wrap:break-word; line-break:strict;
+}
+:focus-visible { outline:2px solid var(--primary); outline-offset:2px; border-radius:var(--radius-sm); }
+
+/* ============ 主題切換鈕 ============ */
+.theme-toggle {
+  position:fixed; top:16px; right:16px; z-index:100;
+  width:36px; height:36px; border-radius:9999px;
+  border:1px solid var(--border-default); background:var(--bg-raised);
+  box-shadow:var(--shadow-sm); cursor:pointer; font-size:16px; line-height:1;
+  display:flex; align-items:center; justify-content:center;
+}
+.theme-toggle:hover { background:var(--bg-hover); }
+
+/* ============ 版面 ============ */
+.page {
+  min-height:100%;
+  display:flex; flex-direction:column; align-items:center; justify-content:center;
+  gap:24px; padding:48px 16px; position:relative; overflow:hidden;
+}
+
+/* 右下角原創幾何光學紋樣（6% 不透明度，呼應光電） */
+.bg-optics {
+  position:fixed; right:-120px; bottom:-140px;
+  width:760px; max-width:90vw; height:auto;
+  color:var(--primary); opacity:.06;
+  pointer-events:none; user-select:none;
+}
+
+/* ============ 登入卡片 ============ */
+.card {
+  width:400px; max-width:100%;
+  background:var(--bg-raised);
+  border:1px solid var(--border-default);
+  border-radius:var(--radius-xl);
+  box-shadow:var(--shadow-lg);
+  padding:40px 32px 32px;
+  position:relative; z-index:1;
+}
+.brand { display:flex; flex-direction:column; align-items:center; gap:12px; margin-bottom:32px; }
+.brand-row { display:flex; align-items:center; gap:10px; }
+.brand-name { font-size:22px; line-height:34px; font-weight:700; letter-spacing:-.01em; }
+.brand-caption { font-size:12px; line-height:18px; color:var(--text-tertiary); }
+
+.field { margin-bottom:16px; }
+.field label {
+  display:block; font-size:14px; line-height:22px; font-weight:500; margin-bottom:6px;
+}
+.input-wrap { position:relative; }
+.input {
+  width:100%; height:40px; padding:0 12px;
+  font-family:var(--font-sans); font-size:14px; color:var(--text-primary);
+  background:var(--bg-base);
+  border:1px solid var(--border-strong); border-radius:var(--radius-md);
+}
+.input::placeholder { color:var(--text-tertiary); }
+.input:focus { outline:none; border-color:var(--primary); box-shadow:0 0 0 2px var(--primary-tint); }
+.input.has-trailing { padding-right:40px; }
+.eye-btn {
+  position:absolute; right:4px; top:50%; transform:translateY(-50%);
+  width:32px; height:32px; border:none; background:transparent; border-radius:var(--radius-md);
+  color:var(--text-tertiary); cursor:pointer;
+  display:flex; align-items:center; justify-content:center;
+}
+.eye-btn:hover { background:var(--bg-hover); color:var(--text-secondary); }
+
+.row-between {
+  display:flex; align-items:center; justify-content:space-between; margin:4px 0 24px;
+}
+.checkbox-label {
+  display:flex; align-items:center; gap:8px;
+  font-size:14px; color:var(--text-secondary); cursor:pointer;
+}
+.checkbox-label input { width:16px; height:16px; accent-color:var(--primary); cursor:pointer; }
+a.link { color:var(--primary); text-decoration:none; font-size:14px; }
+a.link:hover { text-decoration:underline; }
+
+.btn {
+  width:100%; height:44px;
+  display:inline-flex; align-items:center; justify-content:center; gap:8px;
+  font-family:var(--font-sans); font-size:14px; font-weight:500;
+  border-radius:var(--radius-md); cursor:pointer;
+  border:1px solid transparent;
+}
+.btn-primary { background:var(--primary); color:#FFFFFF; }
+.btn-primary:hover { background:var(--primary-hover); }
+html.dark .btn-primary { color:#0F141A; }
+.btn-secondary {
+  background:var(--bg-raised); color:var(--text-primary);
+  border-color:var(--border-strong);
+}
+.btn-secondary:hover { background:var(--bg-hover); }
+
+.divider {
+  display:flex; align-items:center; gap:12px;
+  margin:24px 0; color:var(--text-tertiary); font-size:12px; line-height:18px;
+}
+.divider::before, .divider::after {
+  content:""; flex:1; height:1px; background:var(--border-default);
+}
+
+.flag-note {
+  margin-top:8px;
+  font-size:12px; line-height:18px; color:var(--text-tertiary); text-align:center;
+}
+.flag-note code {
+  font-family:var(--font-mono); font-size:11px;
+  background:var(--bg-sidebar); border:1px solid var(--border-default);
+  border-radius:var(--radius-sm); padding:1px 5px;
+}
+
+.page-footer {
+  font-size:12px; line-height:18px; color:var(--text-tertiary);
+  position:relative; z-index:1; text-align:center;
+}
+.page-footer .ver { font-family:var(--font-mono); font-size:11px; }
+</style>
+</head>
+<body>
+<button class="theme-toggle" id="themeToggle" type="button" aria-label="切換深色模式" title="切換深色模式">🌓</button>
+
+<div class="page">
+
+  <!-- 原創幾何光學紋樣：稜鏡分光、凸透鏡聚焦、同心波前、光波 -->
+  <svg class="bg-optics" viewBox="0 0 760 600" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+    <g stroke="currentColor" stroke-width="2">
+      <!-- 同心波前 -->
+      <circle cx="560" cy="440" r="56"/>
+      <circle cx="560" cy="440" r="108"/>
+      <circle cx="560" cy="440" r="168"/>
+      <circle cx="560" cy="440" r="236"/>
+      <!-- 凸透鏡（vesica）與匯聚光路 -->
+      <path d="M170 500 C 224 436, 224 344, 170 280 C 116 344, 116 500, 170 500 Z"/>
+      <path d="M20 330 L170 330 L330 392"/>
+      <path d="M20 392 L330 392"/>
+      <path d="M20 454 L170 454 L330 392"/>
+      <circle cx="330" cy="392" r="6" fill="currentColor" stroke="none"/>
+      <!-- 稜鏡與分光 -->
+      <path d="M430 120 L494 236 L366 236 Z"/>
+      <path d="M280 210 L412 178"/>
+      <path d="M466 186 L660 122"/>
+      <path d="M470 200 L668 178"/>
+      <path d="M472 214 L664 240"/>
+      <!-- 光波 -->
+      <path d="M356 548 q 28 -30 56 0 t 56 0 t 56 0 t 56 0 t 56 0"/>
+    </g>
+  </svg>
+
+  <main class="card" aria-label="登入 JetBook">
+    <div class="brand">
+      <div class="brand-row">
+        <!-- 原創 Logo：稜鏡分光 -->
+        <svg width="36" height="36" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+          <rect width="32" height="32" rx="8" fill="var(--primary)"/>
+          <g stroke="#FFFFFF" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M16 8 L22.5 21.5 L9.5 21.5 Z" fill="rgba(255,255,255,.16)"/>
+            <path d="M4.5 17.5 L11.5 15.5"/>
+            <path d="M20 13.5 L27.5 10"/>
+            <path d="M20.8 15.5 L28 15"/>
+            <path d="M21.4 17.5 L27.5 20.5"/>
+          </g>
+        </svg>
+        <span class="brand-name">JetBook</span>
+      </div>
+      <span class="brand-caption">捷揚光電內部知識庫</span>
+    </div>
+
+    <form onsubmit="return false;">
+      <div class="field">
+        <label for="email">公司信箱</label>
+        <input class="input" id="email" name="email" type="email"
+               placeholder="name@jet-opto.com.tw" autocomplete="username">
+      </div>
+
+      <div class="field">
+        <label for="password">密碼</label>
+        <div class="input-wrap">
+          <input class="input has-trailing" id="password" name="password" type="password"
+                 placeholder="輸入密碼" autocomplete="current-password">
+          <button class="eye-btn" id="eyeBtn" type="button" aria-label="顯示密碼" title="顯示密碼">
+            <!-- eye -->
+            <svg id="eyeOpen" width="18" height="18" viewBox="0 0 24 24" fill="none"
+                 stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M2 12s3.6-6.5 10-6.5S22 12 22 12s-3.6 6.5-10 6.5S2 12 2 12Z"/>
+              <circle cx="12" cy="12" r="3"/>
+            </svg>
+            <!-- eye-off -->
+            <svg id="eyeClosed" width="18" height="18" viewBox="0 0 24 24" fill="none" style="display:none"
+                 stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M2 12s3.6-6.5 10-6.5c1.8 0 3.4.5 4.7 1.2M22 12s-3.6 6.5-10 6.5c-1.8 0-3.4-.5-4.7-1.2"/>
+              <path d="M4 4l16 16"/>
+            </svg>
+          </button>
+        </div>
+      </div>
+
+      <div class="row-between">
+        <label class="checkbox-label"><input type="checkbox" checked>記住我</label>
+        <a class="link" href="#">忘記密碼？</a>
+      </div>
+
+      <button class="btn btn-primary" type="submit">登入</button>
+
+      <div class="divider">或</div>
+
+      <button class="btn btn-secondary" type="button">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+             stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <rect x="3" y="3" width="8" height="8" rx="1.5"/>
+          <rect x="13" y="3" width="8" height="8" rx="1.5"/>
+          <rect x="3" y="13" width="8" height="8" rx="1.5"/>
+          <rect x="13" y="13" width="8" height="8" rx="1.5"/>
+        </svg>
+        使用公司帳號 SSO 登入
+      </button>
+      <p class="flag-note">※ 由後端 feature flag <code>auth.sso.enabled</code> 控制顯示，v1 預設隱藏（此處為預覽）</p>
+    </form>
+  </main>
+
+  <footer class="page-footer">
+    <span class="ver">JetBook v0.1.0-dev</span> · © 2026 Jet Opto 捷揚光電
+  </footer>
+</div>
+
+<script>
+document.getElementById('themeToggle').addEventListener('click', function () {
+  var dark = document.documentElement.classList.toggle('dark');
+  localStorage.setItem('jetbook-theme', dark ? 'dark' : 'light');
+});
+document.getElementById('eyeBtn').addEventListener('click', function () {
+  var pwd = document.getElementById('password');
+  var open = document.getElementById('eyeOpen');
+  var closed = document.getElementById('eyeClosed');
+  var show = pwd.type === 'password';
+  pwd.type = show ? 'text' : 'password';
+  open.style.display = show ? 'none' : '';
+  closed.style.display = show ? '' : 'none';
+  this.setAttribute('aria-label', show ? '隱藏密碼' : '顯示密碼');
+  this.title = show ? '隱藏密碼' : '顯示密碼';
+});
+</script>
+</body>
+</html>

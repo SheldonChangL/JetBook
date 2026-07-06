@@ -1,0 +1,1031 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>JetBook Mockup — 編輯模式（block 編輯器）</title>
+<script>
+/* 防 FOUC：於 CSS 套用前先讀取主題偏好 */
+(function () {
+  var t = localStorage.getItem("jetbook-theme");
+  if (t === "dark" || (!t && matchMedia("(prefers-color-scheme: dark)").matches)) {
+    document.documentElement.classList.add("dark");
+  }
+})();
+</script>
+<style>
+/* ============================================================
+   JetBook 設計 token（依 UI 規格書 §4.1–§4.3，與 reading.html 一致）
+   ============================================================ */
+:root {
+  /* Primary（深靛藍，色相 ~215°） */
+  --primary-50:  #EEF4FC;
+  --primary-100: #D8E6F8;
+  --primary-300: #84AEE6;
+  --primary-400: #5590DB;
+  --primary-500: #2E72CB;
+  --primary-600: #1D5DB4;
+  --primary-700: #17498F;
+  --primary-900: #0E2C58;
+
+  /* AI Accent（紫，色相 ~262°）— 僅用於 AI 相關元素 */
+  --ai-50:  #F1EDFB;
+  --ai-400: #9B82E8;
+  --ai-500: #7C5CDB;
+
+  /* 中性階（Light） */
+  --bg-base:        #FFFFFF;
+  --bg-sidebar:     #F7F9FB;
+  --bg-raised:      #FFFFFF;
+  --bg-hover:       #EFF2F5;
+  --border-default: #E2E7EC;
+  --border-strong:  #CBD3DB;
+  --text-primary:   #242D37;
+  --text-secondary: #4D5966;
+  --text-tertiary:  #6B7885;
+  --text-disabled:  #9AA6B2;
+
+  /* 語意色（Light） */
+  --success:      #1F9D5B;
+  --success-tint: #E9F7F0;
+  --warning:      #B97D10;
+  --warning-tint: #FBF3E2;
+  --danger:       #D2453B;
+  --danger-tint:  #FCEEED;
+  --info:         #1D5DB4;
+  --info-tint:    #EEF4FC;
+
+  /* 語意別名（元件一律引用這層） */
+  --interactive:       var(--primary-600);
+  --interactive-hover: var(--primary-700);
+  --selected-tint:     var(--primary-50);
+  --ai:      var(--ai-500);
+  --ai-tint: var(--ai-50);
+
+  /* 編輯器：文字選取底色 */
+  --selection: #C7DCF8;
+
+  /* 陰影 */
+  --shadow-sm: 0 1px 2px rgb(16 24 32 / .06);
+  --shadow-md: 0 4px 12px rgb(16 24 32 / .10);
+  --shadow-lg: 0 8px 24px rgb(16 24 32 / .14);
+
+  /* 字型 */
+  --font-sans: "Inter", "Noto Sans TC", -apple-system, "PingFang TC", "Microsoft JhengHei", sans-serif;
+  --font-mono: "JetBrains Mono", Menlo, Consolas, monospace;
+
+  /* 圓角 */
+  --radius-sm: 4px;
+  --radius-md: 6px;
+  --radius-lg: 8px;
+  --radius-xl: 12px;
+}
+
+html.dark {
+  --bg-base:        #0F141A;
+  --bg-sidebar:     #141B22;
+  --bg-raised:      #1C242E;
+  --bg-hover:       #232D38;
+  --border-default: #2A3441;
+  --border-strong:  #3A4654;
+  --text-primary:   #E5EAF0;
+  --text-secondary: #A7B2BF;
+  --text-tertiary:  #7A8694;
+  --text-disabled:  #556170;
+
+  --success:      #3FBF7C;
+  --success-tint: #12291D;
+  --warning:      #E0A93E;
+  --warning-tint: #2E2510;
+  --danger:       #F0716A;
+  --danger-tint:  #331715;
+  --info:         #5590DB;
+  --info-tint:    #122033;
+
+  --interactive:       var(--primary-400);
+  --interactive-hover: var(--primary-300);
+  --selected-tint:     #122033;
+  --ai:      var(--ai-400);
+  --ai-tint: #241C3D;
+
+  --selection: #274B79;
+
+  /* 深色陰影透明度加倍，層次輔以邊框 */
+  --shadow-sm: 0 1px 2px rgb(0 0 0 / .12);
+  --shadow-md: 0 4px 12px rgb(0 0 0 / .20);
+  --shadow-lg: 0 8px 24px rgb(0 0 0 / .28);
+}
+
+/* ============================================================
+   Base
+   ============================================================ */
+* { margin: 0; padding: 0; box-sizing: border-box; }
+html, body { height: 100%; }
+body {
+  font-family: var(--font-sans);
+  font-size: 14px;
+  line-height: 22px;
+  color: var(--text-primary);
+  background: var(--bg-base);
+  -webkit-font-smoothing: antialiased;
+  overflow: hidden;
+}
+button { font: inherit; color: inherit; background: none; border: none; cursor: pointer; }
+a { color: var(--interactive); text-decoration: none; }
+:focus-visible { outline: 2px solid var(--interactive); outline-offset: 2px; }
+
+kbd {
+  font-family: var(--font-sans);
+  font-size: 11px;
+  line-height: 1;
+  padding: 3px 5px;
+  border: 1px solid var(--border-strong);
+  border-bottom-width: 2px;
+  border-radius: var(--radius-sm);
+  color: var(--text-tertiary);
+  background: var(--bg-raised);
+}
+
+/* ============================================================
+   全域頂部列（56px，同 reading.html）
+   ============================================================ */
+.topbar {
+  position: fixed;
+  top: 0; left: 0; right: 0;
+  height: 56px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 0 16px;
+  background: var(--bg-base);
+  border-bottom: 1px solid var(--border-default);
+  z-index: 100;
+}
+.topbar-left { display: flex; align-items: center; gap: 8px; min-width: 264px; }
+.logo {
+  display: flex; align-items: center; gap: 8px;
+  font-size: 16px; font-weight: 700; color: var(--text-primary);
+  padding: 4px 6px; border-radius: var(--radius-md);
+}
+.logo:hover { background: var(--bg-hover); }
+.space-switcher {
+  display: flex; align-items: center; gap: 6px;
+  padding: 5px 10px;
+  border-radius: var(--radius-md);
+  font-size: 14px; font-weight: 500;
+  color: var(--text-secondary);
+}
+.space-switcher:hover { background: var(--bg-hover); }
+.space-switcher .caret { font-size: 10px; color: var(--text-tertiary); }
+
+.topbar-center { flex: 1; display: flex; justify-content: center; }
+.search-trigger {
+  display: flex; align-items: center; gap: 10px;
+  width: 100%; max-width: 440px;
+  height: 34px;
+  padding: 0 10px;
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius-lg);
+  background: var(--bg-sidebar);
+  color: var(--text-tertiary);
+  font-size: 14px;
+}
+.search-trigger:hover { border-color: var(--interactive); background: var(--bg-base); }
+.search-trigger .grow { flex: 1; text-align: left; }
+
+.topbar-right { display: flex; align-items: center; gap: 4px; }
+.icon-btn {
+  position: relative;
+  width: 32px; height: 32px;
+  display: inline-flex; align-items: center; justify-content: center;
+  border-radius: var(--radius-md);
+  color: var(--text-secondary);
+  font-size: 16px;
+}
+.icon-btn:hover { background: var(--bg-hover); color: var(--text-primary); }
+.btn-new {
+  display: flex; align-items: center; gap: 4px;
+  height: 32px; padding: 0 10px;
+  border-radius: var(--radius-md);
+  font-size: 14px; font-weight: 500;
+  color: var(--text-secondary);
+}
+.btn-new:hover { background: var(--bg-hover); color: var(--text-primary); }
+.ai-topbar-btn {
+  display: inline-flex; align-items: center; justify-content: center;
+  width: 32px; height: 32px;
+  border-radius: var(--radius-md);
+  background: var(--ai-tint);
+  color: var(--ai);
+  font-size: 15px;
+}
+.ai-topbar-btn:hover { filter: brightness(.96); }
+.bell-dot {
+  position: absolute; top: 5px; right: 6px;
+  width: 7px; height: 7px; border-radius: 9999px;
+  background: var(--danger);
+  border: 1.5px solid var(--bg-base);
+}
+.avatar {
+  width: 28px; height: 28px;
+  border-radius: 9999px;
+  display: inline-flex; align-items: center; justify-content: center;
+  font-size: 11px; font-weight: 500; color: #FFFFFF;
+  background: var(--primary-500);
+  flex: none;
+}
+.avatar.c3 { background: var(--success); }
+
+/* ============================================================
+   三欄 Shell（左：頁面樹｜中：編輯區｜右：編輯資訊欄）
+   ============================================================ */
+.shell {
+  display: flex;
+  height: calc(100vh - 56px);
+  margin-top: 56px;
+}
+
+/* ---------- 左側欄 280px（與閱讀頁一致） ---------- */
+.sidebar {
+  width: 280px; flex: none;
+  display: flex; flex-direction: column;
+  background: var(--bg-sidebar);
+  border-right: 1px solid var(--border-default);
+  overflow: hidden;
+}
+.sidebar-head { padding: 16px 12px 8px; }
+.space-title {
+  display: flex; align-items: center; gap: 8px;
+  padding: 4px;
+  font-size: 15px; font-weight: 600;
+}
+.badge {
+  font-size: 11px; line-height: 16px;
+  padding: 1px 8px;
+  border-radius: 9999px;
+  font-weight: 500;
+}
+.badge-visibility { background: var(--info-tint); color: var(--info); }
+.sidebar-filter {
+  margin: 8px 4px 4px;
+  display: flex; align-items: center; gap: 6px;
+  height: 30px; padding: 0 8px;
+  border: 1px solid var(--border-default);
+  border-radius: var(--radius-md);
+  background: var(--bg-base);
+  color: var(--text-tertiary);
+  font-size: 13px;
+}
+.sidebar-tree { flex: 1; overflow-y: auto; padding: 4px 8px 16px; }
+.tree-item {
+  position: relative;
+  display: flex; align-items: center; gap: 6px;
+  height: 30px;
+  padding: 0 8px;
+  border-radius: var(--radius-md);
+  font-size: 14px;
+  color: var(--text-secondary);
+  cursor: pointer;
+  white-space: nowrap; overflow: hidden;
+}
+.tree-item:hover { background: var(--bg-hover); }
+.tree-item .chev { width: 14px; flex: none; font-size: 9px; color: var(--text-tertiary); text-align: center; }
+.tree-item .t-icon { flex: none; font-size: 13px; }
+.tree-item .t-label { overflow: hidden; text-overflow: ellipsis; }
+.tree-item.lv1 { padding-left: 24px; }
+.tree-item.current {
+  background: var(--selected-tint);
+  color: var(--interactive);
+  font-weight: 500;
+}
+.tree-item.current::before {
+  content: "";
+  position: absolute; left: 0; top: 6px; bottom: 6px;
+  width: 2px; border-radius: 2px;
+  background: var(--interactive);
+}
+.sidebar-foot {
+  border-top: 1px solid var(--border-default);
+  padding: 8px;
+}
+.sidebar-foot .tree-item { color: var(--text-tertiary); }
+
+/* ---------- 中央編輯區 ---------- */
+.main {
+  flex: 1;
+  overflow-y: auto;
+  position: relative;
+}
+
+/* 編輯頂列（規格 §3.5 ①：取代麵包屑列；C2 決議 v1 無發布閘門，
+   primary 動作為「完成編輯」＝返回閱讀模式，版本快照由 autosave 自動建立） */
+.editbar {
+  position: sticky;
+  top: 0;
+  z-index: 80;
+  display: flex; align-items: center; gap: 10px;
+  height: 48px;
+  padding: 0 20px;
+  background: var(--bg-base);
+  border-bottom: 1px solid var(--border-default);
+}
+.btn-back {
+  display: inline-flex; align-items: center; gap: 6px;
+  height: 30px; padding: 0 10px;
+  border-radius: var(--radius-md);
+  font-size: 13px; font-weight: 500;
+  color: var(--text-secondary);
+}
+.btn-back:hover { background: var(--bg-hover); color: var(--text-primary); }
+.save-status {
+  display: inline-flex; align-items: center; gap: 5px;
+  font-size: 12px;
+  color: var(--text-tertiary);
+}
+.save-status .dot-ok {
+  width: 6px; height: 6px; border-radius: 9999px;
+  background: var(--success);
+  flex: none;
+}
+.presence-chip {
+  display: inline-flex; align-items: center; gap: 6px;
+  height: 26px; padding: 0 10px 0 4px;
+  border: 1px solid var(--border-default);
+  border-radius: 9999px;
+  background: var(--bg-sidebar);
+  font-size: 12px;
+  color: var(--text-secondary);
+}
+.presence-chip .avatar { width: 18px; height: 18px; font-size: 8px; }
+.presence-chip .eye { color: var(--text-tertiary); display: inline-flex; }
+.editbar-spacer { flex: 1; }
+.count { font-size: 11px; font-weight: 600; color: var(--text-tertiary); margin-left: -3px; }
+.btn {
+  display: inline-flex; align-items: center; gap: 6px;
+  height: 30px; padding: 0 12px;
+  border-radius: var(--radius-md);
+  font-size: 13px; font-weight: 500;
+}
+.btn-primary { background: var(--interactive); color: #FFFFFF; }
+.btn-primary:hover { background: var(--interactive-hover); }
+
+/* ---------- 編輯畫布 ---------- */
+.canvas-wrap {
+  max-width: 720px;
+  margin: 0 auto;
+  /* 底部留白供定格展開的 slash 選單完整顯示 */
+  padding: 28px 56px 440px;
+}
+
+/* 標題列：icon 設定＋H1 輸入（§3.5 ②） */
+.title-row { display: flex; align-items: flex-start; gap: 10px; margin-bottom: 6px; }
+.title-icon-btn {
+  width: 44px; height: 44px; flex: none;
+  display: inline-flex; align-items: center; justify-content: center;
+  font-size: 26px;
+  border-radius: var(--radius-lg);
+  margin-top: 2px;
+}
+.title-icon-btn:hover { background: var(--bg-hover); }
+.title-input {
+  flex: 1;
+  border: none; outline: none; background: transparent;
+  font-family: var(--font-sans);
+  font-size: 28px; line-height: 40px; font-weight: 700;
+  color: var(--text-primary);
+  padding: 4px 0;
+}
+.title-input::placeholder { color: var(--text-disabled); }
+.title-sep { border: none; border-top: 1px solid var(--border-default); margin: 14px 0 24px; }
+
+/* ---------- Block 容器與左緣控制（§3.5 ③） ---------- */
+.doc { font-size: 16px; line-height: 28px; overflow-wrap: break-word; line-break: strict; }
+.block { position: relative; margin: 0 0 14px; border-radius: var(--radius-sm); }
+.block-controls {
+  position: absolute;
+  left: -50px; top: 2px;
+  display: flex; gap: 1px;
+  opacity: 0;
+  transition: opacity .12s;
+}
+.block:hover .block-controls,
+.block.demo-hover .block-controls { opacity: 1; }
+.ctrl-btn {
+  width: 22px; height: 24px;
+  display: inline-flex; align-items: center; justify-content: center;
+  border-radius: var(--radius-sm);
+  color: var(--text-tertiary);
+  font-size: 15px; line-height: 1;
+}
+.ctrl-btn:hover { background: var(--bg-hover); color: var(--text-secondary); }
+.ctrl-btn.grip { cursor: grab; font-size: 13px; letter-spacing: -1px; }
+
+.doc h2 { font-size: 22px; line-height: 34px; font-weight: 600; margin: 18px 0 0; }
+.doc strong { font-weight: 600; }
+.doc em { font-style: normal; background: var(--selected-tint); border-radius: 2px; padding: 0 2px; }
+.doc code {
+  font-family: var(--font-mono);
+  font-size: 0.9em;
+  background: var(--bg-hover);
+  border-radius: var(--radius-sm);
+  padding: 1px 5px;
+}
+
+/* Callout block（沿用閱讀樣式） */
+.callout {
+  display: flex; gap: 10px;
+  padding: 12px 16px;
+  border-radius: var(--radius-lg);
+  border-left: 3px solid;
+  font-size: 15px; line-height: 26px;
+}
+.callout .co-icon { flex: none; font-size: 15px; line-height: 26px; }
+.callout-info { background: var(--info-tint); border-color: var(--info); }
+
+/* 文字選取態 */
+.sel { background: var(--selection); border-radius: 2px; padding: 1px 0; }
+
+/* ---------- 行內浮動工具列（§3.5 ③，定格展開） ---------- */
+.sel-anchor { position: relative; }
+.float-toolbar {
+  position: absolute;
+  left: 0; top: -46px;
+  display: flex; align-items: center; gap: 2px;
+  height: 36px;
+  padding: 0 4px;
+  background: var(--bg-raised);
+  border: 1px solid var(--border-default);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-lg);
+  white-space: nowrap;
+  z-index: 60;
+}
+.ft-btn {
+  min-width: 28px; height: 28px;
+  padding: 0 5px;
+  display: inline-flex; align-items: center; justify-content: center;
+  border-radius: var(--radius-sm);
+  font-size: 13px; font-weight: 600;
+  color: var(--text-secondary);
+}
+.ft-btn:hover { background: var(--bg-hover); color: var(--text-primary); }
+.ft-btn .u { text-decoration: underline; }
+.ft-btn .s { text-decoration: line-through; }
+.ft-btn.mono { font-family: var(--font-mono); font-weight: 500; font-size: 12px; }
+.ft-sep { width: 1px; height: 18px; background: var(--border-default); margin: 0 4px; flex: none; }
+.ft-ai {
+  display: inline-flex; align-items: center; gap: 5px;
+  height: 28px; padding: 0 9px;
+  border-radius: var(--radius-sm);
+  background: var(--ai-tint);
+  color: var(--ai);
+  font-size: 13px; font-weight: 500;
+}
+.ft-ai .caret { font-size: 9px; }
+
+/* AI 改寫下拉（展開態） */
+.ai-menu {
+  position: absolute;
+  top: calc(100% + 6px);
+  right: 0;
+  width: 188px;
+  padding: 6px;
+  background: var(--bg-raised);
+  border: 1px solid var(--border-default);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-lg);
+  z-index: 61;
+}
+.ai-menu-label {
+  display: flex; align-items: center; gap: 5px;
+  padding: 4px 8px 6px;
+  font-size: 11px; font-weight: 600;
+  letter-spacing: .05em;
+  color: var(--ai);
+}
+.ai-menu-item {
+  display: flex; align-items: center; gap: 8px;
+  width: 100%;
+  padding: 6px 8px;
+  border-radius: var(--radius-md);
+  font-size: 13px; font-weight: 400;
+  color: var(--text-primary);
+  text-align: left;
+}
+.ai-menu-item:hover { background: var(--bg-hover); }
+.ai-menu-item .mi-icon { width: 18px; flex: none; text-align: center; font-size: 13px; color: var(--text-tertiary); }
+
+/* ---------- Slash 選單（§3.5 ③，定格展開，寬 320px） ---------- */
+.slash-anchor { position: relative; }
+.slash-char { font-size: 16px; color: var(--text-primary); }
+.fake-caret {
+  display: inline-block;
+  width: 1.5px; height: 19px;
+  margin-left: 1px;
+  background: var(--text-primary);
+  vertical-align: -4px;
+  animation: blink 1.1s steps(2) infinite;
+}
+@keyframes blink { 0%, 49% { opacity: 1; } 50%, 100% { opacity: 0; } }
+
+.slash-menu {
+  position: absolute;
+  left: 0; top: 32px;
+  width: 320px;
+  max-height: 400px;
+  overflow-y: auto;
+  padding: 6px;
+  background: var(--bg-raised);
+  border: 1px solid var(--border-default);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-lg);
+  z-index: 70;
+}
+.slash-filter {
+  display: flex; align-items: center; gap: 6px;
+  height: 30px;
+  margin: 2px 2px 4px;
+  padding: 0 8px;
+  border: 1px solid var(--border-default);
+  border-radius: var(--radius-md);
+  background: var(--bg-sidebar);
+  color: var(--text-tertiary);
+  font-size: 13px;
+}
+.slash-group {
+  padding: 8px 8px 4px;
+  font-size: 11px; font-weight: 600;
+  letter-spacing: .05em;
+  color: var(--text-tertiary);
+}
+.slash-item {
+  display: flex; align-items: center; gap: 10px;
+  width: 100%;
+  padding: 5px 8px;
+  border-radius: var(--radius-md);
+  text-align: left;
+}
+.slash-item:hover { background: var(--bg-hover); }
+.slash-item.selected { background: var(--selected-tint); }
+.slash-item.selected .si-name { color: var(--interactive); }
+.si-icon {
+  width: 32px; height: 32px; flex: none;
+  display: inline-flex; align-items: center; justify-content: center;
+  border: 1px solid var(--border-default);
+  border-radius: var(--radius-md);
+  background: var(--bg-base);
+  font-size: 14px; font-weight: 600;
+  color: var(--text-secondary);
+}
+.si-icon.ai { background: var(--ai-tint); color: var(--ai); border-color: transparent; }
+.si-text { min-width: 0; }
+.si-name { font-size: 14px; line-height: 20px; font-weight: 500; color: var(--text-primary); }
+.si-cap { font-size: 12px; line-height: 16px; color: var(--text-tertiary); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
+/* ---------- 右側「編輯資訊欄」240px（§3.5 ④） ---------- */
+.editpanel {
+  width: 240px; flex: none;
+  overflow-y: auto;
+  padding: 20px 16px 24px;
+  border-left: 1px solid var(--border-default);
+  background: var(--bg-sidebar);
+}
+.ep-section { margin-bottom: 24px; }
+.ep-label {
+  font-size: 12px; line-height: 18px; font-weight: 600;
+  letter-spacing: .05em;
+  color: var(--text-tertiary);
+  margin-bottom: 10px;
+}
+.ep-field { margin-bottom: 12px; }
+.ep-field-name { font-size: 12px; color: var(--text-secondary); margin-bottom: 4px; }
+.ep-slug {
+  display: flex; align-items: center; gap: 2px;
+  height: 30px;
+  padding: 0 8px;
+  border: 1px solid var(--border-default);
+  border-radius: var(--radius-md);
+  background: var(--bg-base);
+  font-family: var(--font-mono);
+  font-size: 12px;
+  color: var(--text-secondary);
+  overflow: hidden;
+}
+.ep-slug .pre { color: var(--text-disabled); flex: none; }
+.ep-icon-row { display: flex; align-items: center; gap: 8px; }
+.ep-icon-swatch {
+  width: 34px; height: 34px;
+  display: inline-flex; align-items: center; justify-content: center;
+  border: 1px solid var(--border-default);
+  border-radius: var(--radius-md);
+  background: var(--bg-base);
+  font-size: 17px;
+}
+.ep-icon-swatch:hover { border-color: var(--interactive); }
+.btn-ghost-sm {
+  height: 26px; padding: 0 8px;
+  border-radius: var(--radius-sm);
+  font-size: 12px; font-weight: 500;
+  color: var(--text-secondary);
+}
+.btn-ghost-sm:hover { background: var(--bg-hover); color: var(--text-primary); }
+.ep-toggle-row { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+.ep-toggle-row .ep-field-name { margin: 0; }
+.switch {
+  position: relative;
+  width: 32px; height: 18px; flex: none;
+  border-radius: 9999px;
+  background: var(--border-strong);
+  transition: background .12s;
+}
+.switch::after {
+  content: "";
+  position: absolute; top: 2px; left: 2px;
+  width: 14px; height: 14px;
+  border-radius: 9999px;
+  background: #FFFFFF;
+  box-shadow: var(--shadow-sm);
+  transition: left .12s;
+}
+.switch.on { background: var(--interactive); }
+.switch.on::after { left: 16px; }
+.tag-row { display: flex; flex-wrap: wrap; gap: 6px; }
+.tag-chip {
+  display: inline-flex; align-items: center; gap: 4px;
+  height: 24px; padding: 0 9px;
+  border-radius: 9999px;
+  background: var(--bg-hover);
+  font-size: 12px;
+  color: var(--text-secondary);
+}
+.tag-chip .x { color: var(--text-tertiary); font-size: 11px; cursor: pointer; }
+.tag-add {
+  display: inline-flex; align-items: center; gap: 3px;
+  height: 24px; padding: 0 9px;
+  border: 1px dashed var(--border-strong);
+  border-radius: 9999px;
+  font-size: 12px;
+  color: var(--text-tertiary);
+}
+.tag-add:hover { border-color: var(--interactive); color: var(--interactive); }
+.presence-list { display: flex; flex-direction: column; gap: 8px; }
+.presence-row { display: flex; align-items: center; gap: 8px; font-size: 13px; color: var(--text-secondary); }
+.presence-row .avatar { width: 22px; height: 22px; font-size: 9px; }
+.presence-row .avatar.editing { box-shadow: 0 0 0 2px var(--bg-sidebar), 0 0 0 3.5px var(--interactive); }
+.presence-state { margin-left: auto; font-size: 11px; color: var(--text-tertiary); }
+.presence-state.live { color: var(--success); }
+
+/* ---------- 主題切換（mockup 控制項） ---------- */
+.theme-toggle {
+  position: fixed;
+  top: 68px; right: 16px;
+  z-index: 300;
+  width: 36px; height: 36px;
+  display: flex; align-items: center; justify-content: center;
+  border: 1px solid var(--border-default);
+  border-radius: 9999px;
+  background: var(--bg-raised);
+  box-shadow: var(--shadow-md);
+  font-size: 16px;
+}
+.theme-toggle:hover { border-color: var(--interactive); }
+
+@media (prefers-reduced-motion: reduce) {
+  * { transition: none !important; animation: none !important; }
+}
+</style>
+</head>
+<body>
+
+<button class="theme-toggle" onclick="toggleTheme()" title="切換深色模式" aria-label="切換深色模式">🌓</button>
+
+<!-- ===== 全域頂部列 ===== -->
+<header class="topbar">
+  <div class="topbar-left">
+    <a class="logo" href="#" aria-label="JetBook 首頁">
+      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+        <rect width="24" height="24" rx="6" fill="var(--interactive)"/>
+        <path d="M12 5.5 6.6 16.5h10.8L12 5.5Z" stroke="#FFFFFF" stroke-width="1.7" stroke-linejoin="round" fill="none"/>
+        <circle cx="12" cy="13" r="1.4" fill="#FFFFFF"/>
+      </svg>
+      JetBook
+    </a>
+    <button class="space-switcher" aria-haspopup="listbox">
+      <span>📘</span><span>產品手冊</span><span class="caret">▾</span>
+    </button>
+  </div>
+  <div class="topbar-center">
+    <button class="search-trigger" aria-label="開啟全域搜尋">
+      <svg width="15" height="15" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+        <circle cx="7" cy="7" r="4.6" stroke="currentColor" stroke-width="1.6"/>
+        <path d="m10.6 10.6 3 3" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/>
+      </svg>
+      <span class="grow">搜尋或問 AI…</span>
+      <kbd>⌘K</kbd>
+    </button>
+  </div>
+  <div class="topbar-right">
+    <button class="btn-new"><span>＋</span><span>新增</span><span class="caret" style="font-size:10px;color:var(--text-tertiary)">▾</span></button>
+    <button class="ai-topbar-btn" title="AI 助手（⌘J）" aria-label="開啟 AI 助手">✦</button>
+    <button class="icon-btn" title="通知" aria-label="通知">
+      <svg width="17" height="17" viewBox="0 0 20 20" fill="none" aria-hidden="true">
+        <path d="M10 3a5 5 0 0 0-5 5v3l-1.4 2.6a.6.6 0 0 0 .53.9h11.74a.6.6 0 0 0 .53-.9L15 11V8a5 5 0 0 0-5-5Z" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/>
+        <path d="M8.5 16.5a1.7 1.7 0 0 0 3 0" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+      </svg>
+      <span class="bell-dot" aria-hidden="true"></span>
+    </button>
+    <button class="icon-btn" title="陳志豪 — 個人選單" aria-label="個人選單" style="width:36px">
+      <span class="avatar">志豪</span>
+    </button>
+  </div>
+</header>
+
+<div class="shell">
+
+  <!-- ===== 左側欄：Space 導航（編輯模式保留） ===== -->
+  <nav class="sidebar" aria-label="空間導航">
+    <div class="sidebar-head">
+      <div class="space-title">
+        <span>📘</span>
+        <span style="flex:1">產品手冊</span>
+        <span class="badge badge-visibility">全公司</span>
+      </div>
+      <div class="sidebar-filter">
+        <svg width="13" height="13" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+          <circle cx="7" cy="7" r="4.6" stroke="currentColor" stroke-width="1.6"/>
+          <path d="m10.6 10.6 3 3" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/>
+        </svg>
+        <span>篩選頁面…</span>
+      </div>
+    </div>
+    <div class="sidebar-tree">
+      <div class="tree-item"><span class="chev"></span><span class="t-icon">🧭</span><span class="t-label">產品總覽</span></div>
+      <div class="tree-item"><span class="chev">▾</span><span class="t-icon">🔩</span><span class="t-label">硬體安裝</span></div>
+      <div class="tree-item lv1"><span class="chev"></span><span class="t-icon">🌡️</span><span class="t-label">環境需求</span></div>
+      <div class="tree-item lv1 current" aria-current="page"><span class="chev"></span><span class="t-icon">🔦</span><span class="t-label">雷射模組安裝指南</span></div>
+      <div class="tree-item lv1"><span class="chev"></span><span class="t-icon">❄️</span><span class="t-label">散熱系統組裝</span></div>
+      <div class="tree-item"><span class="chev">▾</span><span class="t-icon">💾</span><span class="t-label">韌體與軟體</span></div>
+      <div class="tree-item lv1"><span class="chev"></span><span class="t-icon">⚡</span><span class="t-label">韌體燒錄流程</span></div>
+      <div class="tree-item lv1"><span class="chev"></span><span class="t-icon">🎛️</span><span class="t-label">控制軟體設定</span></div>
+      <div class="tree-item"><span class="chev">▸</span><span class="t-icon">🔍</span><span class="t-label">品質檢驗</span></div>
+      <div class="tree-item"><span class="chev"></span><span class="t-icon">📦</span><span class="t-label">出貨檢核表</span></div>
+    </div>
+    <div class="sidebar-foot">
+      <div class="tree-item"><span class="chev"></span><span class="t-icon">🗑️</span><span class="t-label">垃圾桶</span></div>
+      <div class="tree-item"><span class="chev"></span><span class="t-icon">⚙️</span><span class="t-label">Space 設定</span></div>
+    </div>
+  </nav>
+
+  <!-- ===== 中央編輯區 ===== -->
+  <main class="main">
+
+    <!-- 編輯頂列：C2 決議 — v1 無發布閘門，[完成編輯] 返回閱讀模式 -->
+    <div class="editbar" role="toolbar" aria-label="編輯工具列">
+      <button class="btn-back" title="返回閱讀模式">
+        <span aria-hidden="true">‹</span><span>返回</span>
+      </button>
+      <span class="save-status" aria-live="polite">
+        <span class="dot-ok" aria-hidden="true"></span>
+        <span>已自動儲存 · 剛剛</span>
+      </span>
+      <span class="presence-chip" title="王小明 正在檢視此頁（軟性編輯鎖：目前由你持有編輯權）">
+        <span class="avatar c3">小明</span>
+        <span>王小明 檢視中</span>
+        <span class="eye" aria-hidden="true">
+          <svg width="13" height="13" viewBox="0 0 20 20" fill="none">
+            <path d="M2.5 10S5.5 4.8 10 4.8 17.5 10 17.5 10 14.5 15.2 10 15.2 2.5 10 2.5 10Z" stroke="currentColor" stroke-width="1.4"/>
+            <circle cx="10" cy="10" r="2.4" stroke="currentColor" stroke-width="1.4"/>
+          </svg>
+        </span>
+      </span>
+      <span class="editbar-spacer"></span>
+      <button class="icon-btn" title="評論（3）" aria-label="評論，3 則">
+        <svg width="16" height="16" viewBox="0 0 20 20" fill="none" aria-hidden="true">
+          <path d="M4 4h12a1 1 0 0 1 1 1v8a1 1 0 0 1-1 1H8l-4 3V5a1 1 0 0 1 1-1Z" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/>
+        </svg>
+      </button><span class="count">3</span>
+      <button class="icon-btn" title="版本歷史" aria-label="版本歷史">
+        <svg width="16" height="16" viewBox="0 0 20 20" fill="none" aria-hidden="true">
+          <circle cx="10" cy="10" r="7" stroke="currentColor" stroke-width="1.5"/>
+          <path d="M10 6v4l2.6 1.8" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+        </svg>
+      </button>
+      <button class="icon-btn" title="更多動作" aria-label="更多動作">⋯</button>
+      <button class="btn btn-primary">完成編輯</button>
+    </div>
+
+    <!-- 編輯畫布 -->
+    <div class="canvas-wrap">
+
+      <!-- H1 標題輸入 -->
+      <div class="title-row">
+        <button class="title-icon-btn" title="變更頁面 icon" aria-label="變更頁面 icon">🔦</button>
+        <input class="title-input" type="text" value="雷射模組安裝指南" placeholder="輸入標題…" aria-label="頁面標題">
+      </div>
+      <hr class="title-sep">
+
+      <div class="doc">
+
+        <!-- 段落 block（一般態） -->
+        <div class="block">
+          <span class="block-controls" aria-hidden="true">
+            <button class="ctrl-btn" title="插入 block">＋</button>
+            <button class="ctrl-btn grip" title="拖曳以移動">⠿</button>
+          </span>
+          <p>本指南說明 <strong>JO-L 系列雷射模組</strong>於整機組裝線上的標準安裝流程，涵蓋安裝前準備、模組固定與接線、光軸校準與允收判定。所有步驟均以量產治具為前提。</p>
+        </div>
+
+        <!-- 段落 block：含選取文字＋行內浮動工具列（定格展開 AI 改寫下拉） -->
+        <div class="block" style="margin-top:64px">
+          <span class="block-controls" aria-hidden="true">
+            <button class="ctrl-btn" title="插入 block">＋</button>
+            <button class="ctrl-btn grip" title="拖曳以移動">⠿</button>
+          </span>
+          <p>安裝作業必須由完成 <em>雷射安全訓練（LS-2 以上）</em> 的人員執行。完成固定與接線後，<span class="sel-anchor"><span class="sel">依序執行模組自檢與光軸校準</span><span class="float-toolbar" role="toolbar" aria-label="行內格式工具列">
+              <button class="ft-btn" title="粗體（⌘B）"><span>B</span></button>
+              <button class="ft-btn" title="斜體（⌘I）"><span style="font-style:italic;font-family:Georgia,serif">I</span></button>
+              <button class="ft-btn" title="底線（⌘U）"><span class="u">U</span></button>
+              <button class="ft-btn" title="刪除線"><span class="s">S</span></button>
+              <span class="ft-sep" aria-hidden="true"></span>
+              <button class="ft-btn mono" title="行內程式碼">&lt;/&gt;</button>
+              <button class="ft-btn" title="插入連結（⌘K）">
+                <svg width="14" height="14" viewBox="0 0 20 20" fill="none" aria-hidden="true">
+                  <path d="M8.5 11.5a3.3 3.3 0 0 0 4.7 0l2.8-2.8a3.32 3.32 0 1 0-4.7-4.7l-1.2 1.2" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/>
+                  <path d="M11.5 8.5a3.3 3.3 0 0 0-4.7 0L4 11.3A3.32 3.32 0 1 0 8.7 16l1.2-1.2" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/>
+                </svg>
+              </button>
+              <span class="ft-sep" aria-hidden="true"></span>
+              <button class="ft-ai" aria-expanded="true" aria-haspopup="menu">
+                <span aria-hidden="true">✦</span><span>AI 改寫</span><span class="caret" aria-hidden="true">▾</span>
+              </button>
+              <!-- AI 改寫下拉（展開態） -->
+              <span class="ai-menu" role="menu" aria-label="AI 改寫選項">
+                <span class="ai-menu-label"><span aria-hidden="true">✦</span><span>AI 改寫選取內容</span></span>
+                <button class="ai-menu-item" role="menuitem"><span class="mi-icon" aria-hidden="true">✂️</span><span>更精簡</span></button>
+                <button class="ai-menu-item" role="menuitem"><span class="mi-icon" aria-hidden="true">👔</span><span>更正式</span></button>
+                <button class="ai-menu-item" role="menuitem"><span class="mi-icon" aria-hidden="true">🌐</span><span>翻譯成英文</span></button>
+                <button class="ai-menu-item" role="menuitem"><span class="mi-icon" aria-hidden="true">✓</span><span>修正文法</span></button>
+              </span>
+            </span></span>，再交付品保覆核。</p>
+        </div>
+
+        <!-- H2 block -->
+        <div class="block">
+          <span class="block-controls" aria-hidden="true">
+            <button class="ctrl-btn" title="插入 block">＋</button>
+            <button class="ctrl-btn grip" title="拖曳以移動">⠿</button>
+          </span>
+          <h2>安裝前準備</h2>
+        </div>
+
+        <!-- 段落 block（hover 態定格：左緣 ＋ 與 ⠿ 顯示） -->
+        <div class="block demo-hover">
+          <span class="block-controls" aria-hidden="true">
+            <button class="ctrl-btn" title="插入 block">＋</button>
+            <button class="ctrl-btn grip" title="拖曳以移動">⠿</button>
+          </span>
+          <p>開始安裝前，請先確認工單上的模組型號與序號，並核對來料檢驗（IQC）標籤為綠色合格章。模組自防潮箱取出後，應於 <strong>4 小時內</strong>完成安裝與封蓋，逾時須送回防潮箱除濕 24 小時。</p>
+        </div>
+
+        <!-- Callout block -->
+        <div class="block">
+          <span class="block-controls" aria-hidden="true">
+            <button class="ctrl-btn" title="插入 block">＋</button>
+            <button class="ctrl-btn grip" title="拖曳以移動">⠿</button>
+          </span>
+          <div class="callout callout-info">
+            <span class="co-icon" aria-hidden="true">ℹ️</span>
+            <div>本文件適用於 <strong>JO-L200 / JO-L350</strong> 兩款模組。舊款 JO-L100 的安裝方式不同，請參閱〈<a href="#">JO-L100 維護手冊</a>〉。</div>
+          </div>
+        </div>
+
+        <!-- 空 block：輸入「/」觸發 slash 選單（定格展開，寬 320px） -->
+        <div class="block slash-anchor">
+          <span class="block-controls" aria-hidden="true">
+            <button class="ctrl-btn" title="插入 block">＋</button>
+            <button class="ctrl-btn grip" title="拖曳以移動">⠿</button>
+          </span>
+          <p><span class="slash-char">/</span><span class="fake-caret" aria-hidden="true"></span></p>
+
+          <div class="slash-menu" role="listbox" aria-label="插入 block 選單">
+            <div class="slash-filter">
+              <svg width="12" height="12" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+                <circle cx="7" cy="7" r="4.6" stroke="currentColor" stroke-width="1.6"/>
+                <path d="m10.6 10.6 3 3" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/>
+              </svg>
+              <span>輸入以篩選（中英文皆可）…</span>
+            </div>
+
+            <div class="slash-group">基本</div>
+            <button class="slash-item selected" role="option" aria-selected="true">
+              <span class="si-icon" aria-hidden="true">Aa</span>
+              <span class="si-text"><span class="si-name">文字</span><span class="si-cap">從純文字段落開始書寫</span></span>
+            </button>
+            <button class="slash-item" role="option">
+              <span class="si-icon" aria-hidden="true">H2</span>
+              <span class="si-text"><span class="si-name">標題 2</span><span class="si-cap">中型章節標題</span></span>
+            </button>
+            <button class="slash-item" role="option">
+              <span class="si-icon" aria-hidden="true">≔</span>
+              <span class="si-text"><span class="si-name">項目列表</span><span class="si-cap">建立無序符號列表</span></span>
+            </button>
+            <button class="slash-item" role="option">
+              <span class="si-icon" aria-hidden="true">☑</span>
+              <span class="si-text"><span class="si-name">待辦清單</span><span class="si-cap">附核取方塊的追蹤清單</span></span>
+            </button>
+            <button class="slash-item" role="option">
+              <span class="si-icon" aria-hidden="true">❝</span>
+              <span class="si-text"><span class="si-name">引用</span><span class="si-cap">引述一段文字</span></span>
+            </button>
+
+            <div class="slash-group">進階</div>
+            <button class="slash-item" role="option">
+              <span class="si-icon mono" aria-hidden="true" style="font-family:var(--font-mono);font-size:11px">{ }</span>
+              <span class="si-text"><span class="si-name">程式碼區塊</span><span class="si-cap">含語法高亮與行號</span></span>
+            </button>
+            <button class="slash-item" role="option">
+              <span class="si-icon" aria-hidden="true">⊞</span>
+              <span class="si-text"><span class="si-name">表格</span><span class="si-cap">拖選格數插入 n×m 表格</span></span>
+            </button>
+            <button class="slash-item" role="option">
+              <span class="si-icon" aria-hidden="true">💡</span>
+              <span class="si-text"><span class="si-name">Callout</span><span class="si-cap">語意色提示框（資訊／警告…）</span></span>
+            </button>
+            <button class="slash-item" role="option">
+              <span class="si-icon" aria-hidden="true">🖼️</span>
+              <span class="si-text"><span class="si-name">圖片</span><span class="si-cap">上傳、貼上或拖放圖片</span></span>
+            </button>
+            <button class="slash-item" role="option">
+              <span class="si-icon" aria-hidden="true">🔗</span>
+              <span class="si-text"><span class="si-name">頁面連結</span><span class="si-cap">連結到知識庫其他頁面</span></span>
+            </button>
+
+            <div class="slash-group" style="color:var(--ai)">AI</div>
+            <button class="slash-item" role="option">
+              <span class="si-icon ai" aria-hidden="true">✦</span>
+              <span class="si-text"><span class="si-name">AI 續寫</span><span class="si-cap">讓 AI 接續目前段落撰寫</span></span>
+            </button>
+            <button class="slash-item" role="option">
+              <span class="si-icon ai" aria-hidden="true">✦</span>
+              <span class="si-text"><span class="si-name">AI 摘要此頁</span><span class="si-cap">產生本頁重點摘要</span></span>
+            </button>
+            <button class="slash-item" role="option">
+              <span class="si-icon ai" aria-hidden="true">✦</span>
+              <span class="si-text"><span class="si-name">AI 翻譯選取</span><span class="si-cap">翻譯選取的內容</span></span>
+            </button>
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </main>
+
+  <!-- ===== 右側「編輯資訊欄」240px ===== -->
+  <aside class="editpanel" aria-label="編輯資訊欄">
+
+    <div class="ep-section">
+      <div class="ep-label">頁面設定</div>
+      <div class="ep-field">
+        <div class="ep-field-name">網址 slug</div>
+        <div class="ep-slug"><span class="pre">/hw/</span><span>laser-module-install</span></div>
+      </div>
+      <div class="ep-field">
+        <div class="ep-field-name">頁面 icon</div>
+        <div class="ep-icon-row">
+          <button class="ep-icon-swatch" title="變更 icon" aria-label="變更頁面 icon">🔦</button>
+          <button class="btn-ghost-sm">變更</button>
+          <button class="btn-ghost-sm" style="color:var(--text-tertiary)">移除</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="ep-section">
+      <div class="ep-label">目前在此頁</div>
+      <div class="presence-list">
+        <div class="presence-row">
+          <span class="avatar editing">志豪</span>
+          <span>陳志豪（我）</span>
+          <span class="presence-state live">編輯中</span>
+        </div>
+        <div class="presence-row">
+          <span class="avatar c3">小明</span>
+          <span>王小明</span>
+          <span class="presence-state">檢視中</span>
+        </div>
+      </div>
+    </div>
+
+  </aside>
+
+</div>
+
+<script>
+/* 主題切換（localStorage 記憶） */
+function toggleTheme() {
+  var dark = document.documentElement.classList.toggle("dark");
+  localStorage.setItem("jetbook-theme", dark ? "dark" : "light");
+}
+</script>
+
+</body>
+</html>

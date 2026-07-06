@@ -1,0 +1,527 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>JetBook — Dashboard</title>
+<script>
+(function () {
+  var t = localStorage.getItem('jetbook-theme');
+  if (t === 'dark' || (!t && matchMedia('(prefers-color-scheme: dark)').matches)) {
+    document.documentElement.classList.add('dark');
+  }
+})();
+</script>
+<style>
+/* ============ JetBook Design Tokens（§4.1–4.3）============ */
+:root {
+  --primary-50:#EEF4FC; --primary-100:#D8E6F8; --primary-300:#84AEE6; --primary-400:#5590DB;
+  --primary-500:#2E72CB; --primary-600:#1D5DB4; --primary-700:#17498F; --primary-900:#0E2C58;
+  --ai-50:#F1EDFB; --ai-400:#9B82E8; --ai-500:#7C5CDB;
+  --primary:var(--primary-600); --primary-hover:var(--primary-700);
+  --primary-tint:var(--primary-50);
+  --ai:var(--ai-500); --ai-tint:var(--ai-50);
+  --bg-base:#FFFFFF; --bg-sidebar:#F7F9FB; --bg-raised:#FFFFFF; --bg-hover:#EFF2F5;
+  --border-default:#E2E7EC; --border-strong:#CBD3DB;
+  --text-primary:#242D37; --text-secondary:#4D5966; --text-tertiary:#6B7885; --text-disabled:#9AA6B2;
+  --success:#1F9D5B; --success-tint:#E9F7F0;
+  --warning:#B97D10; --warning-tint:#FBF3E2;
+  --danger:#D2453B;  --danger-tint:#FCEEED;
+  --info:#1D5DB4;    --info-tint:#EEF4FC;
+  --shadow-sm:0 1px 2px rgb(16 24 32 / .06);
+  --shadow-md:0 4px 12px rgb(16 24 32 / .10);
+  --shadow-lg:0 8px 24px rgb(16 24 32 / .14);
+  --shadow-xl:0 16px 48px rgb(16 24 32 / .18);
+  --font-sans:"Inter","Noto Sans TC",-apple-system,"PingFang TC","Microsoft JhengHei",sans-serif;
+  --font-mono:"JetBrains Mono",Menlo,Consolas,monospace;
+  --radius-sm:4px; --radius-md:6px; --radius-lg:8px; --radius-xl:12px;
+}
+html.dark {
+  --primary:var(--primary-400); --primary-hover:var(--primary-300);
+  --primary-tint:#122033;
+  --ai:var(--ai-400); --ai-tint:#221A38;
+  --bg-base:#0F141A; --bg-sidebar:#141B22; --bg-raised:#1C242E; --bg-hover:#232D38;
+  --border-default:#2A3441; --border-strong:#3A4654;
+  --text-primary:#E5EAF0; --text-secondary:#A7B2BF; --text-tertiary:#7A8694; --text-disabled:#556170;
+  --success:#3FBF7C; --success-tint:#12291D;
+  --warning:#E0A93E; --warning-tint:#2E2510;
+  --danger:#F0716A;  --danger-tint:#331715;
+  --info:#5590DB;    --info-tint:#122033;
+  --shadow-sm:0 1px 2px rgb(0 0 0 / .12);
+  --shadow-md:0 4px 12px rgb(0 0 0 / .20);
+  --shadow-lg:0 8px 24px rgb(0 0 0 / .28);
+  --shadow-xl:0 16px 48px rgb(0 0 0 / .36);
+}
+* { box-sizing:border-box; margin:0; padding:0; }
+html, body { height:100%; }
+body {
+  font-family:var(--font-sans);
+  font-size:14px; line-height:22px;
+  color:var(--text-primary);
+  background:var(--bg-base);
+  -webkit-font-smoothing:antialiased;
+  overflow-wrap:break-word; line-break:strict;
+}
+:focus-visible { outline:2px solid var(--primary); outline-offset:2px; border-radius:var(--radius-sm); }
+a { color:inherit; text-decoration:none; }
+
+.theme-toggle {
+  position:fixed; top:10px; right:16px; z-index:200;
+  width:36px; height:36px; border-radius:9999px;
+  border:1px solid var(--border-default); background:var(--bg-raised);
+  box-shadow:var(--shadow-sm); cursor:pointer; font-size:16px; line-height:1;
+  display:flex; align-items:center; justify-content:center;
+}
+.theme-toggle:hover { background:var(--bg-hover); }
+
+/* ============ App Shell：頂部列（56px）============ */
+.topbar {
+  position:fixed; top:0; left:0; right:0; height:56px; z-index:100;
+  display:flex; align-items:center; gap:16px;
+  padding:0 64px 0 16px; /* 右側留空給主題切換鈕 */
+  background:var(--bg-base);
+  border-bottom:1px solid var(--border-default);
+}
+.topbar-left { display:flex; align-items:center; gap:8px; min-width:0; }
+.logo-link { display:flex; align-items:center; gap:8px; font-weight:700; font-size:16px; }
+.topbar-center { flex:1; display:flex; justify-content:center; min-width:0; }
+.search-trigger {
+  display:flex; align-items:center; gap:8px;
+  width:100%; max-width:480px; height:36px; padding:0 10px;
+  background:var(--bg-sidebar);
+  border:1px solid var(--border-default); border-radius:var(--radius-md);
+  color:var(--text-tertiary); font-family:var(--font-sans); font-size:14px;
+  cursor:pointer;
+}
+.search-trigger:hover { border-color:var(--border-strong); background:var(--bg-hover); }
+.search-trigger .grow { flex:1; text-align:left; }
+.kbd {
+  font-family:var(--font-mono); font-size:11px; line-height:1;
+  color:var(--text-tertiary);
+  background:var(--bg-raised); border:1px solid var(--border-strong);
+  border-radius:var(--radius-sm); padding:3px 5px;
+}
+.topbar-right { display:flex; align-items:center; gap:4px; }
+.icon-btn {
+  position:relative;
+  width:32px; height:32px; border:none; border-radius:var(--radius-md);
+  background:transparent; color:var(--text-secondary); cursor:pointer;
+  display:flex; align-items:center; justify-content:center;
+}
+.icon-btn:hover { background:var(--bg-hover); color:var(--text-primary); }
+.icon-btn.ai { color:var(--ai); }
+.icon-btn.ai:hover { background:var(--ai-tint); }
+.dot {
+  position:absolute; top:5px; right:6px; width:7px; height:7px;
+  background:var(--danger); border-radius:9999px; border:1.5px solid var(--bg-base);
+}
+
+/* ============ 頭像 ============ */
+.avatar {
+  width:28px; height:28px; border-radius:9999px; flex:none;
+  display:flex; align-items:center; justify-content:center;
+  font-size:10px; font-weight:500; color:#FFFFFF; letter-spacing:.02em;
+  user-select:none;
+}
+.avatar.lg { width:32px; height:32px; font-size:11px; }
+.av-1 { background:#2E72CB; } .av-2 { background:#7C5CDB; } .av-3 { background:#1F9D5B; }
+.av-4 { background:#B97D10; } .av-5 { background:#D2453B; } .av-6 { background:#17498F; }
+.avatar-group { display:flex; align-items:center; }
+.avatar-group .avatar {
+  width:24px; height:24px; font-size:9px;
+  border:2px solid var(--bg-raised); margin-left:-8px;
+}
+.avatar-group .avatar:first-child { margin-left:0; }
+.avatar-group .more {
+  background:var(--bg-hover); color:var(--text-secondary);
+}
+
+/* ============ 全域側欄 ============ */
+.sidebar {
+  position:fixed; top:56px; bottom:0; left:0; width:280px; z-index:50;
+  background:var(--bg-sidebar);
+  border-right:1px solid var(--border-default);
+  padding:16px 12px; overflow-y:auto;
+}
+.nav-item {
+  display:flex; align-items:center; gap:10px;
+  height:32px; padding:0 10px; margin-bottom:2px;
+  border-radius:var(--radius-md);
+  color:var(--text-secondary); font-size:14px;
+  position:relative; cursor:pointer;
+}
+.nav-item:hover { background:var(--bg-hover); color:var(--text-primary); }
+.nav-item.active {
+  background:var(--primary-tint); color:var(--primary); font-weight:500;
+}
+.nav-item.active::before {
+  content:""; position:absolute; left:-12px; top:6px; bottom:6px;
+  width:2px; border-radius:2px; background:var(--primary);
+}
+.nav-item svg { flex:none; }
+
+/* ============ 內容區 ============ */
+.main {
+  margin-left:280px; padding:88px 48px 64px;
+  min-height:100%;
+}
+.container { max-width:1040px; margin:0 auto; }
+
+.greeting-row {
+  display:flex; align-items:flex-end; justify-content:space-between; gap:16px;
+  margin-bottom:40px; flex-wrap:wrap;
+}
+.greeting h1 { font-size:28px; line-height:40px; font-weight:700; }
+.greeting .date { font-size:14px; color:var(--text-tertiary); margin-top:2px; }
+
+.btn {
+  display:inline-flex; align-items:center; justify-content:center; gap:6px;
+  height:36px; padding:0 16px;
+  font-family:var(--font-sans); font-size:14px; font-weight:500;
+  border-radius:var(--radius-md); cursor:pointer; border:1px solid transparent;
+  flex:none;
+}
+.btn-primary { background:var(--primary); color:#FFFFFF; }
+.btn-primary:hover { background:var(--primary-hover); }
+html.dark .btn-primary { color:#0F141A; }
+
+.section { margin-bottom:48px; }
+.section-title {
+  font-size:18px; line-height:29px; font-weight:600; margin-bottom:16px;
+  display:flex; align-items:center; gap:8px;
+}
+
+/* 繼續閱讀：橫向卡片列 */
+.resume-row { display:flex; gap:16px; overflow-x:auto; padding-bottom:4px; }
+.resume-card {
+  flex:1 0 220px; min-width:220px;
+  background:var(--bg-raised);
+  border:1px solid var(--border-default); border-radius:var(--radius-lg);
+  padding:16px; cursor:pointer;
+}
+.resume-card:hover { box-shadow:var(--shadow-sm); border-color:var(--border-strong); }
+.resume-card .p-icon { font-size:20px; line-height:1; margin-bottom:10px; display:block; }
+.resume-card .p-title {
+  font-size:14px; font-weight:500;
+  white-space:nowrap; overflow:hidden; text-overflow:ellipsis;
+  margin-bottom:4px;
+}
+.resume-card .p-meta { font-size:12px; line-height:18px; color:var(--text-tertiary); }
+
+/* 我的空間：3 欄格狀 */
+.space-grid {
+  display:grid; grid-template-columns:repeat(3, 1fr); gap:16px;
+}
+.space-card {
+  display:flex; flex-direction:column; gap:12px;
+  background:var(--bg-raised);
+  border:1px solid var(--border-default); border-radius:var(--radius-lg);
+  padding:20px; cursor:pointer;
+}
+.space-card:hover { box-shadow:var(--shadow-sm); border-color:var(--border-strong); }
+.space-head { display:flex; align-items:center; gap:12px; }
+.space-icon {
+  width:40px; height:40px; border-radius:var(--radius-lg); flex:none;
+  display:flex; align-items:center; justify-content:center; font-size:20px;
+}
+.si-blue   { background:var(--primary-tint); }
+.si-purple { background:var(--ai-tint); }
+.si-green  { background:var(--success-tint); }
+.si-amber  { background:var(--warning-tint); }
+.space-name { font-size:14px; font-weight:600; }
+.space-count { font-size:12px; line-height:18px; color:var(--text-tertiary); }
+.space-foot { display:flex; align-items:center; justify-content:space-between; }
+.space-badge {
+  font-size:11px; line-height:16px; padding:1px 8px; border-radius:9999px;
+  background:var(--bg-hover); color:var(--text-secondary);
+}
+.space-card.create {
+  align-items:center; justify-content:center; gap:8px;
+  border:1px dashed var(--border-strong); background:transparent;
+  color:var(--text-tertiary); min-height:132px;
+}
+.space-card.create:hover { color:var(--primary); border-color:var(--primary); box-shadow:none; }
+.space-card.create .plus { font-size:24px; line-height:1; }
+
+/* 最近更新 */
+.activity-list {
+  background:var(--bg-raised);
+  border:1px solid var(--border-default); border-radius:var(--radius-lg);
+  overflow:hidden;
+}
+.activity-item {
+  display:flex; align-items:center; gap:12px;
+  padding:12px 16px; cursor:pointer;
+}
+.activity-item + .activity-item { border-top:1px solid var(--border-default); }
+.activity-item:hover { background:var(--bg-hover); }
+.activity-text { flex:1; min-width:0; font-size:14px; color:var(--text-secondary); }
+.activity-text .who { color:var(--text-primary); font-weight:500; }
+.activity-text .page-link { color:var(--primary); }
+.activity-text .page-link:hover { text-decoration:underline; }
+.badge {
+  flex:none; font-size:11px; line-height:16px; padding:1px 8px;
+  border-radius:9999px; background:var(--primary-tint); color:var(--primary);
+}
+.activity-time { flex:none; font-size:12px; color:var(--text-tertiary); }
+
+/* 響應式 */
+@media (max-width:1023px) {
+  .sidebar { display:none; }
+  .main { margin-left:0; }
+}
+@media (max-width:767px) {
+  .space-grid { grid-template-columns:1fr; }
+  .topbar-center { display:none; }
+  .main { padding:80px 16px 48px; }
+}
+</style>
+</head>
+<body>
+<button class="theme-toggle" id="themeToggle" type="button" aria-label="切換深色模式" title="切換深色模式">🌓</button>
+
+<!-- ============ 頂部列 ============ -->
+<header class="topbar">
+  <div class="topbar-left">
+    <a class="logo-link" href="#" aria-label="回 Dashboard">
+      <svg width="28" height="28" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+        <rect width="32" height="32" rx="8" fill="var(--primary)"/>
+        <g stroke="#FFFFFF" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M16 8 L22.5 21.5 L9.5 21.5 Z" fill="rgba(255,255,255,.16)"/>
+          <path d="M4.5 17.5 L11.5 15.5"/>
+          <path d="M20 13.5 L27.5 10"/>
+          <path d="M20.8 15.5 L28 15"/>
+          <path d="M21.4 17.5 L27.5 20.5"/>
+        </g>
+      </svg>
+      <span>JetBook</span>
+    </a>
+  </div>
+
+  <div class="topbar-center">
+    <button class="search-trigger" type="button">
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+           stroke-width="2" stroke-linecap="round" aria-hidden="true">
+        <circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/>
+      </svg>
+      <span class="grow">搜尋或問 AI…</span>
+      <span class="kbd">⌘K</span>
+    </button>
+  </div>
+
+  <div class="topbar-right">
+    <button class="icon-btn" type="button" aria-label="新增" title="新增（新頁面／新 Space）">
+      <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+           stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>
+    </button>
+    <button class="icon-btn ai" type="button" aria-label="AI 助手" title="AI 助手（⌘J）">
+      <svg width="17" height="17" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+        <path d="M12 3l1.9 5.6L19.5 10l-5.6 1.4L12 17l-1.9-5.6L4.5 10l5.6-1.4L12 3Z"/>
+        <path d="M19 15l.9 2.6 2.6.9-2.6.9L19 22l-.9-2.6-2.6-.9 2.6-.9L19 15Z"/>
+      </svg>
+    </button>
+    <button class="icon-btn" type="button" aria-label="通知" title="通知">
+      <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+           stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+        <path d="M18 9a6 6 0 1 0-12 0c0 6-2 7-2 7h16s-2-1-2-7"/><path d="M10.3 20a2 2 0 0 0 3.4 0"/>
+      </svg>
+      <span class="dot" aria-hidden="true"></span>
+    </button>
+    <button class="icon-btn" type="button" aria-label="使用者選單" title="家豪" style="width:auto;padding:2px;">
+      <span class="avatar av-1">家豪</span>
+    </button>
+  </div>
+</header>
+
+<!-- ============ 全域側欄 ============ -->
+<nav class="sidebar" aria-label="全域導航">
+  <div class="nav-item active" role="link" tabindex="0">
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+         stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+      <path d="M3 10.5 12 3l9 7.5"/><path d="M5 9.5V21h14V9.5"/>
+    </svg>
+    Dashboard
+  </div>
+  <div class="nav-item" role="link" tabindex="0">
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+         stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+      <rect x="3" y="4" width="18" height="5" rx="1.5"/><rect x="3" y="12" width="18" height="8" rx="1.5"/>
+    </svg>
+    所有 Space
+  </div>
+  <div class="nav-item" role="link" tabindex="0">
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+         stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+      <path d="M4 7h16M9 7V5h6v2M6 7l1 13h10l1-13"/>
+    </svg>
+    垃圾桶
+  </div>
+</nav>
+
+<!-- ============ 內容區 ============ -->
+<main class="main">
+  <div class="container">
+
+    <div class="greeting-row">
+      <div class="greeting">
+        <h1>早安，家豪</h1>
+        <div class="date">2026年7月6日 星期一</div>
+      </div>
+      <button class="btn btn-primary" type="button">＋ 新頁面</button>
+    </div>
+
+    <!-- 繼續閱讀 -->
+    <section class="section" aria-label="繼續閱讀">
+      <h2 class="section-title">繼續閱讀</h2>
+      <div class="resume-row">
+        <div class="resume-card" role="link" tabindex="0">
+          <span class="p-icon">📗</span>
+          <div class="p-title">出貨檢驗流程總覽</div>
+          <div class="p-meta">產品手冊 · 10 分鐘前</div>
+        </div>
+        <div class="resume-card" role="link" tabindex="0">
+          <span class="p-icon">🛠️</span>
+          <div class="p-title">VPN 連線疑難排解</div>
+          <div class="p-meta">IT SOP · 昨天 16:20</div>
+        </div>
+        <div class="resume-card" role="link" tabindex="0">
+          <span class="p-icon">🧾</span>
+          <div class="p-title">出差費用報支辦法</div>
+          <div class="p-meta">行政流程 · 昨天 09:15</div>
+        </div>
+        <div class="resume-card" role="link" tabindex="0">
+          <span class="p-icon">🔬</span>
+          <div class="p-title">光學鍍膜製程參數整理</div>
+          <div class="p-meta">研發知識庫 · 3 天前</div>
+        </div>
+      </div>
+    </section>
+
+    <!-- 我的空間 -->
+    <section class="section" aria-label="我的空間">
+      <h2 class="section-title">我的空間</h2>
+      <div class="space-grid">
+        <div class="space-card" role="link" tabindex="0">
+          <div class="space-head">
+            <span class="space-icon si-blue">📘</span>
+            <div>
+              <div class="space-name">產品手冊</div>
+              <div class="space-count">128 頁</div>
+            </div>
+          </div>
+          <div class="space-foot">
+            <div class="avatar-group" aria-label="成員">
+              <span class="avatar av-1">家豪</span><span class="avatar av-2">美玲</span>
+              <span class="avatar av-3">大明</span><span class="avatar av-4">雅婷</span>
+              <span class="avatar more">+3</span>
+            </div>
+            <span class="space-badge">全公司</span>
+          </div>
+        </div>
+
+        <div class="space-card" role="link" tabindex="0">
+          <div class="space-head">
+            <span class="space-icon si-green">🖥️</span>
+            <div>
+              <div class="space-name">IT SOP</div>
+              <div class="space-count">56 頁</div>
+            </div>
+          </div>
+          <div class="space-foot">
+            <div class="avatar-group" aria-label="成員">
+              <span class="avatar av-5">志明</span><span class="avatar av-6">冠宇</span>
+              <span class="avatar av-1">家豪</span>
+            </div>
+            <span class="space-badge">全公司</span>
+          </div>
+        </div>
+
+        <div class="space-card" role="link" tabindex="0">
+          <div class="space-head">
+            <span class="space-icon si-amber">🗂️</span>
+            <div>
+              <div class="space-name">行政流程</div>
+              <div class="space-count">42 頁</div>
+            </div>
+          </div>
+          <div class="space-foot">
+            <div class="avatar-group" aria-label="成員">
+              <span class="avatar av-4">雅婷</span><span class="avatar av-3">大明</span>
+            </div>
+            <span class="space-badge">全公司</span>
+          </div>
+        </div>
+
+        <div class="space-card" role="link" tabindex="0">
+          <div class="space-head">
+            <span class="space-icon si-purple">🔬</span>
+            <div>
+              <div class="space-name">研發知識庫</div>
+              <div class="space-count">210 頁</div>
+            </div>
+          </div>
+          <div class="space-foot">
+            <div class="avatar-group" aria-label="成員">
+              <span class="avatar av-2">美玲</span><span class="avatar av-1">家豪</span>
+              <span class="avatar av-5">志明</span><span class="avatar av-6">冠宇</span>
+              <span class="avatar more">+5</span>
+            </div>
+            <span class="space-badge">私人</span>
+          </div>
+        </div>
+
+        <div class="space-card create" role="button" tabindex="0">
+          <span class="plus">＋</span>
+          <span>建立 Space</span>
+        </div>
+      </div>
+    </section>
+
+    <!-- 最近更新 -->
+    <section class="section" aria-label="最近更新">
+      <h2 class="section-title">最近更新</h2>
+      <div class="activity-list">
+        <div class="activity-item">
+          <span class="avatar av-2">美玲</span>
+          <span class="activity-text"><span class="who">陳美玲</span> 更新了 <a class="page-link" href="#">雷射校準作業指引</a></span>
+          <span class="badge">產品手冊</span>
+          <span class="activity-time">5 分鐘前</span>
+        </div>
+        <div class="activity-item">
+          <span class="avatar av-3">大明</span>
+          <span class="activity-text"><span class="who">王大明</span> 更新了 <a class="page-link" href="#">新人到職 IT 設定清單</a></span>
+          <span class="badge">IT SOP</span>
+          <span class="activity-time">32 分鐘前</span>
+        </div>
+        <div class="activity-item">
+          <span class="avatar av-4">雅婷</span>
+          <span class="activity-text"><span class="who">張雅婷</span> 建立了 <a class="page-link" href="#">2026 Q3 部門預算申請流程</a></span>
+          <span class="badge">行政流程</span>
+          <span class="activity-time">2 小時前</span>
+        </div>
+        <div class="activity-item">
+          <span class="avatar av-5">志明</span>
+          <span class="activity-text"><span class="who">李志明</span> 更新了 <a class="page-link" href="#">光學模組雷射校準 SOP</a></span>
+          <span class="badge">研發知識庫</span>
+          <span class="activity-time">昨天 17:45</span>
+        </div>
+        <div class="activity-item">
+          <span class="avatar av-6">冠宇</span>
+          <span class="activity-text"><span class="who">林冠宇</span> 還原了 <a class="page-link" href="#">供應商稽核檢查表</a> 的版本</span>
+          <span class="badge">產品手冊</span>
+          <span class="activity-time">昨天 11:02</span>
+        </div>
+      </div>
+    </section>
+
+  </div>
+</main>
+
+<script>
+document.getElementById('themeToggle').addEventListener('click', function () {
+  var dark = document.documentElement.classList.toggle('dark');
+  localStorage.setItem('jetbook-theme', dark ? 'dark' : 'light');
+});
+</script>
+</body>
+</html>

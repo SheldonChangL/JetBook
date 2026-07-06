@@ -1,0 +1,336 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>JetBook 設計預覽</title>
+<script>
+(function () {
+  var t = localStorage.getItem('jetbook-theme');
+  if (t === 'dark' || (!t && matchMedia('(prefers-color-scheme: dark)').matches)) {
+    document.documentElement.classList.add('dark');
+  }
+})();
+</script>
+<style>
+/* ============ JetBook Design Tokens（§4.1–4.3）============ */
+:root {
+  --primary-50:#EEF4FC; --primary-100:#D8E6F8; --primary-300:#84AEE6; --primary-400:#5590DB;
+  --primary-500:#2E72CB; --primary-600:#1D5DB4; --primary-700:#17498F; --primary-900:#0E2C58;
+  --ai-50:#F1EDFB; --ai-400:#9B82E8; --ai-500:#7C5CDB;
+  --primary:var(--primary-600); --primary-hover:var(--primary-700);
+  --primary-tint:var(--primary-50);
+  --ai:var(--ai-500); --ai-tint:var(--ai-50);
+  --bg-base:#FFFFFF; --bg-sidebar:#F7F9FB; --bg-raised:#FFFFFF; --bg-hover:#EFF2F5;
+  --border-default:#E2E7EC; --border-strong:#CBD3DB;
+  --text-primary:#242D37; --text-secondary:#4D5966; --text-tertiary:#6B7885; --text-disabled:#9AA6B2;
+  --success:#1F9D5B; --success-tint:#E9F7F0;
+  --warning:#B97D10; --warning-tint:#FBF3E2;
+  --danger:#D2453B;  --danger-tint:#FCEEED;
+  --info:#1D5DB4;    --info-tint:#EEF4FC;
+  --shadow-sm:0 1px 2px rgb(16 24 32 / .06);
+  --shadow-md:0 4px 12px rgb(16 24 32 / .10);
+  --shadow-lg:0 8px 24px rgb(16 24 32 / .14);
+  --shadow-xl:0 16px 48px rgb(16 24 32 / .18);
+  --font-sans:"Inter","Noto Sans TC",-apple-system,"PingFang TC","Microsoft JhengHei",sans-serif;
+  --font-mono:"JetBrains Mono",Menlo,Consolas,monospace;
+  --radius-sm:4px; --radius-md:6px; --radius-lg:8px; --radius-xl:12px;
+}
+html.dark {
+  --primary:var(--primary-400); --primary-hover:var(--primary-300);
+  --primary-tint:#122033;
+  --ai:var(--ai-400); --ai-tint:#221A38;
+  --bg-base:#0F141A; --bg-sidebar:#141B22; --bg-raised:#1C242E; --bg-hover:#232D38;
+  --border-default:#2A3441; --border-strong:#3A4654;
+  --text-primary:#E5EAF0; --text-secondary:#A7B2BF; --text-tertiary:#7A8694; --text-disabled:#556170;
+  --success:#3FBF7C; --success-tint:#12291D;
+  --warning:#E0A93E; --warning-tint:#2E2510;
+  --danger:#F0716A;  --danger-tint:#331715;
+  --info:#5590DB;    --info-tint:#122033;
+  --shadow-sm:0 1px 2px rgb(0 0 0 / .12);
+  --shadow-md:0 4px 12px rgb(0 0 0 / .20);
+  --shadow-lg:0 8px 24px rgb(0 0 0 / .28);
+  --shadow-xl:0 16px 48px rgb(0 0 0 / .36);
+}
+* { box-sizing:border-box; margin:0; padding:0; }
+body {
+  font-family:var(--font-sans);
+  font-size:14px; line-height:22px;
+  color:var(--text-primary);
+  background:var(--bg-base);
+  -webkit-font-smoothing:antialiased;
+  overflow-wrap:break-word; line-break:strict;
+}
+:focus-visible { outline:2px solid var(--primary); outline-offset:2px; border-radius:var(--radius-sm); }
+a { color:inherit; text-decoration:none; }
+
+.theme-toggle {
+  position:fixed; top:16px; right:16px; z-index:100;
+  width:36px; height:36px; border-radius:9999px;
+  border:1px solid var(--border-default); background:var(--bg-raised);
+  box-shadow:var(--shadow-sm); cursor:pointer; font-size:16px; line-height:1;
+  display:flex; align-items:center; justify-content:center;
+}
+.theme-toggle:hover { background:var(--bg-hover); }
+
+.container { max-width:960px; margin:0 auto; padding:64px 24px 80px; }
+
+.hero { display:flex; align-items:center; gap:16px; margin-bottom:8px; }
+.hero h1 { font-size:28px; line-height:40px; font-weight:700; letter-spacing:-.01em; }
+.hero-sub { font-size:14px; color:var(--text-secondary); margin-bottom:48px; }
+.hero-sub code {
+  font-family:var(--font-mono); font-size:12px;
+  background:var(--bg-sidebar); border:1px solid var(--border-default);
+  border-radius:var(--radius-sm); padding:1px 5px;
+}
+
+.section { margin-bottom:56px; }
+.section h2 {
+  font-size:22px; line-height:34px; font-weight:600;
+  margin-bottom:4px;
+}
+.section .sec-desc { font-size:14px; color:var(--text-tertiary); margin-bottom:20px; }
+
+/* ============ Token 速覽 ============ */
+.swatch-group { margin-bottom:24px; }
+.swatch-group-title {
+  font-size:12px; line-height:18px; font-weight:600; color:var(--text-secondary);
+  text-transform:uppercase; letter-spacing:.06em; margin-bottom:10px;
+}
+.swatch-row { display:flex; flex-wrap:wrap; gap:10px; }
+.swatch { width:96px; }
+.swatch .chip {
+  height:56px; border-radius:var(--radius-lg);
+  border:1px solid var(--border-default);
+  display:flex; align-items:flex-end; padding:6px 8px;
+}
+.swatch .chip .on-chip { font-size:10px; font-weight:600; letter-spacing:.02em; }
+.swatch .t-name {
+  font-family:var(--font-mono); font-size:11px; line-height:16px;
+  color:var(--text-secondary); margin-top:6px;
+  white-space:nowrap; overflow:hidden; text-overflow:ellipsis;
+}
+.swatch .t-hex { font-family:var(--font-mono); font-size:11px; line-height:16px; color:var(--text-tertiary); }
+.semantic-chip {
+  display:flex; flex-direction:column; justify-content:flex-end; gap:2px;
+}
+.semantic-chip .bar { height:8px; border-radius:4px; margin-bottom:4px; }
+
+/* ============ Mockup 連結卡片 ============ */
+.mockup-grid {
+  display:grid; grid-template-columns:repeat(3, 1fr); gap:16px;
+}
+.mockup-card {
+  display:flex; flex-direction:column; gap:10px;
+  background:var(--bg-raised);
+  border:1px solid var(--border-default); border-radius:var(--radius-lg);
+  padding:20px;
+}
+.mockup-card:hover { box-shadow:var(--shadow-md); border-color:var(--border-strong); }
+.mc-head { display:flex; align-items:center; gap:10px; }
+.mc-icon {
+  width:36px; height:36px; border-radius:var(--radius-lg); flex:none;
+  display:flex; align-items:center; justify-content:center; font-size:18px;
+  background:var(--primary-tint);
+}
+.mc-icon.ai { background:var(--ai-tint); }
+.mc-title { font-size:14px; font-weight:600; }
+.mc-file { font-family:var(--font-mono); font-size:11px; line-height:16px; color:var(--text-tertiary); }
+.mc-desc { font-size:13px; line-height:20px; color:var(--text-secondary); }
+.mc-open { font-size:12px; color:var(--primary); margin-top:auto; }
+.mockup-card:hover .mc-open { text-decoration:underline; }
+
+.footer {
+  border-top:1px solid var(--border-default); padding-top:24px;
+  font-size:12px; line-height:18px; color:var(--text-tertiary);
+}
+.footer .ver { font-family:var(--font-mono); font-size:11px; }
+
+@media (max-width:900px) { .mockup-grid { grid-template-columns:repeat(2, 1fr); } }
+@media (max-width:600px) { .mockup-grid { grid-template-columns:1fr; } }
+</style>
+</head>
+<body>
+<button class="theme-toggle" id="themeToggle" type="button" aria-label="切換深色模式" title="切換深色模式">🌓</button>
+
+<div class="container">
+
+  <div class="hero">
+    <svg width="44" height="44" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+      <rect width="32" height="32" rx="8" fill="var(--primary)"/>
+      <g stroke="#FFFFFF" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M16 8 L22.5 21.5 L9.5 21.5 Z" fill="rgba(255,255,255,.16)"/>
+        <path d="M4.5 17.5 L11.5 15.5"/>
+        <path d="M20 13.5 L27.5 10"/>
+        <path d="M20.8 15.5 L28 15"/>
+        <path d="M21.4 17.5 L27.5 20.5"/>
+      </g>
+    </svg>
+    <h1>JetBook 設計預覽</h1>
+  </div>
+  <p class="hero-sub">
+    捷揚光電內部知識庫 — 關鍵畫面 HTML mockups。全部使用
+    <code>ui-design.md §4</code> 設計 token（CSS custom properties，light／dark 雙套），
+    右上角 🌓 可即時切換深色模式（狀態跨頁記憶）。
+  </p>
+
+  <!-- ============ 設計 Token 速覽 ============ -->
+  <section class="section">
+    <h2>設計 Token 速覽</h2>
+    <p class="sec-desc">品牌主色為深靛藍（光譜藍，色相 ~215°）；AI 功能一律使用專用紫，嚴禁挪作一般強調。</p>
+
+    <div class="swatch-group">
+      <div class="swatch-group-title">Primary（深靛藍）</div>
+      <div class="swatch-row">
+        <div class="swatch"><div class="chip" style="background:#EEF4FC"></div><div class="t-name">primary-50</div><div class="t-hex">#EEF4FC</div></div>
+        <div class="swatch"><div class="chip" style="background:#D8E6F8"></div><div class="t-name">primary-100</div><div class="t-hex">#D8E6F8</div></div>
+        <div class="swatch"><div class="chip" style="background:#84AEE6"></div><div class="t-name">primary-300</div><div class="t-hex">#84AEE6</div></div>
+        <div class="swatch"><div class="chip" style="background:#5590DB"><span class="on-chip" style="color:#fff">Dark 主色</span></div><div class="t-name">primary-400</div><div class="t-hex">#5590DB</div></div>
+        <div class="swatch"><div class="chip" style="background:#2E72CB"></div><div class="t-name">primary-500</div><div class="t-hex">#2E72CB</div></div>
+        <div class="swatch"><div class="chip" style="background:#1D5DB4"><span class="on-chip" style="color:#fff">主色</span></div><div class="t-name">primary-600</div><div class="t-hex">#1D5DB4</div></div>
+        <div class="swatch"><div class="chip" style="background:#17498F"></div><div class="t-name">primary-700</div><div class="t-hex">#17498F</div></div>
+        <div class="swatch"><div class="chip" style="background:#0E2C58"></div><div class="t-name">primary-900</div><div class="t-hex">#0E2C58</div></div>
+      </div>
+    </div>
+
+    <div class="swatch-group">
+      <div class="swatch-group-title">AI Accent（紫，僅限 AI 功能）</div>
+      <div class="swatch-row">
+        <div class="swatch"><div class="chip" style="background:#F1EDFB"></div><div class="t-name">ai-50</div><div class="t-hex">#F1EDFB</div></div>
+        <div class="swatch"><div class="chip" style="background:#9B82E8"><span class="on-chip" style="color:#fff">Dark 主用</span></div><div class="t-name">ai-400</div><div class="t-hex">#9B82E8</div></div>
+        <div class="swatch"><div class="chip" style="background:#7C5CDB"><span class="on-chip" style="color:#fff">Light 主用</span></div><div class="t-name">ai-500</div><div class="t-hex">#7C5CDB</div></div>
+      </div>
+    </div>
+
+    <div class="swatch-group">
+      <div class="swatch-group-title">語意色（Light 主色＋淡底）</div>
+      <div class="swatch-row">
+        <div class="swatch">
+          <div class="chip semantic-chip" style="background:#E9F7F0">
+            <div class="bar" style="background:#1F9D5B"></div>
+            <span class="on-chip" style="color:#1F9D5B">Success</span>
+          </div>
+          <div class="t-name">success</div><div class="t-hex">#1F9D5B</div>
+        </div>
+        <div class="swatch">
+          <div class="chip semantic-chip" style="background:#FBF3E2">
+            <div class="bar" style="background:#B97D10"></div>
+            <span class="on-chip" style="color:#B97D10">Warning</span>
+          </div>
+          <div class="t-name">warning</div><div class="t-hex">#B97D10</div>
+        </div>
+        <div class="swatch">
+          <div class="chip semantic-chip" style="background:#FCEEED">
+            <div class="bar" style="background:#D2453B"></div>
+            <span class="on-chip" style="color:#D2453B">Danger</span>
+          </div>
+          <div class="t-name">danger</div><div class="t-hex">#D2453B</div>
+        </div>
+        <div class="swatch">
+          <div class="chip semantic-chip" style="background:#EEF4FC">
+            <div class="bar" style="background:#1D5DB4"></div>
+            <span class="on-chip" style="color:#1D5DB4">Info</span>
+          </div>
+          <div class="t-name">info</div><div class="t-hex">#1D5DB4</div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ Mockup 導覽 ============ -->
+  <section class="section">
+    <h2>畫面 Mockups</h2>
+    <p class="sec-desc">每張皆為單檔自足 HTML，可直接以瀏覽器開啟；demo 內容為虛構資料。</p>
+
+    <div class="mockup-grid">
+
+      <a class="mockup-card" href="reading.html">
+        <div class="mc-head">
+          <span class="mc-icon">📖</span>
+          <span>
+            <span class="mc-title" style="display:block">閱讀頁</span>
+            <span class="mc-file">reading.html</span>
+          </span>
+        </div>
+        <p class="mc-desc">三欄版面：280px 側欄頁面樹＋720px 內文欄＋240px TOC scroll-spy。</p>
+        <span class="mc-open">開啟預覽 →</span>
+      </a>
+
+      <a class="mockup-card" href="editor.html">
+        <div class="mc-head">
+          <span class="mc-icon">✏️</span>
+          <span>
+            <span class="mc-title" style="display:block">編輯器</span>
+            <span class="mc-file">editor.html</span>
+          </span>
+        </div>
+        <p class="mc-desc">Block 編輯器：slash 選單、拖曳把手、autosave 狀態與軟性編輯鎖提示。</p>
+        <span class="mc-open">開啟預覽 →</span>
+      </a>
+
+      <a class="mockup-card" href="ai-drawer.html">
+        <div class="mc-head">
+          <span class="mc-icon ai">✦</span>
+          <span>
+            <span class="mc-title" style="display:block">AI 問答抽屜</span>
+            <span class="mc-file">ai-drawer.html</span>
+          </span>
+        </div>
+        <p class="mc-desc">420px 右側抽屜：RAG 串流回覆、引用來源卡片、context chips。</p>
+        <span class="mc-open">開啟預覽 →</span>
+      </a>
+
+      <a class="mockup-card" href="login.html">
+        <div class="mc-head">
+          <span class="mc-icon">🔐</span>
+          <span>
+            <span class="mc-title" style="display:block">登入頁</span>
+            <span class="mc-file">login.html</span>
+          </span>
+        </div>
+        <p class="mc-desc">400px 置中卡片：本地帳密＋SSO feature flag 預留、幾何光學紋樣背景。</p>
+        <span class="mc-open">開啟預覽 →</span>
+      </a>
+
+      <a class="mockup-card" href="dashboard.html">
+        <div class="mc-head">
+          <span class="mc-icon">🏠</span>
+          <span>
+            <span class="mc-title" style="display:block">Dashboard</span>
+            <span class="mc-file">dashboard.html</span>
+          </span>
+        </div>
+        <p class="mc-desc">App Shell＋繼續閱讀、我的空間卡片格、最近更新動態列表。</p>
+        <span class="mc-open">開啟預覽 →</span>
+      </a>
+
+      <a class="mockup-card" href="search.html">
+        <div class="mc-head">
+          <span class="mc-icon">🔍</span>
+          <span>
+            <span class="mc-title" style="display:block">全域搜尋（⌘K）</span>
+            <span class="mc-file">search.html</span>
+          </span>
+        </div>
+        <p class="mc-desc">640px 命令面板：問 AI 首列、全文結果 mark 高亮、語意相關區。</p>
+        <span class="mc-open">開啟預覽 →</span>
+      </a>
+
+    </div>
+  </section>
+
+  <footer class="footer">
+    <span class="ver">JetBook v0.1.0-dev</span> · © 2026 Jet Opto 捷揚光電 ·
+    視覺系統為原創設計（深靛藍主色 #1D5DB4／AI 紫 #7C5CDB），規格詳見 <span class="ver">docs/design/ui-design.md</span>
+  </footer>
+
+</div>
+
+<script>
+document.getElementById('themeToggle').addEventListener('click', function () {
+  var dark = document.documentElement.classList.toggle('dark');
+  localStorage.setItem('jetbook-theme', dark ? 'dark' : 'light');
+});
+</script>
+</body>
+</html>

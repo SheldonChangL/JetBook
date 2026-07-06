@@ -1,0 +1,853 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>JetBook Mockup — 文件閱讀頁（三欄）</title>
+<script>
+/* 防 FOUC：於 CSS 套用前先讀取主題偏好 */
+(function () {
+  var t = localStorage.getItem("jetbook-theme");
+  if (t === "dark" || (!t && matchMedia("(prefers-color-scheme: dark)").matches)) {
+    document.documentElement.classList.add("dark");
+  }
+})();
+</script>
+<style>
+/* ============================================================
+   JetBook 設計 token（依 UI 規格書 §4.1–§4.3）
+   ============================================================ */
+:root {
+  /* Primary（深靛藍，色相 ~215°） */
+  --primary-50:  #EEF4FC;
+  --primary-100: #D8E6F8;
+  --primary-300: #84AEE6;
+  --primary-400: #5590DB;
+  --primary-500: #2E72CB;
+  --primary-600: #1D5DB4;
+  --primary-700: #17498F;
+  --primary-900: #0E2C58;
+
+  /* AI Accent（紫，色相 ~262°）— 僅用於 AI 相關元素 */
+  --ai-50:  #F1EDFB;
+  --ai-400: #9B82E8;
+  --ai-500: #7C5CDB;
+
+  /* 中性階（Light） */
+  --bg-base:        #FFFFFF;
+  --bg-sidebar:     #F7F9FB;
+  --bg-raised:      #FFFFFF;
+  --bg-hover:       #EFF2F5;
+  --border-default: #E2E7EC;
+  --border-strong:  #CBD3DB;
+  --text-primary:   #242D37;
+  --text-secondary: #4D5966;
+  --text-tertiary:  #6B7885;
+  --text-disabled:  #9AA6B2;
+
+  /* 語意色（Light） */
+  --success:      #1F9D5B;
+  --success-tint: #E9F7F0;
+  --warning:      #B97D10;
+  --warning-tint: #FBF3E2;
+  --danger:       #D2453B;
+  --danger-tint:  #FCEEED;
+  --info:         #1D5DB4;
+  --info-tint:    #EEF4FC;
+
+  /* 語意別名（元件一律引用這層） */
+  --interactive:       var(--primary-600);
+  --interactive-hover: var(--primary-700);
+  --selected-tint:     var(--primary-50);
+  --ai:      var(--ai-500);
+  --ai-tint: var(--ai-50);
+
+  /* 陰影 */
+  --shadow-sm: 0 1px 2px rgb(16 24 32 / .06);
+  --shadow-md: 0 4px 12px rgb(16 24 32 / .10);
+  --shadow-lg: 0 8px 24px rgb(16 24 32 / .14);
+
+  /* 字型 */
+  --font-sans: "Inter", "Noto Sans TC", -apple-system, "PingFang TC", "Microsoft JhengHei", sans-serif;
+  --font-mono: "JetBrains Mono", Menlo, Consolas, monospace;
+
+  /* 圓角 */
+  --radius-sm: 4px;
+  --radius-md: 6px;
+  --radius-lg: 8px;
+  --radius-xl: 12px;
+}
+
+html.dark {
+  --bg-base:        #0F141A;
+  --bg-sidebar:     #141B22;
+  --bg-raised:      #1C242E;
+  --bg-hover:       #232D38;
+  --border-default: #2A3441;
+  --border-strong:  #3A4654;
+  --text-primary:   #E5EAF0;
+  --text-secondary: #A7B2BF;
+  --text-tertiary:  #7A8694;
+  --text-disabled:  #556170;
+
+  --success:      #3FBF7C;
+  --success-tint: #12291D;
+  --warning:      #E0A93E;
+  --warning-tint: #2E2510;
+  --danger:       #F0716A;
+  --danger-tint:  #331715;
+  --info:         #5590DB;
+  --info-tint:    #122033;
+
+  --interactive:       var(--primary-400);
+  --interactive-hover: var(--primary-300);
+  --selected-tint:     #122033;
+  --ai:      var(--ai-400);
+  --ai-tint: #241C3D;
+
+  /* 深色陰影透明度加倍，層次輔以邊框 */
+  --shadow-sm: 0 1px 2px rgb(0 0 0 / .12);
+  --shadow-md: 0 4px 12px rgb(0 0 0 / .20);
+  --shadow-lg: 0 8px 24px rgb(0 0 0 / .28);
+}
+
+/* ============================================================
+   Base
+   ============================================================ */
+* { margin: 0; padding: 0; box-sizing: border-box; }
+html, body { height: 100%; }
+body {
+  font-family: var(--font-sans);
+  font-size: 14px;
+  line-height: 22px;
+  color: var(--text-primary);
+  background: var(--bg-base);
+  -webkit-font-smoothing: antialiased;
+  overflow: hidden;
+}
+button { font: inherit; color: inherit; background: none; border: none; cursor: pointer; }
+a { color: var(--interactive); text-decoration: none; }
+:focus-visible { outline: 2px solid var(--interactive); outline-offset: 2px; }
+
+kbd {
+  font-family: var(--font-sans);
+  font-size: 11px;
+  line-height: 1;
+  padding: 3px 5px;
+  border: 1px solid var(--border-strong);
+  border-bottom-width: 2px;
+  border-radius: var(--radius-sm);
+  color: var(--text-tertiary);
+  background: var(--bg-raised);
+}
+
+/* ============================================================
+   全域頂部列（56px）
+   ============================================================ */
+.topbar {
+  position: fixed;
+  top: 0; left: 0; right: 0;
+  height: 56px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 0 16px;
+  background: var(--bg-base);
+  border-bottom: 1px solid var(--border-default);
+  z-index: 100;
+}
+.topbar-left { display: flex; align-items: center; gap: 8px; min-width: 264px; }
+.logo {
+  display: flex; align-items: center; gap: 8px;
+  font-size: 16px; font-weight: 700; color: var(--text-primary);
+  padding: 4px 6px; border-radius: var(--radius-md);
+}
+.logo:hover { background: var(--bg-hover); }
+.space-switcher {
+  display: flex; align-items: center; gap: 6px;
+  padding: 5px 10px;
+  border-radius: var(--radius-md);
+  font-size: 14px; font-weight: 500;
+  color: var(--text-secondary);
+}
+.space-switcher:hover { background: var(--bg-hover); }
+.space-switcher .caret { font-size: 10px; color: var(--text-tertiary); }
+
+.topbar-center { flex: 1; display: flex; justify-content: center; }
+.search-trigger {
+  display: flex; align-items: center; gap: 10px;
+  width: 100%; max-width: 440px;
+  height: 34px;
+  padding: 0 10px;
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius-lg);
+  background: var(--bg-sidebar);
+  color: var(--text-tertiary);
+  font-size: 14px;
+}
+.search-trigger:hover { border-color: var(--interactive); background: var(--bg-base); }
+.search-trigger .grow { flex: 1; text-align: left; }
+
+.topbar-right { display: flex; align-items: center; gap: 4px; }
+.icon-btn {
+  position: relative;
+  width: 32px; height: 32px;
+  display: inline-flex; align-items: center; justify-content: center;
+  border-radius: var(--radius-md);
+  color: var(--text-secondary);
+  font-size: 16px;
+}
+.icon-btn:hover { background: var(--bg-hover); color: var(--text-primary); }
+.btn-new {
+  display: flex; align-items: center; gap: 4px;
+  height: 32px; padding: 0 10px;
+  border-radius: var(--radius-md);
+  font-size: 14px; font-weight: 500;
+  color: var(--text-secondary);
+}
+.btn-new:hover { background: var(--bg-hover); color: var(--text-primary); }
+.ai-topbar-btn {
+  display: inline-flex; align-items: center; justify-content: center;
+  width: 32px; height: 32px;
+  border-radius: var(--radius-md);
+  background: var(--ai-tint);
+  color: var(--ai);
+  font-size: 15px;
+}
+.ai-topbar-btn:hover { filter: brightness(.96); }
+.bell-dot {
+  position: absolute; top: 5px; right: 6px;
+  width: 7px; height: 7px; border-radius: 9999px;
+  background: var(--danger);
+  border: 1.5px solid var(--bg-base);
+}
+.avatar {
+  width: 28px; height: 28px;
+  border-radius: 9999px;
+  display: inline-flex; align-items: center; justify-content: center;
+  font-size: 11px; font-weight: 500; color: #FFFFFF;
+  background: var(--primary-500);
+  flex: none;
+}
+
+/* ============================================================
+   三欄 Shell
+   ============================================================ */
+.shell {
+  display: flex;
+  height: calc(100vh - 56px);
+  margin-top: 56px;
+}
+
+/* ---------- 左側欄 280px ---------- */
+.sidebar {
+  width: 280px; flex: none;
+  display: flex; flex-direction: column;
+  background: var(--bg-sidebar);
+  border-right: 1px solid var(--border-default);
+  overflow: hidden;
+}
+.sidebar-head {
+  padding: 16px 12px 8px;
+}
+.space-title {
+  display: flex; align-items: center; gap: 8px;
+  padding: 4px;
+  font-size: 15px; font-weight: 600;
+}
+.badge {
+  font-size: 11px; line-height: 16px;
+  padding: 1px 8px;
+  border-radius: 9999px;
+  font-weight: 500;
+}
+.badge-visibility { background: var(--info-tint); color: var(--info); }
+.sidebar-filter {
+  margin: 8px 4px 4px;
+  display: flex; align-items: center; gap: 6px;
+  height: 30px; padding: 0 8px;
+  border: 1px solid var(--border-default);
+  border-radius: var(--radius-md);
+  background: var(--bg-base);
+  color: var(--text-tertiary);
+  font-size: 13px;
+}
+.sidebar-tree { flex: 1; overflow-y: auto; padding: 4px 8px 16px; }
+.tree-item {
+  position: relative;
+  display: flex; align-items: center; gap: 6px;
+  height: 30px;
+  padding: 0 8px;
+  border-radius: var(--radius-md);
+  font-size: 14px;
+  color: var(--text-secondary);
+  cursor: pointer;
+  white-space: nowrap; overflow: hidden;
+}
+.tree-item:hover { background: var(--bg-hover); }
+.tree-item .chev { width: 14px; flex: none; font-size: 9px; color: var(--text-tertiary); text-align: center; }
+.tree-item .t-icon { flex: none; font-size: 13px; }
+.tree-item .t-label { overflow: hidden; text-overflow: ellipsis; }
+.tree-item.lv1 { padding-left: 24px; }
+.tree-item.current {
+  background: var(--selected-tint);
+  color: var(--interactive);
+  font-weight: 500;
+}
+.tree-item.current::before {
+  content: "";
+  position: absolute; left: 0; top: 6px; bottom: 6px;
+  width: 2px; border-radius: 2px;
+  background: var(--interactive);
+}
+.sidebar-foot {
+  border-top: 1px solid var(--border-default);
+  padding: 8px;
+}
+.sidebar-foot .tree-item { color: var(--text-tertiary); }
+
+/* ---------- 內容區 ---------- */
+.main {
+  flex: 1;
+  overflow-y: auto;
+  scroll-behavior: smooth;
+}
+.article-wrap {
+  max-width: 720px;
+  margin: 0 auto;
+  padding: 24px 48px 96px;
+}
+
+/* 麵包屑列 */
+.crumb-bar {
+  display: flex; align-items: center; gap: 8px;
+  padding: 4px 0 20px;
+}
+.crumbs { display: flex; align-items: center; gap: 6px; font-size: 13px; color: var(--text-tertiary); flex: 1; min-width: 0; }
+.crumbs a { color: var(--text-tertiary); }
+.crumbs a:hover { color: var(--interactive); }
+.crumbs .sep { color: var(--text-disabled); }
+.crumbs .here { color: var(--text-secondary); font-weight: 500; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.crumb-actions { display: flex; align-items: center; gap: 4px; flex: none; }
+.btn {
+  display: inline-flex; align-items: center; gap: 6px;
+  height: 30px; padding: 0 12px;
+  border-radius: var(--radius-md);
+  font-size: 13px; font-weight: 500;
+}
+.btn-primary { background: var(--interactive); color: #FFFFFF; }
+.btn-primary:hover { background: var(--interactive-hover); }
+.btn-primary kbd { border-color: rgb(255 255 255 / .4); background: rgb(255 255 255 / .12); color: rgb(255 255 255 / .85); }
+.count { font-size: 11px; font-weight: 600; color: var(--text-tertiary); margin-left: -3px; }
+
+/* 標題與 metadata */
+.page-title {
+  font-size: 28px; line-height: 40px; font-weight: 700;
+  display: flex; align-items: center; gap: 10px;
+  text-wrap: balance;
+}
+.meta-row {
+  display: flex; align-items: center; flex-wrap: wrap; gap: 8px;
+  margin-top: 10px;
+  font-size: 12px; line-height: 18px;
+  color: var(--text-tertiary);
+}
+.meta-row .avatar { width: 20px; height: 20px; font-size: 9px; }
+.avatar-stack { display: flex; }
+.avatar-stack .avatar { margin-left: -6px; border: 1.5px solid var(--bg-base); }
+.avatar-stack .avatar:first-child { margin-left: 0; }
+.avatar.c2 { background: var(--ai-500); }
+.avatar.c3 { background: var(--success); }
+.avatar.c4 { background: var(--warning); }
+.avatar.more { background: var(--bg-hover); color: var(--text-tertiary); }
+.title-sep { border: none; border-top: 1px solid var(--border-default); margin: 20px 0 28px; }
+
+/* ---------- 內文排版（閱讀 16/28，繁中規格 §6） ---------- */
+.doc {
+  font-size: 16px; line-height: 28px;
+  overflow-wrap: break-word;
+  line-break: strict;
+}
+.doc p { margin: 0 0 16px; }
+.doc h2, .doc h3 { position: relative; scroll-margin-top: 24px; }
+.doc h2 { font-size: 22px; line-height: 34px; font-weight: 600; margin: 32px 0 12px; }
+.doc h3 { font-size: 18px; line-height: 29px; font-weight: 600; margin: 24px 0 8px; }
+.doc strong { font-weight: 600; }
+/* 中文無斜體：強調改用淡底 highlight（§6.4） */
+.doc em { font-style: normal; background: var(--selected-tint); border-radius: 2px; padding: 0 2px; }
+.doc code {
+  font-family: var(--font-mono);
+  font-size: 0.9em;
+  background: var(--bg-hover);
+  border-radius: var(--radius-sm);
+  padding: 1px 5px;
+}
+.doc ul, .doc ol { margin: 0 0 16px; padding-left: 24px; }
+.doc li { margin-bottom: 4px; }
+.anchor {
+  position: absolute; left: -22px; top: 0;
+  color: var(--text-disabled);
+  font-size: 0.85em;
+  opacity: 0;
+  transition: opacity .12s;
+}
+.doc h2:hover .anchor, .doc h3:hover .anchor { opacity: 1; }
+.anchor:hover { color: var(--interactive); }
+
+/* 程式碼區塊 */
+.codeblock {
+  margin: 4px 0 20px;
+  border: 1px solid var(--border-default);
+  border-radius: var(--radius-lg);
+  background: var(--bg-sidebar);
+  overflow: hidden;
+}
+.codeblock-head {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 6px 8px 6px 12px;
+  border-bottom: 1px solid var(--border-default);
+}
+.code-lang { font-size: 11px; font-weight: 500; color: var(--text-tertiary); letter-spacing: .04em; }
+.copy-btn {
+  display: inline-flex; align-items: center; gap: 4px;
+  height: 24px; padding: 0 8px;
+  border-radius: var(--radius-sm);
+  font-size: 12px; color: var(--text-tertiary);
+}
+.copy-btn:hover { background: var(--bg-hover); color: var(--text-primary); }
+.codeblock pre {
+  padding: 12px 16px;
+  overflow-x: auto;
+  font-family: var(--font-mono);
+  font-size: 13px; line-height: 22px;
+}
+.tok-comment { color: var(--text-tertiary); }
+.tok-cmd { color: var(--interactive); font-weight: 500; }
+.tok-str { color: var(--success); }
+.tok-flag { color: var(--warning); }
+
+/* Callout（四語意色，左緣 3px 色條＋淡底） */
+.callout {
+  display: flex; gap: 10px;
+  margin: 4px 0 20px;
+  padding: 12px 16px;
+  border-radius: var(--radius-lg);
+  border-left: 3px solid;
+  font-size: 15px; line-height: 26px;
+}
+.callout .co-icon { flex: none; font-size: 15px; line-height: 26px; }
+.callout-info    { background: var(--info-tint);    border-color: var(--info); }
+.callout-success { background: var(--success-tint); border-color: var(--success); }
+.callout-warning { background: var(--warning-tint); border-color: var(--warning); }
+.callout-danger  { background: var(--danger-tint);  border-color: var(--danger); }
+
+/* 表格 */
+.doc-table {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 4px 0 20px;
+  font-size: 14px; line-height: 22px;
+}
+.doc-table th, .doc-table td {
+  border: 1px solid var(--border-default);
+  padding: 8px 12px;
+  text-align: left;
+  vertical-align: top;
+}
+.doc-table th { background: var(--bg-sidebar); font-weight: 600; white-space: nowrap; }
+
+/* 圖片佔位 */
+.figure { margin: 4px 0 20px; }
+.img-placeholder {
+  display: flex; align-items: center; justify-content: center;
+  aspect-ratio: 16 / 8;
+  border: 1.5px dashed var(--border-strong);
+  border-radius: var(--radius-lg);
+  background: var(--bg-sidebar);
+  cursor: zoom-in;
+}
+.figure figcaption {
+  margin-top: 8px;
+  font-size: 12px; line-height: 18px;
+  color: var(--text-tertiary);
+  text-align: center;
+}
+
+/* 頁尾導航 */
+.pager {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+  margin-top: 48px;
+}
+.pager-card {
+  display: flex; flex-direction: column; gap: 2px;
+  padding: 12px 16px;
+  border: 1px solid var(--border-default);
+  border-radius: var(--radius-lg);
+  background: var(--bg-raised);
+}
+.pager-card:hover { border-color: var(--interactive); box-shadow: var(--shadow-sm); }
+.pager-card .dir { font-size: 12px; color: var(--text-tertiary); }
+.pager-card .pt { font-size: 14px; font-weight: 500; color: var(--interactive); }
+.pager-card.next { text-align: right; }
+
+/* ---------- 右側 TOC 240px ---------- */
+.toc {
+  width: 240px; flex: none;
+  overflow-y: auto;
+  padding: 28px 16px 24px 8px;
+}
+.toc-inner { position: sticky; top: 0; }
+.toc-label {
+  font-size: 12px; line-height: 18px; font-weight: 600;
+  letter-spacing: .05em;
+  color: var(--text-tertiary);
+  margin-bottom: 8px;
+  padding-left: 12px;
+}
+.toc a {
+  display: block;
+  padding: 4px 8px 4px 10px;
+  border-left: 2px solid var(--border-default);
+  font-size: 13px; line-height: 20px;
+  color: var(--text-secondary);
+}
+.toc a.h3 { padding-left: 24px; }
+.toc a:hover { color: var(--text-primary); }
+.toc a.active {
+  border-left-color: var(--interactive);
+  color: var(--interactive);
+  font-weight: 500;
+}
+.ask-ai-box { margin-top: 20px; padding-left: 10px; }
+.btn-ai {
+  display: flex; align-items: center; justify-content: center; gap: 6px;
+  width: 100%; height: 32px;
+  border-radius: var(--radius-md);
+  background: var(--ai-tint);
+  color: var(--ai);
+  font-size: 13px; font-weight: 500;
+}
+.btn-ai:hover { filter: brightness(.96); }
+
+/* ---------- 主題切換（mockup 控制項） ---------- */
+.theme-toggle {
+  position: fixed;
+  top: 68px; right: 16px;
+  z-index: 300;
+  width: 36px; height: 36px;
+  display: flex; align-items: center; justify-content: center;
+  border: 1px solid var(--border-default);
+  border-radius: 9999px;
+  background: var(--bg-raised);
+  box-shadow: var(--shadow-md);
+  font-size: 16px;
+}
+.theme-toggle:hover { border-color: var(--interactive); }
+
+@media (prefers-reduced-motion: reduce) {
+  * { transition: none !important; animation: none !important; scroll-behavior: auto !important; }
+}
+</style>
+</head>
+<body>
+
+<button class="theme-toggle" onclick="toggleTheme()" title="切換深色模式" aria-label="切換深色模式">🌓</button>
+
+<!-- ===== 全域頂部列 ===== -->
+<header class="topbar">
+  <div class="topbar-left">
+    <a class="logo" href="#" aria-label="JetBook 首頁">
+      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+        <rect width="24" height="24" rx="6" fill="var(--interactive)"/>
+        <path d="M12 5.5 6.6 16.5h10.8L12 5.5Z" stroke="#FFFFFF" stroke-width="1.7" stroke-linejoin="round" fill="none"/>
+        <circle cx="12" cy="13" r="1.4" fill="#FFFFFF"/>
+      </svg>
+      JetBook
+    </a>
+    <button class="space-switcher" aria-haspopup="listbox">
+      <span>📘</span><span>產品手冊</span><span class="caret">▾</span>
+    </button>
+  </div>
+  <div class="topbar-center">
+    <button class="search-trigger" aria-label="開啟全域搜尋">
+      <svg width="15" height="15" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+        <circle cx="7" cy="7" r="4.6" stroke="currentColor" stroke-width="1.6"/>
+        <path d="m10.6 10.6 3 3" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/>
+      </svg>
+      <span class="grow">搜尋或問 AI…</span>
+      <kbd>⌘K</kbd>
+    </button>
+  </div>
+  <div class="topbar-right">
+    <button class="btn-new"><span>＋</span><span>新增</span><span class="caret" style="font-size:10px;color:var(--text-tertiary)">▾</span></button>
+    <button class="ai-topbar-btn" title="AI 助手（⌘J）" aria-label="開啟 AI 助手">✦</button>
+    <button class="icon-btn" title="通知" aria-label="通知">
+      <svg width="17" height="17" viewBox="0 0 20 20" fill="none" aria-hidden="true">
+        <path d="M10 3a5 5 0 0 0-5 5v3l-1.4 2.6a.6.6 0 0 0 .53.9h11.74a.6.6 0 0 0 .53-.9L15 11V8a5 5 0 0 0-5-5Z" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/>
+        <path d="M8.5 16.5a1.7 1.7 0 0 0 3 0" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+      </svg>
+      <span class="bell-dot" aria-hidden="true"></span>
+    </button>
+    <button class="icon-btn" title="陳志豪 — 個人選單" aria-label="個人選單" style="width:36px">
+      <span class="avatar">志豪</span>
+    </button>
+  </div>
+</header>
+
+<div class="shell">
+
+  <!-- ===== 左側欄：Space 導航 ===== -->
+  <nav class="sidebar" aria-label="空間導航">
+    <div class="sidebar-head">
+      <div class="space-title">
+        <span>📘</span>
+        <span style="flex:1">產品手冊</span>
+        <span class="badge badge-visibility">全公司</span>
+      </div>
+      <div class="sidebar-filter">
+        <svg width="13" height="13" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+          <circle cx="7" cy="7" r="4.6" stroke="currentColor" stroke-width="1.6"/>
+          <path d="m10.6 10.6 3 3" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/>
+        </svg>
+        <span>篩選頁面…</span>
+      </div>
+    </div>
+    <div class="sidebar-tree">
+      <div class="tree-item"><span class="chev"></span><span class="t-icon">🧭</span><span class="t-label">產品總覽</span></div>
+      <div class="tree-item"><span class="chev">▾</span><span class="t-icon">🔩</span><span class="t-label">硬體安裝</span></div>
+      <div class="tree-item lv1"><span class="chev"></span><span class="t-icon">🌡️</span><span class="t-label">環境需求</span></div>
+      <div class="tree-item lv1 current" aria-current="page"><span class="chev"></span><span class="t-icon">🔦</span><span class="t-label">雷射模組安裝指南</span></div>
+      <div class="tree-item lv1"><span class="chev"></span><span class="t-icon">❄️</span><span class="t-label">散熱系統組裝</span></div>
+      <div class="tree-item"><span class="chev">▾</span><span class="t-icon">💾</span><span class="t-label">韌體與軟體</span></div>
+      <div class="tree-item lv1"><span class="chev"></span><span class="t-icon">⚡</span><span class="t-label">韌體燒錄流程</span></div>
+      <div class="tree-item lv1"><span class="chev"></span><span class="t-icon">🎛️</span><span class="t-label">控制軟體設定</span></div>
+      <div class="tree-item"><span class="chev">▸</span><span class="t-icon">🔍</span><span class="t-label">品質檢驗</span></div>
+      <div class="tree-item"><span class="chev"></span><span class="t-icon">📦</span><span class="t-label">出貨檢核表</span></div>
+    </div>
+    <div class="sidebar-foot">
+      <div class="tree-item"><span class="chev"></span><span class="t-icon">🗑️</span><span class="t-label">垃圾桶</span></div>
+      <div class="tree-item"><span class="chev"></span><span class="t-icon">⚙️</span><span class="t-label">Space 設定</span></div>
+    </div>
+  </nav>
+
+  <!-- ===== 內容區 ===== -->
+  <main class="main" id="main">
+    <div class="article-wrap">
+
+      <!-- 麵包屑 + 動作群 -->
+      <div class="crumb-bar">
+        <div class="crumbs">
+          <a href="#">產品手冊</a><span class="sep">/</span>
+          <a href="#">硬體安裝</a><span class="sep">/</span>
+          <span class="here">雷射模組安裝指南</span>
+        </div>
+        <div class="crumb-actions">
+          <button class="btn btn-primary">編輯 <kbd>E</kbd></button>
+          <button class="icon-btn" title="評論（3）" aria-label="評論，3 則">
+            <svg width="16" height="16" viewBox="0 0 20 20" fill="none" aria-hidden="true">
+              <path d="M4 4h12a1 1 0 0 1 1 1v8a1 1 0 0 1-1 1H8l-4 3V5a1 1 0 0 1 1-1Z" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/>
+            </svg>
+          </button><span class="count">3</span>
+          <button class="icon-btn" title="版本歷史" aria-label="版本歷史">
+            <svg width="16" height="16" viewBox="0 0 20 20" fill="none" aria-hidden="true">
+              <circle cx="10" cy="10" r="7" stroke="currentColor" stroke-width="1.5"/>
+              <path d="M10 6v4l2.6 1.8" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+            </svg>
+          </button>
+          <button class="icon-btn" title="更多動作" aria-label="更多動作">⋯</button>
+        </div>
+      </div>
+
+      <!-- 標題與 metadata -->
+      <h1 class="page-title"><span aria-hidden="true">🔦</span>雷射模組安裝指南</h1>
+      <div class="meta-row">
+        <span>最後更新：3 小時前</span>
+        <span>·</span>
+        <span style="display:inline-flex;align-items:center;gap:5px">由 <span class="avatar">志豪</span> 陳志豪</span>
+        <span>·</span>
+        <span class="avatar-stack" title="貢獻者：陳志豪、林佩珊、王家豪、張雅婷 等 6 人">
+          <span class="avatar">志豪</span>
+          <span class="avatar c2">佩珊</span>
+          <span class="avatar c3">家豪</span>
+          <span class="avatar more">+3</span>
+        </span>
+        <span>·</span>
+        <span>約 6 分鐘</span>
+      </div>
+      <hr class="title-sep">
+
+      <!-- 內文 -->
+      <article class="doc">
+        <p>本指南說明 <strong>JO-L 系列雷射模組</strong>於整機組裝線上的標準安裝流程，涵蓋安裝前準備、模組固定與接線、光軸校準與允收判定。所有步驟均以量產治具為前提；工程樣品的手動安裝請改依〈工程驗證作業說明〉執行。</p>
+        <p>安裝作業必須由完成 <em>雷射安全訓練（LS-2 以上）</em> 的人員執行，並全程遵守無塵室 Class 10000 的作業規範。</p>
+
+        <h2 id="prep"><a class="anchor" href="#prep" aria-label="複製此章節連結">#</a>安裝前準備</h2>
+        <p>開始安裝前，請先確認工單上的模組型號與序號，並核對來料檢驗（IQC）標籤為綠色合格章。模組自防潮箱取出後，應於 <strong>4 小時內</strong>完成安裝與封蓋。</p>
+
+        <div class="callout callout-info">
+          <span class="co-icon" aria-hidden="true">ℹ️</span>
+          <div>本文件適用於 <strong>JO-L200 / JO-L350</strong> 兩款模組。舊款 JO-L100 的安裝方式不同，請參閱〈<a href="#">JO-L100 維護手冊</a>〉。</div>
+        </div>
+
+        <h3 id="tools"><a class="anchor" href="#tools" aria-label="複製此章節連結">#</a>工具與物料清單</h3>
+        <table class="doc-table">
+          <thead>
+            <tr><th>品項</th><th>規格</th><th>數量</th><th>備註</th></tr>
+          </thead>
+          <tbody>
+            <tr><td>六角扳手組</td><td>1.5–5 mm</td><td>1 組</td><td>校準座固定用</td></tr>
+            <tr><td>扭力起子</td><td>0.6 N·m 定扭</td><td>1 支</td><td>鏡座螺絲限定使用</td></tr>
+            <tr><td>無塵手套</td><td>Class 100</td><td>2 雙</td><td>接觸光學件必戴</td></tr>
+            <tr><td>光功率計</td><td>JO-PM-30</td><td>1 台</td><td>需在校驗期內</td></tr>
+            <tr><td>校準治具</td><td>FX-ALN-V2</td><td>1 組</td><td>V1 治具已停用</td></tr>
+          </tbody>
+        </table>
+
+        <h3 id="safety"><a class="anchor" href="#safety" aria-label="複製此章節連結">#</a>環境與安全確認</h3>
+        <p>確認工作站溫度 22 ± 2 °C、相對濕度 40–60%，靜電手環接地阻抗量測合格。模組拆封與安裝全程須在防靜電桌墊上進行。</p>
+
+        <div class="callout callout-warning">
+          <span class="co-icon" aria-hidden="true">⚠️</span>
+          <div>安裝過程中雷射電源必須維持<strong>關閉</strong>，並於工作站掛上「維護中」標示牌。Class 3B 光源未經衰減不得直視，亦不得以反光物件置於光路上。</div>
+        </div>
+
+        <h2 id="steps"><a class="anchor" href="#steps" aria-label="複製此章節連結">#</a>安裝步驟</h2>
+
+        <h3 id="mount"><a class="anchor" href="#mount" aria-label="複製此章節連結">#</a>模組固定與接線</h3>
+        <p>將模組對位銷對準基座定位孔後平放入座，依<strong>對角順序</strong>鎖付四顆 M3 固定螺絲；鏡座螺絲一律使用定扭起子，扭力上限 <code>0.6 N·m</code>。</p>
+        <p>接線時先接訊號排線至 <code>J3</code> 接口（金手指面朝上），再接電源線至 <code>J1</code>。完成後執行模組自檢：</p>
+
+        <div class="codeblock">
+          <div class="codeblock-head">
+            <span class="code-lang">bash</span>
+            <button class="copy-btn" data-copy-target="code-selftest">
+              <svg width="12" height="12" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+                <rect x="5" y="5" width="8" height="8" rx="1.5" stroke="currentColor" stroke-width="1.4"/>
+                <path d="M11 5V4a1.5 1.5 0 0 0-1.5-1.5h-5A1.5 1.5 0 0 0 3 4v5A1.5 1.5 0 0 0 4.5 10.5H5" stroke="currentColor" stroke-width="1.4"/>
+              </svg>
+              <span>複製</span>
+            </button>
+          </div>
+          <pre id="code-selftest"><span class="tok-comment"># 進入診斷模式並確認模組序號</span>
+<span class="tok-cmd">jetctl</span> probe <span class="tok-flag">--port</span> <span class="tok-str">/dev/ttyUSB0</span>
+
+<span class="tok-comment"># 執行完整自檢並輸出報告</span>
+<span class="tok-cmd">jetctl</span> selftest <span class="tok-flag">--module</span> L350 <span class="tok-flag">--report</span> <span class="tok-str">out/selftest.log</span></pre>
+        </div>
+
+        <div class="callout callout-success">
+          <span class="co-icon" aria-hidden="true">✅</span>
+          <div>自檢通過後，<code>selftest.log</code> 末行會顯示 <strong>PASS</strong> 與模組溫漂係數。請將該檔上傳至品保系統，工單方可進入校準工站。</div>
+        </div>
+
+        <h3 id="align"><a class="anchor" href="#align" aria-label="複製此章節連結">#</a>光軸校準</h3>
+        <p>將 FX-ALN-V2 校準治具固定於出光口後方 300 mm 處，光功率計探頭置於治具中心孔位。開啟低功率校準模式（輸出 5%），以水平、俯仰兩軸微調螺絲將光斑對正十字靶心。</p>
+
+        <figure class="figure">
+          <div class="img-placeholder" role="img" aria-label="光軸校準治具與光功率計配置示意圖">
+            <svg width="200" height="96" viewBox="0 0 200 96" fill="none" aria-hidden="true">
+              <rect x="10" y="34" width="44" height="28" rx="4" stroke="var(--text-disabled)" stroke-width="1.6"/>
+              <path d="M54 48h60" stroke="var(--interactive)" stroke-width="2" stroke-dasharray="5 4"/>
+              <circle cx="130" cy="48" r="16" stroke="var(--text-disabled)" stroke-width="1.6"/>
+              <path d="M130 36v24M118 48h24" stroke="var(--text-disabled)" stroke-width="1.2"/>
+              <circle cx="130" cy="48" r="3.5" fill="var(--interactive)"/>
+              <rect x="160" y="30" width="30" height="36" rx="4" stroke="var(--text-disabled)" stroke-width="1.6"/>
+              <path d="M166 42h18M166 50h12" stroke="var(--text-disabled)" stroke-width="1.4" stroke-linecap="round"/>
+            </svg>
+          </div>
+          <figcaption>圖 1：光軸校準治具（中）與光功率計（右）配置示意，量測點距出光口 300 mm</figcaption>
+        </figure>
+
+        <p>允收公差：<strong>水平偏移 ±0.05 mm、俯仰角 ±0.02°</strong>。連續三次讀值差異超過 5% 時，應先檢查治具鎖付扭力，再重新執行校準。</p>
+
+        <div class="callout callout-danger">
+          <span class="co-icon" aria-hidden="true">⛔</span>
+          <div>校準螺絲鎖付<strong>超過 0.8 N·m 會造成鏡座永久變形</strong>——此為不可逆損壞，模組必須整組報廢並填寫異常單。定扭起子禁止以手動扳手替代。</div>
+        </div>
+
+        <h2 id="faq"><a class="anchor" href="#faq" aria-label="複製此章節連結">#</a>常見問題</h2>
+        <p><strong>Q：自檢顯示 <code>ERR-07</code>（溫度感測異常）怎麼辦？</strong><br>先確認 J3 排線金手指方向是否插反；若接線正確仍報錯，依〈品質檢驗〉章節送模組進恆溫測試站複判。</p>
+        <p><strong>Q：光斑呈橢圓形而非圓形？</strong><br>多為鏡座受力不均，請將四顆固定螺絲全數鬆開，重新依對角順序以定扭起子鎖付一次。</p>
+
+        <!-- 頁尾導航（依頁面樹順序） -->
+        <nav class="pager" aria-label="上下頁導航">
+          <a class="pager-card" href="#">
+            <span class="dir">‹ 上一頁</span>
+            <span class="pt">環境需求</span>
+          </a>
+          <a class="pager-card next" href="#">
+            <span class="dir">下一頁 ›</span>
+            <span class="pt">散熱系統組裝</span>
+          </a>
+        </nav>
+
+      </article>
+    </div>
+  </main>
+
+  <!-- ===== 右側 TOC（scroll-spy） ===== -->
+  <aside class="toc" aria-label="本頁目錄">
+    <div class="toc-inner">
+      <div class="toc-label">本頁目錄</div>
+      <nav id="toc-nav">
+        <a href="#prep" data-target="prep" class="active">安裝前準備</a>
+        <a href="#tools" data-target="tools" class="h3">工具與物料清單</a>
+        <a href="#safety" data-target="safety" class="h3">環境與安全確認</a>
+        <a href="#steps" data-target="steps">安裝步驟</a>
+        <a href="#mount" data-target="mount" class="h3">模組固定與接線</a>
+        <a href="#align" data-target="align" class="h3">光軸校準</a>
+        <a href="#faq" data-target="faq">常見問題</a>
+      </nav>
+      <div class="ask-ai-box">
+        <button class="btn-ai">✦ 問 AI 關於此頁</button>
+      </div>
+    </div>
+  </aside>
+
+</div>
+
+<script>
+/* 主題切換（localStorage 記憶） */
+function toggleTheme() {
+  var dark = document.documentElement.classList.toggle("dark");
+  localStorage.setItem("jetbook-theme", dark ? "dark" : "light");
+}
+
+/* 程式碼複製按鈕 */
+document.querySelectorAll(".copy-btn").forEach(function (btn) {
+  btn.addEventListener("click", function () {
+    var pre = document.getElementById(btn.getAttribute("data-copy-target"));
+    var label = btn.querySelector("span");
+    var done = function () {
+      var orig = label.textContent;
+      label.textContent = "已複製 ✓";
+      setTimeout(function () { label.textContent = orig; }, 1500);
+    };
+    if (navigator.clipboard && pre) {
+      navigator.clipboard.writeText(pre.textContent).then(done, done);
+    } else { done(); }
+  });
+});
+
+/* TOC scroll-spy：以內容捲動位置標示目前章節 */
+(function () {
+  var main = document.getElementById("main");
+  var links = Array.prototype.slice.call(document.querySelectorAll("#toc-nav a"));
+  var ids = links.map(function (a) { return a.getAttribute("data-target"); });
+  var headings = ids.map(function (id) { return document.getElementById(id); });
+  function onScroll() {
+    var current = 0;
+    for (var i = 0; i < headings.length; i++) {
+      if (headings[i].offsetTop - main.scrollTop <= 120) current = i;
+    }
+    links.forEach(function (a, i) { a.classList.toggle("active", i === current); });
+  }
+  main.addEventListener("scroll", onScroll, { passive: true });
+  onScroll();
+})();
+</script>
+
+</body>
+</html>
