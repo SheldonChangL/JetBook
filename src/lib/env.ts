@@ -12,6 +12,22 @@ const envSchema = z.object({
   BASE_URL: z.url(),
   /** PostgreSQL 連線字串 */
   DATABASE_URL: z.string().startsWith("postgresql://"),
+
+  // ── AI Provider（M2；全部 optional，未設定時 AI 功能不可用但系統正常運作，NFR-AVAIL-02） ──
+  /** chat LLM 供應商；未設定＝AI 功能關閉 */
+  LLM_PROVIDER: z.enum(["anthropic", "openai-compat"]).optional(),
+  ANTHROPIC_API_KEY: z.string().optional(),
+  ANTHROPIC_MODEL_PRIMARY: z.string().default("claude-sonnet-5"),
+  ANTHROPIC_MODEL_LIGHT: z.string().default("claude-haiku-4-5"),
+  /** OpenAI-compatible endpoint（Ollama/vLLM；後期 Local LLM，NFR-COMP-01） */
+  OPENAI_COMPAT_BASE_URL: z.url().optional(),
+  OPENAI_COMPAT_MODEL_PRIMARY: z.string().optional(),
+  OPENAI_COMPAT_MODEL_LIGHT: z.string().optional(),
+  /** Embedding（ADR-005：day-1 local BGE-M3 1024 維；未設定＝語意索引關閉） */
+  EMBEDDING_BASE_URL: z.url().optional(),
+  EMBEDDING_MODEL: z.string().default("bge-m3"),
+  EMBEDDING_DIMENSIONS: z.coerce.number().int().positive().default(1024),
+  EMBEDDING_QUERY_PREFIX: z.string().optional(),
 });
 
 export type Env = z.infer<typeof envSchema>;

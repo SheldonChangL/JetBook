@@ -22,6 +22,7 @@ import {
   resetLoginFailures,
 } from "@/lib/auth/throttle";
 import { loginRateLimiter } from "@/lib/rate-limit";
+import { ipFromHeaders, writeAudit } from "@/lib/audit";
 import { requestLogger } from "@/lib/logger";
 
 const loginSchema = z.object({
@@ -46,10 +47,7 @@ function getDummyHash(): Promise<string> {
 export async function login(_prev: LoginState, formData: FormData): Promise<LoginState> {
   const requestHeaders = await headers();
   const log = requestLogger(new Headers(requestHeaders));
-  const ip =
-    requestHeaders.get("x-forwarded-for")?.split(",")[0]?.trim() ??
-    requestHeaders.get("x-real-ip") ??
-    "unknown";
+  const ip = ipFromHeaders(requestHeaders) ?? "unknown";
 
   const parsed = loginSchema.safeParse({
     email: formData.get("email"),
@@ -83,8 +81,16 @@ export async function login(_prev: LoginState, formData: FormData): Promise<Logi
 
   if (!user || !user.isActive || !passwordOk) {
     await recordLoginFailure(email);
-    log.info({ email, ip, reason: !user ? "no-user" : !user.isActive ? "inactive" : "password" },
-      "login failed");
+    const reason = !user ? "no-user" : !user.isActive ? "inactive" : "password";
+    log.info({ email, ip, reason }, "login failed");
+    await writeAudit({
+      actorId: user?.id ?? null,
+      action: "auth.login_failed",
+      targetType: "user",
+      targetId: user?.id ?? null,
+      metadata: { email, reason },
+      ip,
+    });
     // 錯誤訊息不區分帳號不存在／密碼錯誤／已停用（防枚舉）
     return { status: "error", code: "invalid" };
   }
@@ -97,6 +103,14 @@ export async function login(_prev: LoginState, formData: FormData): Promise<Logi
   // 記住我：persistent cookie（絕對逾時）；否則 session cookie（關瀏覽器即失效）
   await setSessionCookie(token, remember ? session.expiresAt : undefined);
   log.info({ userId: user.id, ip }, "login success");
+  await writeAudit({
+    actorId: user.id,
+    action: "auth.login",
+    targetType: "user",
+    targetId: user.id,
+    metadata: { remember },
+    ip,
+  });
   // returnTo 僅允許站內相對路徑（防 open redirect）
   redirect(returnTo && isSafeReturnTo(returnTo) ? returnTo : "/");
 }
@@ -107,6 +121,13 @@ export async function logout(): Promise<void> {
     const result = await validateSessionToken(token);
     if (result) {
       await invalidateSession(result.session.id);
+      await writeAudit({
+        actorId: result.user.id,
+        action: "auth.logout",
+        targetType: "user",
+        targetId: result.user.id,
+        ip: ipFromHeaders(await headers()),
+      });
     }
   }
   await deleteSessionCookie();

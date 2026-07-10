@@ -6,6 +6,7 @@
  * 所有變更走 drizzle-kit 版本化 migration（npm run db:generate → db:migrate）。
  */
 import {
+  bigserial,
   boolean,
   index,
   integer,
@@ -279,6 +280,34 @@ export const pageVisits = pgTable(
     visitedAt: timestamp("visited_at", { withTimezone: true }).notNull().defaultNow(),
   },
   (table) => [primaryKey({ columns: [table.userId, table.pageId] })],
+);
+
+// ── 稽核日誌（B-07；Must/P0，審查 C8） ──────────────────────────────────────
+
+/**
+ * 稽核日誌（append-only）：只經 `src/lib/audit.ts` 的 writeAudit 寫入，
+ * 無任何更新/刪除路徑，也不對一般使用者暴露讀取 API（僅後續 L-02 管理後台可讀）。
+ * actor_id 不掛 FK：使用者刪除後稽核紀錄必須原樣保留（NFR-SEC-06 保留 1 年）。
+ */
+export const auditLogs = pgTable(
+  "audit_logs",
+  {
+    id: bigserial("id", { mode: "number" }).primaryKey(),
+    /** 行為者；匿名事件（如登入失敗且帳號不存在）為 null */
+    actorId: uuid("actor_id"),
+    /** 事件動作，如 auth.login / space.create / page.delete */
+    action: text("action").notNull(),
+    /** 目標資源類型，如 user / space / page */
+    targetType: text("target_type").notNull(),
+    targetId: text("target_id"),
+    metadata: jsonb("metadata"),
+    ip: text("ip"),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (table) => [
+    index("ix_audit_logs_actor").on(table.actorId),
+    index("ix_audit_logs_created").on(table.createdAt),
+  ],
 );
 
 export type User = typeof users.$inferSelect;
