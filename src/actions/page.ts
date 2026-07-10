@@ -2,6 +2,7 @@
 
 import { and, asc, desc, eq, isNull, sql } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
+import { headers } from "next/headers";
 import { z } from "zod";
 import { db } from "@/lib/db";
 import { pages, pageSlugHistory, pageVersions, spaces } from "@/lib/db/schema";
@@ -11,6 +12,7 @@ import { positionBetween } from "@/lib/pages/position";
 import { docToMarkdown, docToPlainText } from "@/lib/content/serialize";
 import { EMPTY_DOC, type ProseMirrorDoc } from "@/lib/content/types";
 import { VersionConflictError } from "@/lib/pages/errors";
+import { ipFromHeaders, writeAudit } from "@/lib/audit";
 import { logger } from "@/lib/logger";
 
 function slugifyTitle(title: string): string {
@@ -143,6 +145,14 @@ export async function deletePage(input: z.infer<typeof deleteSchema>) {
   `);
 
   logger.info({ userId: user.id, pageId }, "page soft-deleted (subtree)");
+  await writeAudit({
+    actorId: user.id,
+    action: "page.delete",
+    targetType: "page",
+    targetId: pageId,
+    metadata: { spaceId: page.spaceId, title: page.title },
+    ip: ipFromHeaders(await headers()),
+  });
   const space = await db.query.spaces.findFirst({ where: eq(spaces.id, page.spaceId) });
   if (space) revalidatePath(`/s/${space.slug}`);
 }
@@ -272,7 +282,7 @@ export async function restorePageVersion(input: z.infer<typeof restoreSchema>) {
   const data = restoreSchema.parse(input);
   const page = await db.query.pages.findFirst({ where: eq(pages.id, data.pageId) });
   if (!page || page.deletedAt) throw new Error("NOT_FOUND");
-  await requireEditor(page.spaceId);
+  const user = await requireEditor(page.spaceId);
 
   const target = await db.query.pageVersions.findFirst({
     where: and(eq(pageVersions.pageId, data.pageId), eq(pageVersions.versionNo, data.versionNo)),
@@ -291,6 +301,18 @@ export async function restorePageVersion(input: z.infer<typeof restoreSchema>) {
     .update(pageVersions)
     .set({ note: `還原自 v${data.versionNo}` })
     .where(and(eq(pageVersions.pageId, data.pageId), eq(pageVersions.versionNo, result.versionNo)));
+  await writeAudit({
+    actorId: user.id,
+    action: "page.restore_version",
+    targetType: "page",
+    targetId: data.pageId,
+    metadata: {
+      spaceId: page.spaceId,
+      fromVersionNo: data.versionNo,
+      newVersionNo: result.versionNo,
+    },
+    ip: ipFromHeaders(await headers()),
+  });
   return result;
 }
 
