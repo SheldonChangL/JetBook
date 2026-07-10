@@ -3,7 +3,7 @@ import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
 import { and, eq, isNull } from "drizzle-orm";
 import { getTranslations } from "next-intl/server";
-import { Pencil } from "lucide-react";
+import { History, Pencil } from "lucide-react";
 import { db } from "@/lib/db";
 import { pages, pageSlugHistory, spaces } from "@/lib/db/schema";
 import { getCurrentSession, requireSession } from "@/lib/auth/current";
@@ -91,14 +91,22 @@ export default async function PageReadPage({
           {page.icon ? `${page.icon} ` : ""}
           {page.title}
         </h1>
-        {canEdit ? (
-          <Button asChild variant="secondary" size="sm">
-            <Link href={`/s/${spaceSlug}/${pageSlug}/edit`}>
-              <Pencil aria-hidden className="size-4" />
-              {t("edit")}
+        <div className="flex shrink-0 items-center gap-1.5">
+          <Button asChild variant="ghost" size="sm">
+            <Link href={`/s/${spaceSlug}/${pageSlug}/history`}>
+              <History aria-hidden className="size-4" />
+              {t("history")}
             </Link>
           </Button>
-        ) : null}
+          {canEdit ? (
+            <Button asChild variant="secondary" size="sm">
+              <Link href={`/s/${spaceSlug}/${pageSlug}/edit`}>
+                <Pencil aria-hidden className="size-4" />
+                {t("edit")}
+              </Link>
+            </Button>
+          ) : null}
+        </div>
       </div>
 
       <p className="mb-6 text-caption text-fg-tertiary">{t("lastUpdated", { time: updated })}</p>
