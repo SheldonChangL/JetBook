@@ -1,6 +1,7 @@
 import "server-only";
 import { env } from "@/lib/env";
 import { AnthropicProvider } from "./anthropic";
+import { OpenAICompatProvider } from "./openai-compat";
 import type { LLMProvider } from "./provider";
 
 export type { ChatDelta, ChatMessage, ChatParams, ChatResult, ChatUsage, EmbeddingProvider, LLMProvider } from "./provider";
@@ -33,9 +34,23 @@ export function getLlmProvider(): LLMProvider {
       });
       break;
     }
-    case "openai-compat":
-      // H-03 實作 OpenAICompatProvider 後在此接上
-      throw new Error("openai-compat provider 於 H-03 提供");
+    case "openai-compat": {
+      if (
+        !env.OPENAI_COMPAT_BASE_URL ||
+        !env.OPENAI_COMPAT_MODEL_PRIMARY ||
+        !env.OPENAI_COMPAT_MODEL_LIGHT
+      ) {
+        throw new Error(
+          "LLM_PROVIDER=openai-compat 需要 OPENAI_COMPAT_BASE_URL / MODEL_PRIMARY / MODEL_LIGHT",
+        );
+      }
+      provider = new OpenAICompatProvider({
+        baseUrl: env.OPENAI_COMPAT_BASE_URL,
+        modelPrimary: env.OPENAI_COMPAT_MODEL_PRIMARY,
+        modelLight: env.OPENAI_COMPAT_MODEL_LIGHT,
+      });
+      break;
+    }
     default:
       throw new Error("未設定 LLM_PROVIDER（AI 功能未啟用）");
   }
