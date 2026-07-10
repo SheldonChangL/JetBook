@@ -1,5 +1,7 @@
 node_modules/
 .next/
+# 附件儲存根目錄（UPLOAD_DIR 預設值；檔案本體不入 repo）
+data/
 dist/
 coverage/
 *.log
