@@ -2,6 +2,9 @@ import "server-only";
 import { and, eq, isNull, or, sql } from "drizzle-orm";
 import { db } from "@/lib/db";
 import { spaceMembers, spaces, type SpaceRole, type User } from "@/lib/db/schema";
+import { roleAtLeast } from "./policy";
+
+export { roleAtLeast };
 
 /**
  * Space 層級授權（B-03 permission.ts 的一部分；權限判斷集中在 lib/authz）。
@@ -43,9 +46,3 @@ export async function getSpaceRole(
   return null;
 }
 
-const ROLE_RANK: Record<SpaceRole, number> = { viewer: 0, commenter: 1, editor: 2, admin: 3 };
-
-export function roleAtLeast(role: SpaceRole | null, required: SpaceRole): boolean {
-  if (!role) return false;
-  return ROLE_RANK[role] >= ROLE_RANK[required];
-}

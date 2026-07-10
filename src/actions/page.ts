@@ -6,7 +6,7 @@ import { z } from "zod";
 import { db } from "@/lib/db";
 import { pages, pageSlugHistory, spaces } from "@/lib/db/schema";
 import { requireSession } from "@/lib/auth/current";
-import { getSpaceRole, roleAtLeast } from "@/lib/authz/spaces";
+import { assertCan } from "@/lib/authz/permission";
 import { positionBetween } from "@/lib/pages/position";
 import { logger } from "@/lib/logger";
 
@@ -50,8 +50,7 @@ async function lastPositionUnder(spaceId: string, parentId: string | null): Prom
 
 async function requireEditor(spaceId: string) {
   const { user } = await requireSession();
-  const role = await getSpaceRole(user, spaceId);
-  if (!roleAtLeast(role, "editor")) throw new Error("FORBIDDEN");
+  await assertCan(user, "page.edit", { type: "page", spaceId });
   return user;
 }
 
