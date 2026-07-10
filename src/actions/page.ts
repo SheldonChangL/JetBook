@@ -4,7 +4,7 @@ import { and, asc, desc, eq, isNull, sql } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
 import { z } from "zod";
 import { db } from "@/lib/db";
-import { pages, pageSlugHistory, spaces } from "@/lib/db/schema";
+import { pages, pageSlugHistory, pageVersions, spaces } from "@/lib/db/schema";
 import { requireSession } from "@/lib/auth/current";
 import { assertCan } from "@/lib/authz/permission";
 import { positionBetween } from "@/lib/pages/position";
@@ -146,6 +146,9 @@ export async function deletePage(input: z.infer<typeof deleteSchema>) {
   if (space) revalidatePath(`/s/${space.slug}`);
 }
 
+/** Session 合併窗：同作者連續存檔於此時間內合併為單一版本（E-01）。 */
+const SNAPSHOT_MERGE_MS = 5 * 60 * 1000;
+
 export class VersionConflictError extends Error {
   constructor(public currentVersionNo: number) {
     super("VERSION_CONFLICT");
@@ -196,7 +199,36 @@ export async function savePage(input: z.infer<typeof saveSchema>): Promise<{ ver
       const fresh = await tx.query.pages.findFirst({ where: eq(pages.id, data.pageId) });
       throw new VersionConflictError(fresh?.currentVersionNo ?? 0);
     }
-    return updated[0]!.versionNo;
+    const versionNo = updated[0]!.versionNo;
+
+    // 版本快照（E-01，ADR-008 完整 JSON）：同交易寫入。
+    // Session 合併：同一作者於 SNAPSHOT_MERGE_MS 內的連續存檔更新最後一筆快照，
+    // 避免高頻 autosave 產生數百筆微版本。
+    const last = await tx.query.pageVersions.findFirst({
+      where: eq(pageVersions.pageId, data.pageId),
+      orderBy: desc(pageVersions.versionNo),
+    });
+    const mergeable =
+      last &&
+      last.createdBy === user.id &&
+      Date.now() - last.createdAt.getTime() < SNAPSHOT_MERGE_MS;
+
+    if (mergeable) {
+      await tx
+        .update(pageVersions)
+        .set({ versionNo, title: page.title, content: doc, contentMd, createdAt: new Date() })
+        .where(eq(pageVersions.id, last.id));
+    } else {
+      await tx.insert(pageVersions).values({
+        pageId: data.pageId,
+        versionNo,
+        title: page.title,
+        content: doc,
+        contentMd,
+        createdBy: user.id,
+      });
+    }
+    return versionNo;
   });
 
   logger.info({ userId: user.id, pageId: data.pageId, versionNo: nextVersion }, "page saved");
@@ -214,6 +246,58 @@ export async function countDescendants(pageId: string): Promise<number> {
     SELECT count(*)::int - 1 AS count FROM subtree
   `);
   return Number(result.rows[0]?.count ?? 0);
+}
+
+/** 版本歷史列表（新到舊）。需 space 讀取權。 */
+export async function listPageVersions(pageId: string) {
+  const { user } = await requireSession();
+  const page = await db.query.pages.findFirst({ where: eq(pages.id, pageId) });
+  if (!page) throw new Error("NOT_FOUND");
+  await assertCan(user, "page.read", { type: "page", spaceId: page.spaceId });
+  return db
+    .select({
+      id: pageVersions.id,
+      versionNo: pageVersions.versionNo,
+      title: pageVersions.title,
+      createdBy: pageVersions.createdBy,
+      createdAt: pageVersions.createdAt,
+      note: pageVersions.note,
+    })
+    .from(pageVersions)
+    .where(eq(pageVersions.pageId, pageId))
+    .orderBy(desc(pageVersions.versionNo));
+}
+
+const restoreSchema = z.object({ pageId: z.uuid(), versionNo: z.number().int().positive() });
+
+/**
+ * 還原至指定版本（E-01 F-VER-03）：不可變歷史——還原本身產生新版本，
+ * 重用 savePage 儲存管線（三欄同步 + 快照），不旁路（架構鐵律 #5）。
+ */
+export async function restorePageVersion(input: z.infer<typeof restoreSchema>) {
+  const data = restoreSchema.parse(input);
+  const page = await db.query.pages.findFirst({ where: eq(pages.id, data.pageId) });
+  if (!page || page.deletedAt) throw new Error("NOT_FOUND");
+  await requireEditor(page.spaceId);
+
+  const target = await db.query.pageVersions.findFirst({
+    where: and(eq(pageVersions.pageId, data.pageId), eq(pageVersions.versionNo, data.versionNo)),
+  });
+  if (!target) throw new Error("NOT_FOUND");
+
+  const doc = (target.content as ProseMirrorDoc | null) ?? EMPTY_DOC;
+  // 以還原內容走一次 savePage（新版本、快照、衍生欄位一致）
+  const result = await savePage({
+    pageId: data.pageId,
+    expectedVersionNo: page.currentVersionNo,
+    content: doc,
+  });
+  // 標記還原來源
+  await db
+    .update(pageVersions)
+    .set({ note: `還原自 v${data.versionNo}` })
+    .where(and(eq(pageVersions.pageId, data.pageId), eq(pageVersions.versionNo, result.versionNo)));
+  return result;
 }
 
 /** 讀取整棵 space 頁面樹（未刪除，依 position 排序；recursive CTE，ADR-001）。 */

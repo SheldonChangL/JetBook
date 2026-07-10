@@ -226,6 +226,29 @@ export const pages = pgTable(
   ],
 );
 
+/** 版本快照（E-01；完整 JSON 快照非 delta，ADR-008）。 */
+export const pageVersions = pgTable(
+  "page_versions",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    pageId: uuid("page_id")
+      .notNull()
+      .references(() => pages.id, { onDelete: "cascade" }),
+    versionNo: integer("version_no").notNull(),
+    title: text("title").notNull(),
+    content: jsonb("content"),
+    contentMd: text("content_md").notNull().default(""),
+    createdBy: uuid("created_by").references(() => users.id, { onDelete: "set null" }),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+    /** 命名版本（如「還原自 v3」）；一般自動快照為 null */
+    note: text("note"),
+  },
+  (table) => [
+    uniqueIndex("ux_page_versions_page_no").on(table.pageId, table.versionNo),
+    index("ix_page_versions_page").on(table.pageId),
+  ],
+);
+
 /** slug 歷史：改名後舊 URL 301 導向（G1/F-PAGE-03）。 */
 export const pageSlugHistory = pgTable(
   "page_slug_history",
@@ -265,3 +288,4 @@ export type SpaceMember = typeof spaceMembers.$inferSelect;
 export type SpaceRole = (typeof spaceRoleEnum.enumValues)[number];
 export type SpaceVisibility = (typeof spaceVisibilityEnum.enumValues)[number];
 export type Page = typeof pages.$inferSelect;
+export type PageVersion = typeof pageVersions.$inferSelect;
