@@ -33,6 +33,11 @@ jobs:
       - name: Typecheck
         run: npm run typecheck
 
+      - name: Drizzle migration consistency
+        run: npm run db:check
+        env:
+          DATABASE_URL: postgresql://ci:ci@127.0.0.1:5432/ci
+
       - name: Test
         run: npm run test --if-present
 
