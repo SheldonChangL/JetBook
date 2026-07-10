@@ -36,6 +36,13 @@
       "when": 1783652984599,
       "tag": "0004_daffy_kate_bishop",
       "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "7",
+      "when": 1783653077105,
+      "tag": "0005_pgroonga_search_index",
+      "breakpoints": true
     }
   ]
 }
