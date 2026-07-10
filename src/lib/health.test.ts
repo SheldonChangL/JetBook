@@ -23,6 +23,20 @@ describe("maskDatabaseUrl", () => {
     expect(masked).toBe("postgresql://127.0.0.1:5432/jetbook");
   });
 
+  it("支援 HA 多主機連線字串並移除 query 參數", () => {
+    const masked = maskDatabaseUrl(
+      "postgresql://user:password@host1:5432,host2:5432/jetbook?sslmode=require",
+    );
+    expect(masked).toBe("postgresql://host1:5432,host2:5432/jetbook");
+    expect(masked).not.toContain("password");
+  });
+
+  it("無 userinfo 時原樣保留 host 與 db 名", () => {
+    expect(maskDatabaseUrl("postgresql://db.internal:5432/jetbook")).toBe(
+      "postgresql://db.internal:5432/jetbook",
+    );
+  });
+
   it("無法解析時整串遮蔽", () => {
     expect(maskDatabaseUrl("not a url")).toBe("postgresql://***");
   });

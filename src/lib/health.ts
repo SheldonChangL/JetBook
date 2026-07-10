@@ -66,16 +66,27 @@ export function checkLlm(): LlmHealth {
   return { status: "configured", provider: env.LLM_PROVIDER };
 }
 
-/** DATABASE_URL 遮罩憑證：只顯示 host（含 port）與 db 名，帳密一律不輸出。 */
+/**
+ * DATABASE_URL 遮罩憑證：只顯示 host（含 port）與 db 名，帳密一律不輸出。
+ * 不用 `new URL()`——HA 多主機字串（`postgresql://u:p@h1:5432,h2:5432/db`）會讓
+ * `new URL()` 拋錯而整串遮蔽，反而看不到主機。改以字串切分：去 query（避免夾帶
+ * 敏感參數）、取 authority（第一個 `/` 前）、移除 authority 內最後一個 `@` 前的 userinfo。
+ */
 export function maskDatabaseUrl(databaseUrl: string): string {
-  try {
-    const url = new URL(databaseUrl);
-    const host = url.port ? `${url.hostname}:${url.port}` : url.hostname;
-    return `postgresql://${host}${url.pathname}`;
-  } catch {
-    // 無法解析時整串遮蔽，避免任何憑證外洩
+  const prefixMatch = /^postgres(?:ql)?:\/\//.exec(databaseUrl);
+  if (!prefixMatch) {
+    // 非預期格式一律整串遮蔽，避免任何憑證外洩
     return "postgresql://***";
   }
+  const prefix = prefixMatch[0];
+  // 去掉 query（避免夾帶密碼等敏感參數後外洩）
+  const afterPrefix = databaseUrl.slice(prefix.length).replace(/\?.*$/s, "");
+  const slashIdx = afterPrefix.indexOf("/");
+  const authority = slashIdx === -1 ? afterPrefix : afterPrefix.slice(0, slashIdx);
+  const dbPath = slashIdx === -1 ? "" : afterPrefix.slice(slashIdx);
+  const atIdx = authority.lastIndexOf("@");
+  const hosts = atIdx === -1 ? authority : authority.slice(atIdx + 1);
+  return `${prefix}${hosts}${dbPath}`;
 }
 
 export interface EnvSummary {

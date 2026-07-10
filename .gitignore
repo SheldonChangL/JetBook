@@ -4,8 +4,6 @@ node_modules/
 data/
 dist/
 coverage/
-# 附件上傳目錄（UPLOAD_DIR 預設值；執行期產生）
-uploads/
 *.log
 .env
 .env.local

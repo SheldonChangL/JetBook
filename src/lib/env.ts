@@ -12,8 +12,6 @@ const envSchema = z.object({
   BASE_URL: z.url(),
   /** PostgreSQL 連線字串 */
   DATABASE_URL: z.string().startsWith("postgresql://"),
-  /** 附件上傳目錄（M-01 StorageProvider 使用；容器內以 volume 掛載） */
-  UPLOAD_DIR: z.string().min(1).default("uploads"),
 
   // ── 檔案儲存（M-01） ──
   /** 附件儲存根目錄（LocalStorageProvider；換路徑即換儲存根，未來 S3/MinIO 另加實作切換） */
