@@ -3,7 +3,13 @@
     "appName": "JetBook",
     "appDescription": "Jet Opto 內部知識管理系統",
     "close": "關閉",
-    "cancel": "取消"
+    "cancel": "取消",
+    "relativeTime": {
+      "justNow": "剛剛",
+      "minutesAgo": "{minutes} 分鐘前",
+      "hoursAgo": "{hours} 小時前",
+      "yesterday": "昨天"
+    }
   },
   "nav": {
     "home": "首頁"
@@ -19,7 +25,12 @@
       "private": "私人",
       "org_read": "全公司可讀",
       "org_write": "全公司可編輯"
-    }
+    },
+    "continueReading": "繼續閱讀",
+    "noVisits": "還沒有瀏覽紀錄，開啟任一頁面後會出現在這裡。",
+    "recentUpdates": "最近更新",
+    "noRecentUpdates": "還沒有任何頁面更新。",
+    "updatedBy": "{name} 更新了"
   },
   "designSystem": {
     "title": "JetBook 設計系統",
@@ -244,11 +255,33 @@
     "lockedHint": "另一位使用者正在編輯這個頁面，請稍後再試。",
     "backToReading": "返回閱讀",
     "steal": "強制取得編輯權",
-    "stealConfirm": "搶鎖會中斷對方的編輯，確定要繼續嗎？"
+    "stealConfirm": "搶鎖會中斷對方的編輯，確定要繼續嗎？",
+    "slash": {
+      "label": "區塊選單",
+      "empty": "沒有符合的區塊",
+      "groups": {
+        "basic": "基本",
+        "advanced": "進階",
+        "ai": "AI"
+      },
+      "items": {
+        "text": { "label": "文字", "desc": "一般段落文字" },
+        "heading1": { "label": "標題 1", "desc": "大節標題" },
+        "heading2": { "label": "標題 2", "desc": "中節標題" },
+        "heading3": { "label": "標題 3", "desc": "小節標題" },
+        "bulletList": { "label": "無序清單", "desc": "以圓點符號列點" },
+        "orderedList": { "label": "有序清單", "desc": "以數字編號列點" },
+        "taskList": { "label": "任務清單", "desc": "可勾選的待辦事項" },
+        "blockquote": { "label": "引用", "desc": "標示引述內容" },
+        "divider": { "label": "分隔線", "desc": "以水平線分隔內容" },
+        "codeBlock": { "label": "程式碼區塊", "desc": "等寬字型的程式碼片段" }
+      }
+    }
   },
   "reading": {
     "edit": "編輯",
-    "lastUpdated": "最後更新：{time}"
+    "lastUpdated": "最後更新：{time}",
+    "history": "版本歷史"
   },
   "tree": {
     "label": "頁面",
@@ -270,11 +303,30 @@
     "emptyTitle": "還沒有頁面",
     "emptyDesc": "建立第一個頁面，開始累積團隊知識。",
     "createFirst": "建立第一個頁面",
-    "actionError": "操作失敗，請稍後再試"
+    "actionError": "操作失敗，請稍後再試",
+    "dragHandle": "拖曳排序"
   },
   "spaceHome": {
     "pagesHeading": "頁面",
     "noPages": "這個空間還沒有頁面。",
     "childCount": "{count, plural, =0 {沒有子頁面} other {# 個子頁面}}"
+  },
+  "versionHistory": {
+    "metaTitle": "版本歷史 — {title}",
+    "title": "版本歷史（{count}）",
+    "listLabel": "版本列表",
+    "backToReading": "返回閱讀",
+    "versionLabel": "版本 {n}",
+    "autoSnapshot": "自動快照",
+    "unknownAuthor": "未知使用者",
+    "snapshotMeta": "版本 {n} · {time}",
+    "empty": "尚無版本紀錄",
+    "restore": "還原此版本",
+    "restoreModalTitle": "還原為版本 {n}？",
+    "restoreModalBody": "還原會建立新版本而非覆蓋：頁面內容將回到版本 {n} 的快照，所有既有版本歷史完整保留，你隨時可以再還原回來。",
+    "restoreConfirm": "確認還原",
+    "restoreCancel": "取消",
+    "restoreSuccess": "已還原為版本 {n}，並建立新版本 {newN}",
+    "restoreError": "還原失敗，請重新整理後再試"
   }
 }

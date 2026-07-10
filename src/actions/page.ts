@@ -5,10 +5,11 @@ import { revalidatePath } from "next/cache";
 import { headers } from "next/headers";
 import { z } from "zod";
 import { db } from "@/lib/db";
-import { pages, pageSlugHistory, pageVersions, spaces } from "@/lib/db/schema";
+import { pages, pageSlugHistory, pageVersions, spaces, users } from "@/lib/db/schema";
 import { requireSession } from "@/lib/auth/current";
 import { assertCan } from "@/lib/authz/permission";
 import { positionBetween } from "@/lib/pages/position";
+import { movePageNode } from "@/lib/pages/move";
 import { listSpaceTreeNodes } from "@/lib/pages/tree";
 import { docToMarkdown, docToPlainText } from "@/lib/content/serialize";
 import { EMPTY_DOC, type ProseMirrorDoc } from "@/lib/content/types";
@@ -49,7 +50,8 @@ async function lastPositionUnder(spaceId: string, parentId: string | null): Prom
         isNull(pages.deletedAt),
       ),
     )
-    .orderBy(desc(pages.position))
+    // fractional index 為 base-62 位元組序鍵：必須 COLLATE "C" 排序（C-04 修正）
+    .orderBy(desc(sql`${pages.position} COLLATE "C"`))
     .limit(1);
   return rows[0]?.position ?? null;
 }
@@ -122,6 +124,42 @@ export async function renamePage(input: z.infer<typeof renameSchema>) {
   const space = await db.query.spaces.findFirst({ where: eq(spaces.id, page.spaceId) });
   if (space) revalidatePath(`/s/${space.slug}`);
   return { slug: newSlug };
+}
+
+const moveSchema = z.object({
+  pageId: z.uuid(),
+  /** 新父節點；null＝根層 */
+  newParentId: z.uuid().nullable().default(null),
+  /** 插在此兄弟節點之前（與 afterId 擇一；都省略＝接在末尾） */
+  beforeId: z.uuid().optional(),
+  /** 插在此兄弟節點之後 */
+  afterId: z.uuid().optional(),
+});
+
+/**
+ * 搬移／排序頁面（C-04）：fractional index 只改單一節點；
+ * 循環防護（recursive CTE）與 position 計算在 lib 層同一交易內完成。
+ */
+export async function movePage(input: z.infer<typeof moveSchema>) {
+  const data = moveSchema.parse(input);
+  const page = await db.query.pages.findFirst({ where: eq(pages.id, data.pageId) });
+  if (!page || page.deletedAt) throw new Error("NOT_FOUND");
+  const user = await requireEditor(page.spaceId);
+
+  await movePageNode({
+    pageId: data.pageId,
+    newParentId: data.newParentId,
+    beforeId: data.beforeId ?? null,
+    afterId: data.afterId ?? null,
+    movedBy: user.id,
+  });
+
+  logger.info(
+    { userId: user.id, pageId: data.pageId, newParentId: data.newParentId },
+    "page moved",
+  );
+  const space = await db.query.spaces.findFirst({ where: eq(spaces.id, page.spaceId) });
+  if (space) revalidatePath(`/s/${space.slug}`);
 }
 
 const deleteSchema = z.object({ pageId: z.uuid() });
@@ -258,7 +296,7 @@ export async function countDescendants(input: string): Promise<number> {
   return Number(result.rows[0]?.count ?? 0);
 }
 
-/** 版本歷史列表（新到舊）。需 space 讀取權。 */
+/** 版本歷史列表（新到舊，含作者名；E-02）。需 space 讀取權。 */
 export async function listPageVersions(pageId: string) {
   const { user } = await requireSession();
   const page = await db.query.pages.findFirst({ where: eq(pages.id, pageId) });
@@ -270,10 +308,13 @@ export async function listPageVersions(pageId: string) {
       versionNo: pageVersions.versionNo,
       title: pageVersions.title,
       createdBy: pageVersions.createdBy,
+      /** 作者名；作者帳號被刪除（created_by set null）時為 null */
+      authorName: users.name,
       createdAt: pageVersions.createdAt,
       note: pageVersions.note,
     })
     .from(pageVersions)
+    .leftJoin(users, eq(pageVersions.createdBy, users.id))
     .where(eq(pageVersions.pageId, pageId))
     .orderBy(desc(pageVersions.versionNo));
 }

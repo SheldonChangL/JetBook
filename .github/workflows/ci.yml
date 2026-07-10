@@ -41,6 +41,9 @@ jobs:
       - name: Test
         run: npm run test --if-present
 
+      - name: Integration test（真 PG，testcontainers）
+        run: npm run test:integration
+
       - name: Build
         run: npm run build
 
