@@ -29,6 +29,18 @@ export async function can(user: Actor, action: Action, resource: Resource): Prom
   return actionAllowedForRole(action, role);
 }
 
+/** 組織層級管理權（管理後台／使用者管理入口，L-01）。 */
+export function isOrgAdmin(user: Actor): boolean {
+  return user.orgRole === "admin";
+}
+
+/** 斷言版本：非 org admin 即擲 FORBIDDEN（admin action 薄殼使用）。 */
+export function assertOrgAdmin(user: Actor): void {
+  if (!isOrgAdmin(user)) {
+    throw new Error("FORBIDDEN");
+  }
+}
+
 /** 斷言版本：無權限即擲 FORBIDDEN（供 action/route handler 薄殼使用）。 */
 export async function assertCan(user: Actor, action: Action, resource: Resource): Promise<void> {
   if (!(await can(user, action, resource))) {

@@ -3,6 +3,7 @@ import Link from "next/link";
 import { getTranslations } from "next-intl/server";
 import { Home, Library, Trash2 } from "lucide-react";
 import { requireSession } from "@/lib/auth/current";
+import { isOrgAdmin } from "@/lib/authz/permission";
 import { listAccessibleSpaces } from "@/lib/spaces/queries";
 import { AppShell } from "@/components/layout/app-shell";
 
@@ -33,7 +34,10 @@ export default async function AppLayout({ children }: { children: ReactNode }) {
   );
 
   return (
-    <AppShell user={{ name: user.name, email: user.email }} sidebar={sidebar}>
+    <AppShell
+      user={{ name: user.name, email: user.email, isAdmin: isOrgAdmin(user) }}
+      sidebar={sidebar}
+    >
       {children}
     </AppShell>
   );

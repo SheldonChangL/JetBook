@@ -13,7 +13,7 @@ import { UserMenu } from "./user-menu";
 const SIDEBAR_KEY = "jetbook-sidebar-collapsed";
 
 export interface AppShellProps {
-  user: { name: string; email: string };
+  user: { name: string; email: string; isAdmin?: boolean };
   sidebar: ReactNode;
   children: ReactNode;
 }
@@ -84,7 +84,7 @@ export function AppShell({ user, sidebar, children }: AppShellProps) {
 
         <div className="flex items-center gap-1">
           <ThemeToggle />
-          <UserMenu name={user.name} email={user.email} />
+          <UserMenu name={user.name} email={user.email} isAdmin={user.isAdmin} />
         </div>
       </header>
 
