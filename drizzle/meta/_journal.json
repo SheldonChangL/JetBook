@@ -29,6 +29,13 @@
       "when": 1783652318710,
       "tag": "0003_brave_killmonger",
       "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "7",
+      "when": 1783652984599,
+      "tag": "0004_daffy_kate_bishop",
+      "breakpoints": true
     }
   ]
 }
