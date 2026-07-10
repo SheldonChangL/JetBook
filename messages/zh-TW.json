@@ -12,7 +12,14 @@
     "title": "JetBook",
     "subtitle": "Jet Opto 內部知識管理系統 — 建置中（M0）。",
     "stageBadge": "M0 建置中",
-    "greeting": "{name}，歡迎回來"
+    "greeting": "{name}，歡迎回來",
+    "mySpaces": "我的空間",
+    "noSpaces": "你還沒有加入任何空間，從左側「所有空間」建立第一個。",
+    "visibility": {
+      "private": "私人",
+      "org_read": "全公司可讀",
+      "org_write": "全公司可編輯"
+    }
   },
   "designSystem": {
     "title": "JetBook 設計系統",
@@ -114,5 +121,26 @@
       "org_read": "全公司可讀",
       "org_write": "全公司可編輯"
     }
+  },
+  "shell": {
+    "home": "首頁",
+    "allSpaces": "所有空間",
+    "trash": "垃圾桶",
+    "mySpaces": "我的空間",
+    "searchPlaceholder": "搜尋或問 AI…",
+    "toggleTheme": "切換深色模式",
+    "toggleSidebar": "切換側欄",
+    "collapseSidebar": "收合側欄",
+    "userMenu": "使用者選單",
+    "logout": "登出"
+  },
+  "trash": {
+    "title": "垃圾桶",
+    "emptyTitle": "垃圾桶是空的",
+    "emptyDesc": "刪除的頁面會在此保留 30 天。"
+  },
+  "search": {
+    "title": "搜尋",
+    "noResults": "找不到符合的結果"
   }
 }
