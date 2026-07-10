@@ -7,6 +7,7 @@ import { Menu, PanelLeftClose, Search } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { IconButton } from "@/components/ui/icon-button";
 import { Kbd } from "@/components/ui/kbd";
+import { OfflineBanner } from "./offline-banner";
 import { ThemeToggle } from "./theme-toggle";
 import { UserMenu } from "./user-menu";
 
@@ -49,6 +50,8 @@ export function AppShell({ user, sidebar, children }: AppShellProps) {
 
   return (
     <div className="flex h-dvh flex-col">
+      {/* 全域離線提示（§3.12） */}
+      <OfflineBanner />
       {/* 頂部列 */}
       <header className="flex h-14 shrink-0 items-center gap-2 border-b border-edge bg-base px-3">
         <button
