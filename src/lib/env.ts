@@ -12,6 +12,8 @@ const envSchema = z.object({
   BASE_URL: z.url(),
   /** PostgreSQL 連線字串 */
   DATABASE_URL: z.string().startsWith("postgresql://"),
+  /** 附件上傳目錄（M-01 StorageProvider 使用；容器內以 volume 掛載） */
+  UPLOAD_DIR: z.string().min(1).default("uploads"),
 
   // ── AI Provider（M2；全部 optional，未設定時 AI 功能不可用但系統正常運作，NFR-AVAIL-02） ──
   /** chat LLM 供應商；未設定＝AI 功能關閉 */
