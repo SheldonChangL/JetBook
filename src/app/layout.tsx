@@ -3,6 +3,8 @@ import type { ReactNode } from "react";
 import { NextIntlClientProvider } from "next-intl";
 import { getLocale, getTranslations } from "next-intl/server";
 import { Inter, JetBrains_Mono, Noto_Sans_TC } from "next/font/google";
+import { ToastProvider } from "@/components/ui/toast";
+import { TooltipProvider } from "@/components/ui/tooltip";
 import "./globals.css";
 
 const inter = Inter({
@@ -37,6 +39,7 @@ export async function generateMetadata(): Promise<Metadata> {
 
 export default async function RootLayout({ children }: { children: ReactNode }) {
   const locale = await getLocale();
+  const t = await getTranslations("common");
   return (
     <html
       lang={locale}
@@ -47,7 +50,11 @@ export default async function RootLayout({ children }: { children: ReactNode }) 
         <script dangerouslySetInnerHTML={{ __html: themeInitScript }} />
       </head>
       <body>
-        <NextIntlClientProvider>{children}</NextIntlClientProvider>
+        <NextIntlClientProvider>
+          <TooltipProvider>
+            <ToastProvider closeLabel={t("close")}>{children}</ToastProvider>
+          </TooltipProvider>
+        </NextIntlClientProvider>
       </body>
     </html>
   );
