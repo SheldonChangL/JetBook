@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { Suspense } from "react";
 import { getTranslations } from "next-intl/server";
 import { LoginForm } from "./login-form";
 
@@ -19,7 +20,9 @@ export default async function LoginPage() {
           <h1 className="text-h2 text-fg">{tCommon("appName")}</h1>
           <p className="text-caption text-fg-tertiary">{tAuth("tagline")}</p>
         </div>
-        <LoginForm />
+        <Suspense>
+          <LoginForm />
+        </Suspense>
       </div>
       <p className="mt-6 text-caption text-fg-tertiary">{tAuth("copyright")}</p>
     </main>
