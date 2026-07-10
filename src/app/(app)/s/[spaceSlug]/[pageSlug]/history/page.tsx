@@ -11,6 +11,7 @@ import { can } from "@/lib/authz/permission";
 import { denyPageRead } from "@/lib/authz/deny";
 import { listPageVersions } from "@/actions/page";
 import { RenderContent } from "@/components/content/render-content";
+import { RestoreVersionButton } from "./restore-version-button";
 import { Badge } from "@/components/ui/badge";
 import type { ProseMirrorDoc } from "@/lib/content/types";
 import { cn } from "@/lib/utils";
@@ -62,6 +63,9 @@ export default async function PageHistoryPage({
   if (!(await can(user, "page.read", { type: "page", spaceId: space.id }))) {
     denyPageRead(space, `/s/${spaceSlug}/${pageSlug}/history`);
   }
+
+  // 還原鈕僅 editor+ 顯示（E-03）；判斷一律走 authz 唯一入口
+  const canEdit = await can(user, "page.edit", { type: "page", spaceId: space.id });
 
   const versions = await listPageVersions(page.id);
 
@@ -140,12 +144,21 @@ export default async function PageHistoryPage({
       <section className="min-w-0 flex-1 overflow-y-auto">
         {selected && selectedFull ? (
           <article className="mx-auto max-w-3xl px-6 py-8">
-            <p className="mb-2 text-caption text-fg-tertiary">
-              {t("snapshotMeta", {
-                n: selected.versionNo,
-                time: formatTime(selected.createdAt),
-              })}
-            </p>
+            <div className="mb-2 flex items-center justify-between gap-4">
+              <p className="text-caption text-fg-tertiary">
+                {t("snapshotMeta", {
+                  n: selected.versionNo,
+                  time: formatTime(selected.createdAt),
+                })}
+              </p>
+              {canEdit ? (
+                <RestoreVersionButton
+                  pageId={page.id}
+                  versionNo={selected.versionNo}
+                  readingHref={readingHref}
+                />
+              ) : null}
+            </div>
             <h2 className="mb-6 text-h1 text-fg">{selectedFull.title}</h2>
             <RenderContent doc={(selectedFull.content as ProseMirrorDoc | null) ?? null} />
           </article>

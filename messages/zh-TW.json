@@ -268,6 +268,13 @@
     "autoSnapshot": "自動快照",
     "unknownAuthor": "未知使用者",
     "snapshotMeta": "版本 {n} · {time}",
-    "empty": "尚無版本紀錄"
+    "empty": "尚無版本紀錄",
+    "restore": "還原此版本",
+    "restoreModalTitle": "還原為版本 {n}？",
+    "restoreModalBody": "還原會建立新版本而非覆蓋：頁面內容將回到版本 {n} 的快照，所有既有版本歷史完整保留，你隨時可以再還原回來。",
+    "restoreConfirm": "確認還原",
+    "restoreCancel": "取消",
+    "restoreSuccess": "已還原為版本 {n}，並建立新版本 {newN}",
+    "restoreError": "還原失敗，請重新整理後再試"
   }
 }
