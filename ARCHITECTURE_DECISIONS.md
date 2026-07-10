@@ -13,7 +13,7 @@
 | ADR-004 | DB-backed opaque session（Lucia 模式），不用 JWT | 已接受 | — |
 | ADR-005 | Embedding day-1 採 local BGE-M3（1024 維） | 已接受 | G4／R3 |
 | ADR-006 | v1 併發控制採軟性編輯鎖＋樂觀版本檢查 | 已接受 | C1／R5 |
-| ADR-007 | 中文全文檢索選型待 M0 spike 定案（傾向 pgroonga） | 已接受（暫定） | R2／C12 |
+| ADR-007 | 中文全文檢索採 pgroonga（A-10 spike 定案） | 已接受 | R2／C12 |
 | ADR-008 | 版本歷史存完整 JSON 快照，diff 顯示時計算 | 已接受 | — |
 | ADR-009 | LLM Provider 抽象層不暴露 sampling 參數 | 已接受 | C6 |
 | ADR-010 | v1 採直接編輯，無草稿/發布閘門 | 已接受 | C2 |
@@ -192,9 +192,9 @@ CRDT/Yjs 即時共編留待 v2（ADR-002 的 ProseMirror JSON canonical 已為�
 
 ---
 
-## ADR-007：中文全文檢索選型待 M0 spike 定案（傾向 pgroonga），interface 先以 tsvector 抽象
+## ADR-007：中文全文檢索採 pgroonga（A-10 spike 定案）
 
-- **狀態**：已接受（暫定——M0 spike 後定案並更新本則）
+- **狀態**：已接受（2026-07-06 由 A-10 spike 定案，報告見 docs/architecture/spike-a10-chinese-fts.md）
 - **日期**：2026-07-06
 - **對應審查編號**：R2／C12
 
@@ -212,6 +212,14 @@ PostgreSQL 內建 text search parser 不支援中文斷詞，繁中全文檢索�
 在定案前，程式介面**先以 tsvector 抽象**：schema 保留 `pages.search_tsv`（tsvector, GIN index）與搜尋 lib 的單一查詢入口，
 兩候選皆可掛入（zhparser 直接產 tsvector；pgroonga 則以自有 index 替換該查詢路徑），
 確保 M0 定案時只改 DB image 與該查詢入口，不動呼叫端。
+
+### 定案結果（A-10 spike，2026-07-06）
+
+**採用 pgroonga 4.0.6（TokenBigram）**：
+- 14/14 驗收查詢全數通過，含「捷揚」→「捷揚光電」子字串命中、料號、中英混排、多詞 AND。
+- zhparser 對照組 build 失敗（SCWS 上游 xunsearch.com 不可達；無官方套件）——維運成本實證偏高。
+- 安裝方式：db image 以官方 groonga/pgroonga:latest-debian-16 為 base 疊裝 pgvector（groonga APT repo 對 postgres:16 新 base（trixie/arm64）無 pg16 套件）。
+- 實作影響：pages 不需要 search_tsv tsvector 欄位，pgroonga 索引直接建在 content_text/title 上；查詢入口用 &@~ + pgroonga_score。
 
 ### 取捨與後果
 
