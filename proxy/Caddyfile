@@ -1,0 +1,9 @@
+# JetBook reverse proxy
+# 內網部署：正式環境改為公司內部網域 + 內部 CA / 自簽憑證（NFR-SEC-10 全程 HTTPS）。
+# 本機/初期先以 :80 反代；啟用 TLS 時將 site address 改為網域並掛憑證。
+:80 {
+	reverse_proxy web:3000
+	request_body {
+		max_size 50MB
+	}
+}
