@@ -2,11 +2,13 @@
 
 import { and, eq } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
+import { headers } from "next/headers";
 import { z } from "zod";
 import { db } from "@/lib/db";
 import { spaceMembers, spaces, type SpaceRole } from "@/lib/db/schema";
 import { requireSession } from "@/lib/auth/current";
 import { assertCan } from "@/lib/authz/permission";
+import { ipFromHeaders, writeAudit } from "@/lib/audit";
 import { logger } from "@/lib/logger";
 
 function slugify(name: string): string {
@@ -52,6 +54,14 @@ export async function createSpace(input: z.infer<typeof createSchema>) {
   });
 
   logger.info({ userId: user.id, spaceId: space.id }, "space created");
+  await writeAudit({
+    actorId: user.id,
+    action: "space.create",
+    targetType: "space",
+    targetId: space.id,
+    metadata: { name: data.name, slug },
+    ip: ipFromHeaders(await headers()),
+  });
   revalidatePath("/spaces");
   return { slug: space.slug };
 }
@@ -70,6 +80,14 @@ export async function updateSpace(input: z.infer<typeof updateSchema>) {
   await assertCan(user, "space.manage", { type: "space", spaceId: data.spaceId });
   const { spaceId, ...fields } = data;
   await db.update(spaces).set(fields).where(eq(spaces.id, spaceId));
+  await writeAudit({
+    actorId: user.id,
+    action: "space.update",
+    targetType: "space",
+    targetId: spaceId,
+    metadata: { fields },
+    ip: ipFromHeaders(await headers()),
+  });
   revalidatePath("/spaces");
 }
 
@@ -108,6 +126,14 @@ export async function setSpaceMember(input: z.infer<typeof memberSchema>) {
         target: [spaceMembers.spaceId, spaceMembers.userId],
         set: { role },
       });
+  });
+  await writeAudit({
+    actorId: user.id,
+    action: "space.member_set",
+    targetType: "space",
+    targetId: data.spaceId,
+    metadata: { memberId: data.userId, role: data.role },
+    ip: ipFromHeaders(await headers()),
   });
   revalidatePath("/spaces");
 }
