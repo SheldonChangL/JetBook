@@ -1,6 +1,6 @@
 "use server";
 
-import { and, asc, desc, eq, isNull, sql } from "drizzle-orm";
+import { and, desc, eq, isNull, sql } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
 import { headers } from "next/headers";
 import { z } from "zod";
@@ -9,6 +9,7 @@ import { pages, pageSlugHistory, pageVersions, spaces, users } from "@/lib/db/sc
 import { requireSession } from "@/lib/auth/current";
 import { assertCan } from "@/lib/authz/permission";
 import { positionBetween } from "@/lib/pages/position";
+import { listSpaceTreeNodes } from "@/lib/pages/tree";
 import { docToMarkdown, docToPlainText } from "@/lib/content/serialize";
 import { EMPTY_DOC, type ProseMirrorDoc } from "@/lib/content/types";
 import { VersionConflictError } from "@/lib/pages/errors";
@@ -239,8 +240,13 @@ export async function savePage(input: z.infer<typeof saveSchema>): Promise<{ ver
   return { versionNo: nextVersion };
 }
 
-/** 計算某頁的後代數量（刪除前顯示影響範圍用）。 */
-export async function countDescendants(pageId: string): Promise<number> {
+/** 計算某頁的後代數量（刪除前顯示影響範圍用）。需 space 讀取權。 */
+export async function countDescendants(input: string): Promise<number> {
+  const pageId = z.uuid().parse(input);
+  const { user } = await requireSession();
+  const page = await db.query.pages.findFirst({ where: eq(pages.id, pageId) });
+  if (!page || page.deletedAt) throw new Error("NOT_FOUND");
+  await assertCan(user, "page.read", { type: "page", spaceId: page.spaceId });
   const result = await db.execute<{ count: number }>(sql`
     WITH RECURSIVE subtree AS (
       SELECT id FROM ${pages} WHERE id = ${pageId}
@@ -319,18 +325,10 @@ export async function restorePageVersion(input: z.infer<typeof restoreSchema>) {
   return result;
 }
 
-/** 讀取整棵 space 頁面樹（未刪除，依 position 排序；recursive CTE，ADR-001）。 */
-export async function listSpaceTree(spaceId: string) {
-  return db
-    .select({
-      id: pages.id,
-      parentId: pages.parentId,
-      title: pages.title,
-      slug: pages.slug,
-      icon: pages.icon,
-      position: pages.position,
-    })
-    .from(pages)
-    .where(and(eq(pages.spaceId, spaceId), isNull(pages.deletedAt)))
-    .orderBy(asc(pages.position));
+/** 讀取整棵 space 頁面樹（未刪除，依 position 排序；ADR-001）。需 space 讀取權。 */
+export async function listSpaceTree(input: string) {
+  const spaceId = z.uuid().parse(input);
+  const { user } = await requireSession();
+  await assertCan(user, "page.read", { type: "page", spaceId });
+  return listSpaceTreeNodes(spaceId);
 }
