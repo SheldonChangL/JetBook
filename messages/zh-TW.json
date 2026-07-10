@@ -79,5 +79,21 @@
     "emptyTitle": "這個空間還是空的",
     "emptyDesc": "建立第一個頁面，開始累積團隊知識。",
     "emptyCta": "建立第一個頁面"
+  },
+  "auth": {
+    "loginTitle": "登入",
+    "tagline": "捷揚光電內部知識庫",
+    "email": "公司信箱",
+    "password": "密碼",
+    "showPassword": "顯示密碼",
+    "hidePassword": "隱藏密碼",
+    "rememberMe": "記住我",
+    "submit": "登入",
+    "submitting": "登入中…",
+    "errorInvalidCredentials": "信箱或密碼錯誤",
+    "errorRateLimited": "嘗試次數過多，請稍後再試",
+    "errorLockedFor": "登入失敗次數過多，請於 {seconds} 秒後再試",
+    "logout": "登出",
+    "copyright": "© Jet Opto 捷揚光電"
   }
 }
