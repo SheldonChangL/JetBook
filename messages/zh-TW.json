@@ -2,7 +2,8 @@
   "common": {
     "appName": "JetBook",
     "appDescription": "Jet Opto 內部知識管理系統",
-    "close": "關閉"
+    "close": "關閉",
+    "cancel": "取消"
   },
   "nav": {
     "home": "首頁"
@@ -96,5 +97,22 @@
     "errorLockedFor": "登入失敗次數過多，請於 {seconds} 秒後再試",
     "logout": "登出",
     "copyright": "© Jet Opto 捷揚光電"
+  },
+  "spaces": {
+    "title": "所有空間",
+    "create": "建立 Space",
+    "createTitle": "建立新空間",
+    "createError": "建立失敗，請稍後再試",
+    "cancel": "取消",
+    "nameLabel": "名稱",
+    "iconLabel": "圖示（emoji）",
+    "descLabel": "描述",
+    "emptyTitle": "你還沒有加入任何空間",
+    "emptyDesc": "建立第一個空間，開始整理團隊知識。",
+    "visibility": {
+      "private": "私人",
+      "org_read": "全公司可讀",
+      "org_write": "全公司可編輯"
+    }
   }
 }

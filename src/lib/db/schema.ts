@@ -103,5 +103,88 @@ export const loginThrottle = pgTable("login_throttle", {
   lastFailedAt: timestamp("last_failed_at", { withTimezone: true }).notNull().defaultNow(),
 });
 
+// ── Space 與組織（C-01；schema 一次補齊 C4/G8/G10） ──────────────────────
+
+/** Space 可見性三態（C4）：private 僅成員；org_read 全員可讀；org_write 全員可編輯。 */
+export const spaceVisibilityEnum = pgEnum("space_visibility", [
+  "private",
+  "org_read",
+  "org_write",
+]);
+/** Space 成員角色四級（C3）：admin 管理；editor 編輯；commenter 讀+留言；viewer 唯讀。 */
+export const spaceRoleEnum = pgEnum("space_role", ["admin", "editor", "commenter", "viewer"]);
+
+/** 單列組織設定（F-ORG-01）。 */
+export const orgSettings = pgTable("org_settings", {
+  id: integer("id").primaryKey().default(1),
+  name: text("name").notNull().default("Jet Opto 捷揚光電"),
+  logoUrl: text("logo_url"),
+  defaultLocale: text("default_locale").notNull().default("zh-TW"),
+  aiEnabled: boolean("ai_enabled").notNull().default(true),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+});
+
+/** Collection：Space 分組預留（G10/F-ORG-03，M3 啟用）。 */
+export const collections = pgTable("collections", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  name: text("name").notNull(),
+  parentId: uuid("parent_id"),
+  position: integer("position").notNull().default(0),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+});
+
+export const spaces = pgTable(
+  "spaces",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    slug: text("slug").notNull().unique(),
+    name: text("name").notNull(),
+    description: text("description"),
+    icon: text("icon"),
+    visibility: spaceVisibilityEnum("visibility").notNull().default("private"),
+    /** 敏感空間可關閉 AI 索引（NFR-COMP-03） */
+    aiIndexingEnabled: boolean("ai_indexing_enabled").notNull().default(true),
+    collectionId: uuid("collection_id").references(() => collections.id, { onDelete: "set null" }),
+    createdBy: uuid("created_by").references(() => users.id, { onDelete: "set null" }),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+    archivedAt: timestamp("archived_at", { withTimezone: true }),
+    deletedAt: timestamp("deleted_at", { withTimezone: true }),
+  },
+  (table) => [index("ix_spaces_collection").on(table.collectionId)],
+);
+
+export const spaceMembers = pgTable(
+  "space_members",
+  {
+    spaceId: uuid("space_id")
+      .notNull()
+      .references(() => spaces.id, { onDelete: "cascade" }),
+    userId: uuid("user_id")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    role: spaceRoleEnum("role").notNull().default("viewer"),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (table) => [primaryKey({ columns: [table.spaceId, table.userId] })],
+);
+
+/** Space 首頁釘選頁面（G8/F-ORG-06，最多 6）。page_id 於 C-02 加 FK。 */
+export const spacePinnedPages = pgTable(
+  "space_pinned_pages",
+  {
+    spaceId: uuid("space_id")
+      .notNull()
+      .references(() => spaces.id, { onDelete: "cascade" }),
+    pageId: uuid("page_id").notNull(),
+    position: integer("position").notNull().default(0),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (table) => [primaryKey({ columns: [table.spaceId, table.pageId] })],
+);
+
 export type User = typeof users.$inferSelect;
 export type Session = typeof sessions.$inferSelect;
+export type Space = typeof spaces.$inferSelect;
+export type SpaceMember = typeof spaceMembers.$inferSelect;
+export type SpaceRole = (typeof spaceRoleEnum.enumValues)[number];
+export type SpaceVisibility = (typeof spaceVisibilityEnum.enumValues)[number];
