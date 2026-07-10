@@ -20,6 +20,7 @@ type SaveState = "idle" | "saving" | "saved" | "conflict" | "error";
 export interface PageEditorProps {
   pageId: string;
   spaceSlug: string;
+  pageSlug: string;
   initialTitle: string;
   initialContent: ProseMirrorDoc | null;
   initialVersionNo: number;
@@ -32,6 +33,7 @@ export interface PageEditorProps {
 export function PageEditor({
   pageId,
   spaceSlug,
+  pageSlug,
   initialTitle,
   initialContent,
   initialVersionNo,
@@ -118,7 +120,7 @@ export function PageEditor({
       <div className="flex items-center justify-between">
         <button
           type="button"
-          onClick={() => router.push(`/s/${spaceSlug}`)}
+          onClick={() => router.push(`/s/${spaceSlug}/${pageSlug}`)}
           className="flex items-center gap-1 text-body-ui text-fg-secondary hover:text-fg"
         >
           <ArrowLeft className="size-4" />
@@ -128,7 +130,7 @@ export function PageEditor({
           <span className="text-caption text-fg-tertiary" aria-live="polite">
             {statusText}
           </span>
-          <Button variant="secondary" size="sm" onClick={() => router.push(`/s/${spaceSlug}`)}>
+          <Button variant="secondary" size="sm" onClick={() => router.push(`/s/${spaceSlug}/${pageSlug}`)}>
             {t("done")}
           </Button>
         </div>

@@ -44,6 +44,7 @@ export default async function EditPage({
     <PageEditor
       pageId={page.id}
       spaceSlug={spaceSlug}
+      pageSlug={pageSlug}
       initialTitle={page.title}
       initialContent={(page.content as ProseMirrorDoc | null) ?? null}
       initialVersionNo={page.currentVersionNo}
