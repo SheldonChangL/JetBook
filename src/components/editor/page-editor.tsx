@@ -62,7 +62,12 @@ export function PageEditor({
     if (!editor) return;
     setSaveState("saving");
     try {
-      const doc = editor.getJSON() as ProseMirrorDoc;
+      // JSON 正規化：ProseMirror 的 node.attrs 是 null-prototype 物件
+      // （prosemirror-model Object.create(null)），React 序列化 Server Action
+      // 參數時會視為 temporary client reference，伺服器端一存取即拋錯。
+      // round-trip 轉為 plain object 後再送出（heading/taskItem/codeBlock 等
+      // 帶 attrs 的節點都需要）。
+      const doc = JSON.parse(JSON.stringify(editor.getJSON())) as ProseMirrorDoc;
       const result = await savePage({
         pageId,
         expectedVersionNo: versionRef.current,
