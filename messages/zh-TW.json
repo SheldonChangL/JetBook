@@ -273,7 +273,8 @@
     "emptyTitle": "還沒有頁面",
     "emptyDesc": "建立第一個頁面，開始累積團隊知識。",
     "createFirst": "建立第一個頁面",
-    "actionError": "操作失敗，請稍後再試"
+    "actionError": "操作失敗，請稍後再試",
+    "dragHandle": "拖曳排序"
   },
   "spaceHome": {
     "pagesHeading": "頁面",
