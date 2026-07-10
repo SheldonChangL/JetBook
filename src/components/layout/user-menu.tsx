@@ -1,12 +1,22 @@
 "use client";
 
+import Link from "next/link";
 import { useTranslations } from "next-intl";
-import { LogOut } from "lucide-react";
+import { LogOut, ShieldCheck } from "lucide-react";
 import { logout } from "@/actions/auth";
 import { Avatar } from "@/components/ui/avatar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 
-export function UserMenu({ name, email }: { name: string; email: string }) {
+export function UserMenu({
+  name,
+  email,
+  isAdmin = false,
+}: {
+  name: string;
+  email: string;
+  /** org admin 顯示「管理後台」入口（§3.11） */
+  isAdmin?: boolean;
+}) {
   const t = useTranslations("shell");
   return (
     <Popover>
@@ -21,6 +31,15 @@ export function UserMenu({ name, email }: { name: string; email: string }) {
           <p className="truncate text-body-ui font-medium text-fg">{name}</p>
           <p className="truncate text-caption text-fg-tertiary">{email}</p>
         </div>
+        {isAdmin ? (
+          <Link
+            href="/admin"
+            className="flex w-full items-center gap-2 border-b border-edge px-3 py-2 text-body-ui text-fg transition-colors hover:bg-hover"
+          >
+            <ShieldCheck aria-hidden className="size-4" />
+            {t("adminConsole")}
+          </Link>
+        ) : null}
         <form action={logout}>
           <button
             type="submit"

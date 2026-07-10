@@ -132,6 +132,7 @@
     "toggleSidebar": "切換側欄",
     "collapseSidebar": "收合側欄",
     "userMenu": "使用者選單",
+    "adminConsole": "管理後台",
     "logout": "登出",
     "offlineBanner": "網路連線中斷，請勿關閉分頁，系統將自動重試儲存"
   },
@@ -153,6 +154,54 @@
       "spaceAdmins": "「{space}」的管理員：",
       "backHome": "回首頁"
     }
+  },
+  "admin": {
+    "title": "管理後台",
+    "navUsers": "使用者",
+    "navSystem": "系統狀態",
+    "backToApp": "返回 JetBook",
+    "usersTitle": "使用者管理",
+    "colName": "使用者",
+    "colEmail": "Email",
+    "colOrgRole": "系統角色",
+    "colProvider": "認證來源",
+    "colLastLogin": "最後登入",
+    "colStatus": "狀態",
+    "colActions": "操作",
+    "provider": {
+      "local": "本地",
+      "oidc": "SSO"
+    },
+    "role": {
+      "admin": "管理員",
+      "member": "成員"
+    },
+    "statusActive": "啟用",
+    "statusInactive": "停用",
+    "createUser": "建立使用者",
+    "createUserTitle": "建立新使用者",
+    "createSuccess": "使用者已建立",
+    "fieldName": "姓名",
+    "fieldEmail": "Email",
+    "fieldPassword": "初始密碼",
+    "fieldPasswordHelper": "至少 10 碼；請交付給使用者後提醒其自行變更",
+    "fieldOrgRole": "系統角色",
+    "errorEmailTaken": "此 Email 已被使用",
+    "errorWeakPassword": "密碼過弱，請使用至少 10 碼且非常見密碼",
+    "errorLastAdmin": "至少需保留一位啟用中的系統管理員",
+    "actionError": "操作失敗，請稍後再試",
+    "deactivate": "停用",
+    "activate": "啟用",
+    "deactivated": "已停用，該使用者所有登入已失效",
+    "resetPassword": "重設密碼",
+    "resetPasswordTitle": "重設 {name} 的密碼",
+    "resetPasswordConfirm": "將產生新的隨機密碼並立即登出該使用者的所有裝置，確定要繼續嗎？",
+    "resetPasswordDone": "新密碼已產生，請立即複製並安全地交付給使用者。",
+    "resetPasswordOnce": "此密碼僅顯示這一次，關閉後無法再次檢視。",
+    "passwordCopied": "已複製到剪貼簿",
+    "copy": "複製",
+    "done": "完成",
+    "cancel": "取消"
   },
   "trash": {
     "title": "垃圾桶",
