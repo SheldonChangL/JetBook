@@ -7,3 +7,6 @@ coverage/
 .env.local
 .env.*.local
 .DS_Store
+tsconfig.tsbuildinfo
+.claude/worktrees/
+.env

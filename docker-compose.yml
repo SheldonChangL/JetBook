@@ -1,0 +1,54 @@
+name: jetbook
+
+services:
+  proxy:
+    image: caddy:2
+    restart: always
+    ports:
+      - "${HTTP_PORT:-80}:80"
+    volumes:
+      - ./proxy/Caddyfile:/etc/caddy/Caddyfile:ro
+    depends_on:
+      web:
+        condition: service_healthy
+
+  web:
+    build: .
+    restart: always
+    env_file:
+      - path: .env
+        required: true
+    environment:
+      PORT: "3000"
+    expose:
+      - "3000"
+    healthcheck:
+      test: ["CMD", "wget", "-q", "--spider", "http://127.0.0.1:3000/"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+      start_period: 20s
+    depends_on:
+      db:
+        condition: service_healthy
+    volumes:
+      - uploads:/data/uploads
+
+  db:
+    build: db/
+    restart: always
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-jetbook}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?POSTGRES_PASSWORD 必須在 .env 設定}
+      POSTGRES_DB: ${POSTGRES_DB:-jetbook}
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-jetbook} -d ${POSTGRES_DB:-jetbook}"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+
+volumes:
+  pgdata:
+  uploads:
