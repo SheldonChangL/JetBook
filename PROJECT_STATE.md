@@ -9,7 +9,16 @@ Next.js（App Router、TS strict）全端 + PostgreSQL 16/pgvector/pgroonga + Do
 
 ## 目前階段
 
-**M0 完成 ✅，進行 M1 MVP。** 無 active issue（下一個：B-01 #11）。
+**M0 完成 ✅，M1 MVP 進行中（認證＋Space/頁面骨架＋授權核心已完成）。**
+下一個：D-01 TipTap 編輯器（#32）→ D-02 儲存管線（#33）→ E-01 版本（#49）→ F-01 搜尋（#53）→ G-01/G-02 Shell/閱讀。
+
+### 環境備忘（跨 session）
+- 本機 PG：`docker compose up -d db`（image = pgroonga base + pgvector，已含中文分詞）。
+- 遷移：`npm run db:generate && npm run db:migrate`（.env 的 DATABASE_URL 指 127.0.0.1:5432）。
+- 測試種子帳號：admin@jet-opto.com.tw / Admin-JetBook-2026（org admin）。
+- 行為驗證慣例：`npx tsx --conditions=react-server`（server-only 模組需此 flag）；import server action 模組會拉進 React server context 而失敗，測 DB 邏輯時直接呼叫 lib 層。
+- 瀏覽器 E2E：RSC server-action 表單用 `form.requestSubmit()`（`.click()` 常與 hydration 競爭）；改動需 `rm -rf .next` 清快取。
+- self-merge：`gh api -X PUT repos/SheldonChangL/JetBook/pulls/<N>/merge -f merge_method=squash`。
 
 ## GitHub 執行狀態
 
@@ -36,6 +45,16 @@ Next.js（App Router、TS strict）全端 + PostgreSQL 16/pgvector/pgroonga + Do
 - [x] A-08 核心 UI 元件庫 16 元件（Radix + cmdk）＋ `/design-system` 預覽沙盒（深淺色實測）
 - [x] A-09 next-intl 單語系 zh-TW＋ESLint 禁 JSX 硬編碼字串
 - [x] A-10 **中文分詞 spike 定案 pgroonga**（14/14 驗收查詢；db image = pgroonga base + pgvector，實建實測）
+
+### M1 MVP（進行中）
+
+- [x] B-01 使用者/Session schema + Argon2id（#11，10/10 真 PG 測試）
+- [x] B-02 登入/登出 + 防暴力破解（#12，瀏覽器 E2E + 節流實測）
+- [x] B-04 路由保護 + requireSession + returnTo（#14）
+- [x] C-01 Space schema（visibility 三態/角色四級）+ CRUD（#19，7/7 權限測試）
+- [x] C-02 頁面 schema（鄰接表+fractional index/鎖欄位/slug 歷史/瀏覽）+ CRUD（#20，8/8）
+- [x] B-03 授權核心 permission.ts（#13，37 單元 + 8 真 PG，SQL 層過濾 + RAG AI 索引排除）
+- [ ] D-01 編輯器 → D-02 儲存管線 → E-01 版本 → F-01 搜尋 → G-01/02 Shell/閱讀 → L-01 後台 → N-02 E2E 閘門
 
 ## 關鍵已拍板決策（摘要，全文見 ADR）
 

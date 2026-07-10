@@ -8,6 +8,8 @@ import { pages, pageSlugHistory, spaces } from "@/lib/db/schema";
 import { requireSession } from "@/lib/auth/current";
 import { assertCan } from "@/lib/authz/permission";
 import { positionBetween } from "@/lib/pages/position";
+import { docToMarkdown, docToPlainText } from "@/lib/content/serialize";
+import { EMPTY_DOC, type ProseMirrorDoc } from "@/lib/content/types";
 import { logger } from "@/lib/logger";
 
 function slugifyTitle(title: string): string {
@@ -142,6 +144,63 @@ export async function deletePage(input: z.infer<typeof deleteSchema>) {
   logger.info({ userId: user.id, pageId }, "page soft-deleted (subtree)");
   const space = await db.query.spaces.findFirst({ where: eq(spaces.id, page.spaceId) });
   if (space) revalidatePath(`/s/${space.slug}`);
+}
+
+export class VersionConflictError extends Error {
+  constructor(public currentVersionNo: number) {
+    super("VERSION_CONFLICT");
+    this.name = "VersionConflictError";
+  }
+}
+
+const saveSchema = z.object({
+  pageId: z.uuid(),
+  /** 樂觀鎖：用戶端載入時的版本號；不符即拒寫（C1 第二道防線） */
+  expectedVersionNo: z.number().int().nonnegative(),
+  /** TipTap/ProseMirror JSON（canonical） */
+  content: z.custom<ProseMirrorDoc>((v) => typeof v === "object" && v !== null),
+});
+
+/**
+ * 內容儲存管線（D-02，架構鐵律 #5）：同一交易內同步 content(JSON canonical)、
+ * content_md、content_text 三欄位並遞增版本號；樂觀版本檢查為第二道防線。
+ * 回傳新版本號。E-01 於同交易掛入版本快照；之後 enqueue embedding job（M2）。
+ */
+export async function savePage(input: z.infer<typeof saveSchema>): Promise<{ versionNo: number }> {
+  const data = saveSchema.parse(input);
+  const page = await db.query.pages.findFirst({ where: eq(pages.id, data.pageId) });
+  if (!page || page.deletedAt) throw new Error("NOT_FOUND");
+  const user = await requireEditor(page.spaceId);
+
+  const doc = data.content ?? EMPTY_DOC;
+  const contentMd = docToMarkdown(doc);
+  const contentText = docToPlainText(doc);
+
+  const nextVersion = await db.transaction(async (tx) => {
+    // 樂觀鎖：以 WHERE current_version_no = expected 原子更新
+    const updated = await tx
+      .update(pages)
+      .set({
+        content: doc,
+        contentMd,
+        contentText,
+        currentVersionNo: data.expectedVersionNo + 1,
+        updatedBy: user.id,
+        updatedAt: new Date(),
+      })
+      .where(and(eq(pages.id, data.pageId), eq(pages.currentVersionNo, data.expectedVersionNo)))
+      .returning({ versionNo: pages.currentVersionNo });
+
+    if (updated.length === 0) {
+      // 版本不符：讀回目前版本號供前端提示重載
+      const fresh = await tx.query.pages.findFirst({ where: eq(pages.id, data.pageId) });
+      throw new VersionConflictError(fresh?.currentVersionNo ?? 0);
+    }
+    return updated[0]!.versionNo;
+  });
+
+  logger.info({ userId: user.id, pageId: data.pageId, versionNo: nextVersion }, "page saved");
+  return { versionNo: nextVersion };
 }
 
 /** 計算某頁的後代數量（刪除前顯示影響範圍用）。 */
