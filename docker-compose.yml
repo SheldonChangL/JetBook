@@ -20,6 +20,8 @@ services:
         required: true
     environment:
       PORT: "3000"
+      # 容器內以服務名連 db（.env 的 DATABASE_URL 供本機 CLI/遷移工具用 localhost）
+      DATABASE_URL: postgresql://${POSTGRES_USER:-jetbook}:${POSTGRES_PASSWORD}@db:5432/${POSTGRES_DB:-jetbook}
     expose:
       - "3000"
     healthcheck:
@@ -41,6 +43,9 @@ services:
       POSTGRES_USER: ${POSTGRES_USER:-jetbook}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?POSTGRES_PASSWORD 必須在 .env 設定}
       POSTGRES_DB: ${POSTGRES_DB:-jetbook}
+    ports:
+      # 僅綁 loopback：供本機開發跑 migration／整合測試，不對外
+      - "127.0.0.1:${POSTGRES_PORT:-5432}:5432"
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-jetbook} -d ${POSTGRES_DB:-jetbook}"]
       interval: 10s
