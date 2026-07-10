@@ -6,7 +6,7 @@ import { z } from "zod";
 import { db } from "@/lib/db";
 import { spaceMembers, spaces, type SpaceRole } from "@/lib/db/schema";
 import { requireSession } from "@/lib/auth/current";
-import { getSpaceRole, roleAtLeast } from "@/lib/authz/spaces";
+import { assertCan } from "@/lib/authz/permission";
 import { logger } from "@/lib/logger";
 
 function slugify(name: string): string {
@@ -67,10 +67,7 @@ const updateSchema = z.object({
 export async function updateSpace(input: z.infer<typeof updateSchema>) {
   const { user } = await requireSession();
   const data = updateSchema.parse(input);
-  const role = await getSpaceRole(user, data.spaceId);
-  if (!roleAtLeast(role, "admin")) {
-    throw new Error("FORBIDDEN");
-  }
+  await assertCan(user, "space.manage", { type: "space", spaceId: data.spaceId });
   const { spaceId, ...fields } = data;
   await db.update(spaces).set(fields).where(eq(spaces.id, spaceId));
   revalidatePath("/spaces");
@@ -86,10 +83,7 @@ const memberSchema = z.object({
 export async function setSpaceMember(input: z.infer<typeof memberSchema>) {
   const { user } = await requireSession();
   const data = memberSchema.parse(input);
-  const actorRole = await getSpaceRole(user, data.spaceId);
-  if (!roleAtLeast(actorRole, "admin")) {
-    throw new Error("FORBIDDEN");
-  }
+  await assertCan(user, "space.manage", { type: "space", spaceId: data.spaceId });
 
   await db.transaction(async (tx) => {
     const admins = await tx
