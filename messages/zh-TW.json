@@ -3,7 +3,13 @@
     "appName": "JetBook",
     "appDescription": "Jet Opto 內部知識管理系統",
     "close": "關閉",
-    "cancel": "取消"
+    "cancel": "取消",
+    "relativeTime": {
+      "justNow": "剛剛",
+      "minutesAgo": "{minutes} 分鐘前",
+      "hoursAgo": "{hours} 小時前",
+      "yesterday": "昨天"
+    }
   },
   "nav": {
     "home": "首頁"
@@ -19,7 +25,12 @@
       "private": "私人",
       "org_read": "全公司可讀",
       "org_write": "全公司可編輯"
-    }
+    },
+    "continueReading": "繼續閱讀",
+    "noVisits": "還沒有瀏覽紀錄，開啟任一頁面後會出現在這裡。",
+    "recentUpdates": "最近更新",
+    "noRecentUpdates": "還沒有任何頁面更新。",
+    "updatedBy": "{name} 更新了"
   },
   "designSystem": {
     "title": "JetBook 設計系統",
