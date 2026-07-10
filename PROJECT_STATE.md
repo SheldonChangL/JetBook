@@ -9,8 +9,14 @@ Next.js（App Router、TS strict）全端 + PostgreSQL 16/pgvector/pgroonga + Do
 
 ## 目前階段
 
-**M0 完成 ✅，M1 MVP 進行中（認證＋Space/頁面骨架＋授權核心已完成）。**
-下一個：D-01 TipTap 編輯器（#32）→ D-02 儲存管線（#33）→ E-01 版本（#49）→ F-01 搜尋（#53）→ G-01/G-02 Shell/閱讀。
+**M0 完成 ✅；M1 核心垂直切片完成 ✅（登入→建立/編輯/autosave→版本→閱讀→搜尋 全通）。**
+已完成 M1：B-01/02/04（認證）、C-01/02（Space/頁面）、B-03（授權）、D-02（儲存管線）、
+E-01（版本）、F-01（pgroonga 搜尋）、G-01（App Shell）、D-01（TipTap 編輯器）、G-02（閱讀頁）。
+**M1 剩餘**：C-03 頁面樹 UI（#21）、C-04 拖曳搬移（#22）、C-05 slug/301（#23）、C-06 Dashboard（#26）、
+C-07 權限管理 UI（#27）、B-05 忘記密碼（#15）、B-06 OIDC stub（#16）、B-07 audit（#17）、B-08 個人設定（#88）、
+D-03~D-10 編輯器區塊（slash/程式碼/表格/callout/圖片/附件/Markdown 貼上）、E-02/E-03 版本 UI、
+F-02 Cmd+K（#54）、G-03 深色設定頁、G-04 錯誤頁、M-01/M-02 附件、L-01/L-02 後台、
+N-01 真 PG 整合測試、N-02 E2E 閘門、N-03 備份。之後 M2（AI/RAG）、M3（協作治理）。
 
 ### 環境備忘（跨 session）
 - 本機 PG：`docker compose up -d db`（image = pgroonga base + pgvector，已含中文分詞）。
@@ -54,7 +60,14 @@ Next.js（App Router、TS strict）全端 + PostgreSQL 16/pgvector/pgroonga + Do
 - [x] C-01 Space schema（visibility 三態/角色四級）+ CRUD（#19，7/7 權限測試）
 - [x] C-02 頁面 schema（鄰接表+fractional index/鎖欄位/slug 歷史/瀏覽）+ CRUD（#20，8/8）
 - [x] B-03 授權核心 permission.ts（#13，37 單元 + 8 真 PG，SQL 層過濾 + RAG AI 索引排除）
-- [ ] D-01 編輯器 → D-02 儲存管線 → E-01 版本 → F-01 搜尋 → G-01/02 Shell/閱讀 → L-01 後台 → N-02 E2E 閘門
+- [x] D-02 內容儲存管線（三欄同交易同步 + 樂觀鎖 + 編輯鎖，#109，5/5）
+- [x] E-01 版本快照（session 合併 + 還原，#110，4/4）
+- [x] F-01 全文搜尋（pgroonga 中文分詞 + 權限過濾 + 標題加權，#111，6/6）
+- [x] G-01 App Shell 三欄版面（#112，瀏覽器實測）
+- [x] D-01 TipTap 編輯器 + autosave + 編輯鎖（#113，E2E + DB 落地）
+- [x] G-02 文件閱讀頁（JSON→React 渲染 + 301 + 瀏覽記錄，#114，E2E）
+- 測試：Vitest 41（policy 37 + serialize 4 → 實為 policy/serialize 合計 41）；核心邏輯另有多支真 PG 行為驗證腳本
+- [ ] M1 剩餘見上「目前階段」清單
 
 ## 關鍵已拍板決策（摘要，全文見 ADR）
 
