@@ -142,5 +142,20 @@
   "search": {
     "title": "搜尋",
     "noResults": "找不到符合的結果"
+  },
+  "editor": {
+    "back": "返回",
+    "done": "完成編輯",
+    "titlePlaceholder": "輸入標題…",
+    "saving": "儲存中…",
+    "saved": "已自動儲存",
+    "conflict": "版本衝突",
+    "saveError": "儲存失敗，請稍後再試",
+    "conflictHint": "內容已被他人更新，請重新載入頁面後再編輯。",
+    "lockedTitle": "此頁面正在被編輯",
+    "lockedHint": "另一位使用者正在編輯這個頁面，請稍後再試。",
+    "backToReading": "返回閱讀",
+    "steal": "強制取得編輯權",
+    "stealConfirm": "搶鎖會中斷對方的編輯，確定要繼續嗎？"
   }
 }

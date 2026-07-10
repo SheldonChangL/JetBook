@@ -198,6 +198,63 @@ html.dark {
     outline-offset: 2px;
   }
 
+  /* 編輯器與閱讀內文區塊樣式（TipTap 與閱讀渲染共用 .prose-editor） */
+  .prose-editor :where(h1) {
+    font-size: var(--text-h1);
+    line-height: var(--text-h1--line-height);
+    font-weight: 700;
+    margin-top: 1.5rem;
+  }
+  .prose-editor :where(h2) {
+    font-size: var(--text-h2);
+    line-height: var(--text-h2--line-height);
+    font-weight: 600;
+    margin-top: 2rem;
+    margin-bottom: 0.75rem;
+  }
+  .prose-editor :where(h3) {
+    font-size: var(--text-h3);
+    line-height: var(--text-h3--line-height);
+    font-weight: 600;
+    margin-top: 1.5rem;
+  }
+  .prose-editor :where(p) {
+    margin: 0.75rem 0;
+  }
+  .prose-editor :where(ul, ol) {
+    margin: 0.75rem 0;
+    padding-left: 1.5rem;
+  }
+  .prose-editor :where(ul) {
+    list-style: disc;
+  }
+  .prose-editor :where(ol) {
+    list-style: decimal;
+  }
+  .prose-editor :where(blockquote) {
+    border-left: 3px solid var(--primary);
+    padding-left: 1rem;
+    color: var(--text-secondary);
+  }
+  .prose-editor :where(pre) {
+    background: var(--bg-sidebar);
+    border: 1px solid var(--border-default);
+    border-radius: var(--radius-md);
+    padding: 0.75rem 1rem;
+    overflow-x: auto;
+    font-size: var(--text-code);
+  }
+  .prose-editor :where(:not(pre) > code) {
+    background: var(--bg-hover);
+    border-radius: var(--radius-xs);
+    padding: 0.1em 0.3em;
+    font-size: 0.9em;
+  }
+  .prose-editor :where(a) {
+    color: var(--primary);
+    text-decoration: underline;
+  }
+
   /* 動態偏好（§5.2） */
   @media (prefers-reduced-motion: reduce) {
     *,
