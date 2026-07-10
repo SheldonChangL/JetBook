@@ -10,6 +10,7 @@ import { assertCan } from "@/lib/authz/permission";
 import { positionBetween } from "@/lib/pages/position";
 import { docToMarkdown, docToPlainText } from "@/lib/content/serialize";
 import { EMPTY_DOC, type ProseMirrorDoc } from "@/lib/content/types";
+import { VersionConflictError } from "@/lib/pages/errors";
 import { logger } from "@/lib/logger";
 
 function slugifyTitle(title: string): string {
@@ -148,13 +149,6 @@ export async function deletePage(input: z.infer<typeof deleteSchema>) {
 
 /** Session 合併窗：同作者連續存檔於此時間內合併為單一版本（E-01）。 */
 const SNAPSHOT_MERGE_MS = 5 * 60 * 1000;
-
-export class VersionConflictError extends Error {
-  constructor(public currentVersionNo: number) {
-    super("VERSION_CONFLICT");
-    this.name = "VersionConflictError";
-  }
-}
 
 const saveSchema = z.object({
   pageId: z.uuid(),
