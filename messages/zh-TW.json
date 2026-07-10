@@ -133,7 +133,27 @@
     "collapseSidebar": "收合側欄",
     "userMenu": "使用者選單",
     "adminConsole": "管理後台",
-    "logout": "登出"
+    "logout": "登出",
+    "offlineBanner": "網路連線中斷，請勿關閉分頁，系統將自動重試儲存"
+  },
+  "errors": {
+    "notFound": {
+      "title": "找不到這個頁面",
+      "description": "頁面可能已被移動或刪除，請確認網址是否正確。",
+      "backHome": "回首頁"
+    },
+    "serverError": {
+      "title": "發生了一點問題",
+      "description": "請重新整理頁面，若問題持續請聯繫管理員。",
+      "digest": "錯誤代碼：{digest}（回報問題時請附上此代碼）",
+      "reload": "重新整理"
+    },
+    "forbidden": {
+      "title": "你沒有權限檢視此頁面",
+      "description": "如需存取權限，請聯繫該空間的管理員。",
+      "spaceAdmins": "「{space}」的管理員：",
+      "backHome": "回首頁"
+    }
   },
   "admin": {
     "title": "管理後台",

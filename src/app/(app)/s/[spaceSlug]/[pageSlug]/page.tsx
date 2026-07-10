@@ -6,8 +6,9 @@ import { getTranslations } from "next-intl/server";
 import { Pencil } from "lucide-react";
 import { db } from "@/lib/db";
 import { pages, pageSlugHistory, spaces } from "@/lib/db/schema";
-import { requireSession } from "@/lib/auth/current";
+import { getCurrentSession, requireSession } from "@/lib/auth/current";
 import { can } from "@/lib/authz/permission";
+import { denyPageRead } from "@/lib/authz/deny";
 import { recordVisit } from "@/lib/pages/visits";
 import { RenderContent } from "@/components/content/render-content";
 import { Button } from "@/components/ui/button";
@@ -37,8 +38,12 @@ export async function generateMetadata({
   params: Promise<{ spaceSlug: string; pageSlug: string }>;
 }): Promise<Metadata> {
   const { spaceSlug, pageSlug } = await params;
+  // 權限檢查同頁面本體：無權限者連 <title> 都不得洩漏頁面存在性（G-04 §3.12）。
+  const session = await getCurrentSession();
+  if (!session) return {};
   const space = await db.query.spaces.findFirst({ where: eq(spaces.slug, spaceSlug) });
   if (!space) return {};
+  if (!(await can(session.user, "page.read", { type: "page", spaceId: space.id }))) return {};
   const { page } = await resolvePage(space.id, spaceSlug, pageSlug);
   return { title: page?.title };
 }
@@ -60,7 +65,10 @@ export default async function PageReadPage({
   if (redirectTo) redirect(redirectTo);
   if (!page) notFound();
 
-  if (!(await can(user, "page.read", { type: "page", spaceId: space.id }))) notFound();
+  // 無權限但頁面存在：private Space 一律 404（不洩漏存在性）；org 可見 Space 導 403（§3.12）。
+  if (!(await can(user, "page.read", { type: "page", spaceId: space.id }))) {
+    denyPageRead(space, `/s/${spaceSlug}/${pageSlug}`);
+  }
   await recordVisit(user.id, page.id);
 
   const canEdit = await can(user, "page.edit", { type: "page", spaceId: space.id });
