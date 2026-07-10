@@ -1,12 +1,15 @@
+import Link from "next/link";
 import { notFound } from "next/navigation";
 import { eq } from "drizzle-orm";
+import { getTranslations } from "next-intl/server";
 import { db } from "@/lib/db";
 import { spaces } from "@/lib/db/schema";
 import { requireSession } from "@/lib/auth/current";
-import { getSpaceRole } from "@/lib/authz/spaces";
+import { getSpaceRole } from "@/lib/authz/permission";
+import { listSpaceTreeNodes } from "@/lib/pages/tree";
 
 /**
- * Space 首頁（暫版）：驗證存取權；完整頁面樹與首頁內容由 C-03/C-06 實作。
+ * Space 首頁（C-03）：描述＋頂層頁面目錄卡片（標題＋子頁數，設計規範 §3.3 ③）。
  */
 export default async function SpaceHomePage({
   params,
@@ -22,15 +25,50 @@ export default async function SpaceHomePage({
   const role = await getSpaceRole(user, space.id);
   if (!role) notFound();
 
+  const t = await getTranslations("spaceHome");
+  const nodes = await listSpaceTreeNodes(space.id);
+  const topLevel = nodes.filter((n) => n.parentId === null);
+  const childCount = new Map<string, number>();
+  for (const n of nodes) {
+    if (n.parentId) childCount.set(n.parentId, (childCount.get(n.parentId) ?? 0) + 1);
+  }
+
   return (
-    <main className="mx-auto flex max-w-3xl flex-col gap-3 px-6 py-8">
-      <h1 className="text-h1 text-fg">
-        {space.icon ? `${space.icon} ` : ""}
-        {space.name}
-      </h1>
-      {space.description ? (
-        <p className="text-body-read text-fg-secondary">{space.description}</p>
-      ) : null}
+    <main className="mx-auto flex max-w-3xl flex-col gap-8 px-6 py-8">
+      <header className="flex flex-col gap-2">
+        <h1 className="text-h1 text-fg">
+          {space.icon ? `${space.icon} ` : ""}
+          {space.name}
+        </h1>
+        {space.description ? (
+          <p className="text-body-read text-fg-secondary">{space.description}</p>
+        ) : null}
+      </header>
+
+      <section aria-label={t("pagesHeading")} className="flex flex-col gap-3">
+        <h2 className="text-h4 text-fg">{t("pagesHeading")}</h2>
+        {topLevel.length === 0 ? (
+          <p className="text-body-ui text-fg-tertiary">{t("noPages")}</p>
+        ) : (
+          <div className="grid gap-3 sm:grid-cols-2">
+            {topLevel.map((n) => (
+              <Link
+                key={n.id}
+                href={`/s/${space.slug}/${n.slug}`}
+                className="flex flex-col gap-1 rounded-md border border-edge bg-raised p-4 transition-colors hover:border-edge-strong hover:bg-hover"
+              >
+                <span className="truncate text-body-ui font-medium text-fg">
+                  {n.icon ? `${n.icon} ` : ""}
+                  {n.title}
+                </span>
+                <span className="text-caption text-fg-tertiary">
+                  {t("childCount", { count: childCount.get(n.id) ?? 0 })}
+                </span>
+              </Link>
+            ))}
+          </div>
+        )}
+      </section>
     </main>
   );
 }
