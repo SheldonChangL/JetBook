@@ -1,4 +1,5 @@
 import "server-only";
+import { cache } from "react";
 import { and, asc, eq, isNull } from "drizzle-orm";
 import { db } from "@/lib/db";
 import { pages } from "@/lib/db/schema";
@@ -15,8 +16,9 @@ export interface SpaceTreeNode {
  * 讀取整棵 space 頁面樹（C-03）：未刪除、依 fractional position 排序的平面列表，
  * 由前端依 parentId 組裝成樹（鄰接表，ADR-001）。
  * 呼叫端（layout / server action）負責先驗 space 讀取權（lib/authz）。
+ * React cache()：同一請求內 layout 與 page 重複呼叫只查一次 DB。
  */
-export async function listSpaceTreeNodes(spaceId: string): Promise<SpaceTreeNode[]> {
+export const listSpaceTreeNodes = cache(async (spaceId: string): Promise<SpaceTreeNode[]> => {
   return db
     .select({
       id: pages.id,
@@ -28,4 +30,4 @@ export async function listSpaceTreeNodes(spaceId: string): Promise<SpaceTreeNode
     .from(pages)
     .where(and(eq(pages.spaceId, spaceId), isNull(pages.deletedAt)))
     .orderBy(asc(pages.position));
-}
+});
