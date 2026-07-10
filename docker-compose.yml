@@ -36,6 +36,21 @@ services:
     volumes:
       - uploads:/data/uploads
 
+  worker:
+    build: .
+    restart: always
+    command: ["node", "dist/worker.js"]
+    env_file:
+      - path: .env
+        required: true
+    environment:
+      DATABASE_URL: postgresql://${POSTGRES_USER:-jetbook}:${POSTGRES_PASSWORD}@db:5432/${POSTGRES_DB:-jetbook}
+    depends_on:
+      db:
+        condition: service_healthy
+    volumes:
+      - uploads:/data/uploads
+
   db:
     build: db/
     restart: always

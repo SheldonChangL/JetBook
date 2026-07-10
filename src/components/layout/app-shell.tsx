@@ -7,13 +7,14 @@ import { Menu, PanelLeftClose, Search } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { IconButton } from "@/components/ui/icon-button";
 import { Kbd } from "@/components/ui/kbd";
+import { OfflineBanner } from "./offline-banner";
 import { ThemeToggle } from "./theme-toggle";
 import { UserMenu } from "./user-menu";
 
 const SIDEBAR_KEY = "jetbook-sidebar-collapsed";
 
 export interface AppShellProps {
-  user: { name: string; email: string };
+  user: { name: string; email: string; isAdmin?: boolean };
   sidebar: ReactNode;
   children: ReactNode;
 }
@@ -49,6 +50,8 @@ export function AppShell({ user, sidebar, children }: AppShellProps) {
 
   return (
     <div className="flex h-dvh flex-col">
+      {/* 全域離線提示（§3.12） */}
+      <OfflineBanner />
       {/* 頂部列 */}
       <header className="flex h-14 shrink-0 items-center gap-2 border-b border-edge bg-base px-3">
         <button
@@ -84,7 +87,7 @@ export function AppShell({ user, sidebar, children }: AppShellProps) {
 
         <div className="flex items-center gap-1">
           <ThemeToggle />
-          <UserMenu name={user.name} email={user.email} />
+          <UserMenu name={user.name} email={user.email} isAdmin={user.isAdmin} />
         </div>
       </header>
 

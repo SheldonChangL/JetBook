@@ -19,9 +19,11 @@
     "db:check": "drizzle-kit check",
     "db:studio": "drizzle-kit studio",
     "test": "vitest run",
-    "test:watch": "vitest"
+    "test:watch": "vitest",
+    "build:worker": "node scripts/build-worker.mjs"
   },
   "dependencies": {
+    "@anthropic-ai/sdk": "^0.110.0",
     "@node-rs/argon2": "^2.0.2",
     "@tiptap/pm": "^3.27.3",
     "@tiptap/react": "^3.27.3",
@@ -34,6 +36,7 @@
     "next": "^15.5.20",
     "next-intl": "^4.13.1",
     "pg": "^8.22.0",
+    "pg-boss": "^12.25.1",
     "pino": "^10.3.1",
     "radix-ui": "^1.6.2",
     "react": "^19.2.7",
@@ -50,6 +53,7 @@
     "@types/react": "^19.2.17",
     "@types/react-dom": "^19.2.3",
     "drizzle-kit": "^0.31.10",
+    "esbuild": "^0.28.1",
     "eslint": "^9.39.4",
     "eslint-config-next": "^15.5.20",
     "prettier": "^3.9.4",
