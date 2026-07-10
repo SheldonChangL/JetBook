@@ -6,6 +6,7 @@
  * 所有變更走 drizzle-kit 版本化 migration（npm run db:generate → db:migrate）。
  */
 import {
+  bigint,
   bigserial,
   boolean,
   index,
@@ -282,6 +283,38 @@ export const pageVisits = pgTable(
   (table) => [primaryKey({ columns: [table.userId, table.pageId] })],
 );
 
+// ── 附件（M-01；儲存本體在 StorageProvider，DB 只存 metadata） ──────────────
+
+/**
+ * 附件 metadata（F-FILE-*）。實體檔案由 `src/lib/storage/` 的 StorageProvider
+ * 管理（本地實作存 UPLOAD_DIR 下 UUID 檔名，防原始檔名注入/路徑跳脫）。
+ * page_id 可為 null：上傳當下尚未掛到頁面（編輯器插入前）或頁面刪除後保留檔案。
+ */
+export const attachments = pgTable(
+  "attachments",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    pageId: uuid("page_id").references(() => pages.id, { onDelete: "set null" }),
+    spaceId: uuid("space_id")
+      .notNull()
+      .references(() => spaces.id, { onDelete: "cascade" }),
+    uploaderId: uuid("uploader_id").references(() => users.id, { onDelete: "set null" }),
+    /** 原始檔名（僅供顯示/下載命名；絕不作為儲存路徑） */
+    fileName: text("file_name").notNull(),
+    mimeType: text("mime_type").notNull(),
+    sizeBytes: bigint("size_bytes", { mode: "number" }).notNull(),
+    /** StorageProvider 內的鍵（本地實作＝UUID+副檔名） */
+    storageKey: text("storage_key").notNull().unique(),
+    /** 內容 sha256 hex（完整性驗證／未來去重依據） */
+    sha256: text("sha256").notNull(),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (table) => [
+    index("ix_attachments_page").on(table.pageId),
+    index("ix_attachments_space").on(table.spaceId),
+  ],
+);
+
 // ── 稽核日誌（B-07；Must/P0，審查 C8） ──────────────────────────────────────
 
 /**
@@ -318,3 +351,4 @@ export type SpaceRole = (typeof spaceRoleEnum.enumValues)[number];
 export type SpaceVisibility = (typeof spaceVisibilityEnum.enumValues)[number];
 export type Page = typeof pages.$inferSelect;
 export type PageVersion = typeof pageVersions.$inferSelect;
+export type Attachment = typeof attachments.$inferSelect;
