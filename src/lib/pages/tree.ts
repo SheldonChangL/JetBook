@@ -1,6 +1,6 @@
 import "server-only";
 import { cache } from "react";
-import { and, asc, eq, isNull } from "drizzle-orm";
+import { and, asc, eq, isNull, sql } from "drizzle-orm";
 import { db } from "@/lib/db";
 import { pages } from "@/lib/db/schema";
 
@@ -29,5 +29,6 @@ export const listSpaceTreeNodes = cache(async (spaceId: string): Promise<SpaceTr
     })
     .from(pages)
     .where(and(eq(pages.spaceId, spaceId), isNull(pages.deletedAt)))
-    .orderBy(asc(pages.position));
+    // fractional index 為 base-62 位元組序鍵：必須 COLLATE "C" 排序（C-04 修正）
+    .orderBy(asc(sql`${pages.position} COLLATE "C"`));
 });

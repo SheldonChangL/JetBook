@@ -64,6 +64,21 @@ function renderNode(node: ProseMirrorNode, key: number): ReactNode {
       return <ol key={key}>{renderChildren(node.content)}</ol>;
     case "listItem":
       return <li key={key}>{renderChildren(node.content)}</li>;
+    case "taskList":
+      return (
+        <ul key={key} data-type="taskList">
+          {renderChildren(node.content)}
+        </ul>
+      );
+    case "taskItem":
+      return (
+        <li key={key} data-checked={node.attrs?.checked ? "true" : "false"}>
+          <label>
+            <input type="checkbox" defaultChecked={Boolean(node.attrs?.checked)} disabled />
+          </label>
+          <div>{renderChildren(node.content)}</div>
+        </li>
+      );
     case "blockquote":
       return <blockquote key={key}>{renderChildren(node.content)}</blockquote>;
     case "codeBlock":

@@ -7,15 +7,24 @@ import {
   useState,
   useTransition,
   type ButtonHTMLAttributes,
+  type DragEvent,
   type KeyboardEvent,
   type ReactNode,
 } from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useTranslations } from "next-intl";
-import { ChevronRight, Ellipsis, FileText, Pencil, Plus, Trash2 } from "lucide-react";
+import {
+  ChevronRight,
+  Ellipsis,
+  FileText,
+  GripVertical,
+  Pencil,
+  Plus,
+  Trash2,
+} from "lucide-react";
 import { cn } from "@/lib/utils";
-import { countDescendants, createPage, deletePage, renamePage } from "@/actions/page";
+import { countDescendants, createPage, deletePage, movePage, renamePage } from "@/actions/page";
 import { Button } from "@/components/ui/button";
 import { EmptyState } from "@/components/ui/empty-state";
 import { IconButton } from "@/components/ui/icon-button";
@@ -175,6 +184,108 @@ export function PageTree({ spaceId, spaceSlug, nodes, canEdit }: PageTreeProps) 
     }
   }
 
+  // --- 拖曳排序與搬移（C-04，原生 HTML5 drag&drop） ---
+  const [dragId, setDragId] = useState<string | null>(null);
+  const [dropTarget, setDropTarget] = useState<{
+    id: string;
+    pos: "before" | "after" | "inside";
+  } | null>(null);
+  /** hover 600ms 自動展開的待觸發計時器 */
+  const hoverExpandRef = useRef<{ id: string; timer: ReturnType<typeof setTimeout> } | null>(null);
+
+  // 被拖曳節點的整支子樹（含自身）：禁止落入其中（循環）
+  const dragSubtree = useMemo(() => {
+    const set = new Set<string>();
+    if (!dragId) return set;
+    const collect = (id: string) => {
+      set.add(id);
+      for (const c of childrenOf.get(id) ?? []) collect(c.id);
+    };
+    collect(dragId);
+    return set;
+  }, [dragId, childrenOf]);
+
+  function clearHoverExpand() {
+    if (hoverExpandRef.current) {
+      clearTimeout(hoverExpandRef.current.timer);
+      hoverExpandRef.current = null;
+    }
+  }
+
+  function resetDrag() {
+    setDragId(null);
+    setDropTarget(null);
+    clearHoverExpand();
+  }
+
+  function onHandleDragStart(e: DragEvent<HTMLElement>, node: PageTreeNode) {
+    e.dataTransfer.effectAllowed = "move";
+    e.dataTransfer.setData("text/plain", node.id);
+    // 以整列作為拖曳影像（把手只是啟動點）
+    const row = e.currentTarget.closest("li");
+    if (row) e.dataTransfer.setDragImage(row, 8, 15);
+    setDragId(node.id);
+  }
+
+  function onRowDragOver(e: DragEvent<HTMLDivElement>, node: PageTreeNode) {
+    if (!dragId) return;
+    if (dragSubtree.has(node.id)) {
+      // 拖入自身或子孫：不 preventDefault ＝ 不允許 drop，游標顯示 not-allowed
+      e.dataTransfer.dropEffect = "none";
+      if (dropTarget) setDropTarget(null);
+      return;
+    }
+    e.preventDefault();
+    e.dataTransfer.dropEffect = "move";
+    const rect = e.currentTarget.getBoundingClientRect();
+    const ratio = (e.clientY - rect.top) / rect.height;
+    const pos = ratio < 0.25 ? "before" : ratio > 0.75 ? "after" : "inside";
+    setDropTarget((prev) => (prev?.id === node.id && prev.pos === pos ? prev : { id: node.id, pos }));
+    // 停留 600ms 自動展開（收合且有子節點時），方便拖進深層
+    if (hoverExpandRef.current && hoverExpandRef.current.id !== node.id) clearHoverExpand();
+    const hasChildren = (childrenOf.get(node.id) ?? []).length > 0;
+    if (hasChildren && !expanded.has(node.id) && !hoverExpandRef.current) {
+      hoverExpandRef.current = {
+        id: node.id,
+        timer: setTimeout(() => {
+          setExpanded((prev) => new Set(prev).add(node.id));
+          hoverExpandRef.current = null;
+        }, 600),
+      };
+    }
+  }
+
+  function onRowDrop(e: DragEvent<HTMLDivElement>, node: PageTreeNode) {
+    e.preventDefault();
+    const sourceId = dragId ?? e.dataTransfer.getData("text/plain");
+    const pos = dropTarget?.id === node.id ? dropTarget.pos : "inside";
+    const blocked = !sourceId || sourceId === node.id || dragSubtree.has(node.id);
+    resetDrag();
+    if (blocked) return;
+    startTransition(async () => {
+      try {
+        if (pos === "inside") {
+          await movePage({ pageId: sourceId, newParentId: node.id });
+          setExpanded((prev) => new Set(prev).add(node.id));
+        } else if (pos === "before") {
+          await movePage({ pageId: sourceId, newParentId: node.parentId, beforeId: node.id });
+        } else {
+          await movePage({ pageId: sourceId, newParentId: node.parentId, afterId: node.id });
+        }
+        router.refresh();
+      } catch {
+        toast({ variant: "error", title: t("actionError") });
+      }
+    });
+  }
+
+  function onTreeDragLeave(e: DragEvent<HTMLUListElement>) {
+    // 離開整棵樹（含拖出視窗）才清插入指示，避免列間移動閃爍
+    if (e.relatedTarget instanceof Node && e.currentTarget.contains(e.relatedTarget)) return;
+    setDropTarget(null);
+    clearHoverExpand();
+  }
+
   // --- 新增（根頁面/子頁面）→ createPage → 編輯頁 ---
   function handleCreate(parentId: string | null) {
     startTransition(async () => {
@@ -279,21 +390,42 @@ export function PageTree({ spaceId, spaceSlug, nodes, canEdit }: PageTreeProps) 
           }
         />
       ) : (
-        <ul role="tree" aria-label={t("label")} className="px-1" onKeyDown={onTreeKeyDown}>
+        <ul
+          role="tree"
+          aria-label={t("label")}
+          className="px-1"
+          onKeyDown={onTreeKeyDown}
+          onDragLeave={canEdit ? onTreeDragLeave : undefined}
+        >
           {visible.map(({ node, level }) => {
             const children = childrenOf.get(node.id) ?? [];
             const hasChildren = children.length > 0;
             const isExpanded = expanded.has(node.id);
             const isCurrent = node.id === currentId;
+            const isDropInside = dropTarget?.id === node.id && dropTarget.pos === "inside";
             return (
               <li key={node.id} role="none">
                 <div
                   className={cn(
                     "group relative flex h-[30px] items-center gap-0.5 rounded-sm pr-1",
                     isCurrent ? "bg-primary-tint" : "hover:bg-hover",
+                    dragId === node.id && "opacity-50",
+                    isDropInside && "bg-primary-tint ring-1 ring-inset ring-primary",
                   )}
                   style={{ paddingLeft: 4 + level * 16 }}
+                  onDragOver={canEdit ? (e) => onRowDragOver(e, node) : undefined}
+                  onDrop={canEdit ? (e) => onRowDrop(e, node) : undefined}
                 >
+                  {dropTarget?.id === node.id && dropTarget.pos !== "inside" ? (
+                    <span
+                      aria-hidden
+                      className={cn(
+                        "pointer-events-none absolute inset-x-0 z-10 h-0.5 rounded-full bg-primary",
+                        dropTarget.pos === "before" ? "-top-px" : "-bottom-px",
+                      )}
+                      style={{ marginLeft: 4 + level * 16 }}
+                    />
+                  ) : null}
                   {isCurrent ? (
                     <span
                       aria-hidden
@@ -345,6 +477,17 @@ export function PageTree({ spaceId, spaceSlug, nodes, canEdit }: PageTreeProps) 
                   </Link>
                   {canEdit ? (
                     <span className="ml-auto hidden shrink-0 items-center group-focus-within:flex group-hover:flex group-has-[[data-state=open]]:flex">
+                      <span
+                        role="button"
+                        aria-label={t("dragHandle")}
+                        title={t("dragHandle")}
+                        draggable
+                        onDragStart={(e) => onHandleDragStart(e, node)}
+                        onDragEnd={resetDrag}
+                        className="flex size-6 cursor-grab items-center justify-center rounded-xs text-fg-tertiary transition-colors hover:bg-hover hover:text-fg active:cursor-grabbing"
+                      >
+                        <GripVertical aria-hidden className="size-3.5" />
+                      </span>
                       <RowActionButton label={t("addChild")} onClick={() => handleCreate(node.id)}>
                         <Plus aria-hidden className="size-3.5" />
                       </RowActionButton>
