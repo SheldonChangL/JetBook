@@ -157,5 +157,9 @@
     "backToReading": "返回閱讀",
     "steal": "強制取得編輯權",
     "stealConfirm": "搶鎖會中斷對方的編輯，確定要繼續嗎？"
+  },
+  "reading": {
+    "edit": "編輯",
+    "lastUpdated": "最後更新：{time}"
   }
 }

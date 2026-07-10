@@ -52,12 +52,19 @@ export function Button({
   return (
     <Comp
       className={cn(buttonVariants({ variant, size }), className)}
-      disabled={disabled || loading}
+      disabled={asChild ? undefined : disabled || loading}
       data-loading={loading || undefined}
       {...props}
     >
-      {loading ? <Loader2 aria-hidden className="size-4 animate-spin" /> : null}
-      {children}
+      {/* asChild 時 Slot 需單一子元素，只傳 children（loading 不適用連結型按鈕） */}
+      {asChild ? (
+        children
+      ) : (
+        <>
+          {loading ? <Loader2 aria-hidden className="size-4 animate-spin" /> : null}
+          {children}
+        </>
+      )}
     </Comp>
   );
 }
