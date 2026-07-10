@@ -23,6 +23,11 @@ const envSchema = z.object({
   OPENAI_COMPAT_BASE_URL: z.url().optional(),
   OPENAI_COMPAT_MODEL_PRIMARY: z.string().optional(),
   OPENAI_COMPAT_MODEL_LIGHT: z.string().optional(),
+  /** Embedding（ADR-005：day-1 local BGE-M3 1024 維；未設定＝語意索引關閉） */
+  EMBEDDING_BASE_URL: z.url().optional(),
+  EMBEDDING_MODEL: z.string().default("bge-m3"),
+  EMBEDDING_DIMENSIONS: z.coerce.number().int().positive().default(1024),
+  EMBEDDING_QUERY_PREFIX: z.string().optional(),
 });
 
 export type Env = z.infer<typeof envSchema>;
