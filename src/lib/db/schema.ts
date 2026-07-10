@@ -9,11 +9,13 @@ import {
   boolean,
   index,
   integer,
+  jsonb,
   pgEnum,
   pgTable,
   primaryKey,
   text,
   timestamp,
+  uniqueIndex,
   uuid,
 } from "drizzle-orm/pg-core";
 
@@ -182,9 +184,84 @@ export const spacePinnedPages = pgTable(
   (table) => [primaryKey({ columns: [table.spaceId, table.pageId] })],
 );
 
+// ── 頁面（C-02；schema 一次補齊 C1 鎖欄位/G1 slug 歷史/G9 瀏覽紀錄） ──────────
+
+export const pages = pgTable(
+  "pages",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    spaceId: uuid("space_id")
+      .notNull()
+      .references(() => spaces.id, { onDelete: "cascade" }),
+    /** 鄰接表：父頁；根層為 null（ADR-001） */
+    parentId: uuid("parent_id"),
+    /** fractional index 排序鍵（同層相對順序；插入取中值免重排） */
+    position: text("position").notNull().default("a0"),
+    slug: text("slug").notNull(),
+    title: text("title").notNull().default(""),
+    icon: text("icon"),
+    /** TipTap/ProseMirror JSON canonical（ADR-002） */
+    content: jsonb("content"),
+    /** 衍生：匯出與 RAG chunking 用 */
+    contentMd: text("content_md").notNull().default(""),
+    /** 衍生：純文字，餵 pgroonga 全文索引（ADR-007，不用 tsvector） */
+    contentText: text("content_text").notNull().default(""),
+    currentVersionNo: integer("current_version_no").notNull().default(0),
+    /** 頁面層限制存取旗標（page_permissions 覆寫用，後續 issue 啟用） */
+    restricted: boolean("restricted").notNull().default(false),
+    // ── C1 軟性編輯鎖 ──
+    lockedBy: uuid("locked_by").references(() => users.id, { onDelete: "set null" }),
+    lockedAt: timestamp("locked_at", { withTimezone: true }),
+    createdBy: uuid("created_by").references(() => users.id, { onDelete: "set null" }),
+    updatedBy: uuid("updated_by").references(() => users.id, { onDelete: "set null" }),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+    updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+    deletedAt: timestamp("deleted_at", { withTimezone: true }),
+  },
+  (table) => [
+    index("ix_pages_space").on(table.spaceId),
+    index("ix_pages_parent").on(table.parentId),
+    // 同 space 內 slug 唯一（未刪除者）
+    uniqueIndex("ux_pages_space_slug").on(table.spaceId, table.slug),
+  ],
+);
+
+/** slug 歷史：改名後舊 URL 301 導向（G1/F-PAGE-03）。 */
+export const pageSlugHistory = pgTable(
+  "page_slug_history",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    spaceId: uuid("space_id")
+      .notNull()
+      .references(() => spaces.id, { onDelete: "cascade" }),
+    oldSlug: text("old_slug").notNull(),
+    pageId: uuid("page_id")
+      .notNull()
+      .references(() => pages.id, { onDelete: "cascade" }),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (table) => [uniqueIndex("ux_slug_history_space_slug").on(table.spaceId, table.oldSlug)],
+);
+
+/** 最近瀏覽（G9/F-PUB-03 Dashboard「繼續閱讀」來源）。 */
+export const pageVisits = pgTable(
+  "page_visits",
+  {
+    userId: uuid("user_id")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    pageId: uuid("page_id")
+      .notNull()
+      .references(() => pages.id, { onDelete: "cascade" }),
+    visitedAt: timestamp("visited_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (table) => [primaryKey({ columns: [table.userId, table.pageId] })],
+);
+
 export type User = typeof users.$inferSelect;
 export type Session = typeof sessions.$inferSelect;
 export type Space = typeof spaces.$inferSelect;
 export type SpaceMember = typeof spaceMembers.$inferSelect;
 export type SpaceRole = (typeof spaceRoleEnum.enumValues)[number];
 export type SpaceVisibility = (typeof spaceVisibilityEnum.enumValues)[number];
+export type Page = typeof pages.$inferSelect;
