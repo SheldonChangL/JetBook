@@ -8,6 +8,7 @@
   },
   "home": {
     "title": "JetBook",
-    "subtitle": "Jet Opto 內部知識管理系統 — 建置中（M0）。"
+    "subtitle": "Jet Opto 內部知識管理系統 — 建置中（M0）。",
+    "stageBadge": "M0 建置中"
   }
 }
