@@ -11,7 +11,9 @@ export default defineConfig({
   },
   test: {
     environment: "node",
-    include: ["src/**/*.test.ts", "tests/**/*.test.ts"],
+    // 單元測試不含整合測試（*.int.test.ts 由 vitest.integration.config.ts 專跑）
+    include: ["src/**/*.test.ts"],
+    exclude: ["tests/integration/**"],
     // 單元測試環境變數（env.ts fail-fast 所需的最小集合；整合測試由 testcontainers 覆寫）
     env: {
       NODE_ENV: "test",
