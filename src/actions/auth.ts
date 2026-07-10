@@ -15,6 +15,7 @@ import {
   setSessionCookie,
   validateSessionToken,
 } from "@/lib/auth/session";
+import { isSafeReturnTo } from "@/lib/auth/current";
 import {
   getLockRemainingSeconds,
   recordLoginFailure,
@@ -27,6 +28,7 @@ const loginSchema = z.object({
   email: z.string().trim().toLowerCase().pipe(z.email()),
   password: z.string().min(1),
   remember: z.coerce.boolean().default(false),
+  returnTo: z.string().optional(),
 });
 
 export type LoginState =
@@ -53,11 +55,12 @@ export async function login(_prev: LoginState, formData: FormData): Promise<Logi
     email: formData.get("email"),
     password: formData.get("password"),
     remember: formData.get("remember"),
+    returnTo: formData.get("returnTo") ?? undefined,
   });
   if (!parsed.success) {
     return { status: "error", code: "invalid" };
   }
-  const { email, password, remember } = parsed.data;
+  const { email, password, remember, returnTo } = parsed.data;
 
   // 第一道：IP rate limit（5 次/分）
   const rate = loginRateLimiter.check(`login:${ip}`);
@@ -94,7 +97,8 @@ export async function login(_prev: LoginState, formData: FormData): Promise<Logi
   // 記住我：persistent cookie（絕對逾時）；否則 session cookie（關瀏覽器即失效）
   await setSessionCookie(token, remember ? session.expiresAt : undefined);
   log.info({ userId: user.id, ip }, "login success");
-  redirect("/");
+  // returnTo 僅允許站內相對路徑（防 open redirect）
+  redirect(returnTo && isSafeReturnTo(returnTo) ? returnTo : "/");
 }
 
 export async function logout(): Promise<void> {

@@ -1,6 +1,7 @@
 "use client";
 
-import { useActionState, useState } from "react";
+import { useActionState, useEffect, useState } from "react";
+import { useSearchParams } from "next/navigation";
 import { useTranslations } from "next-intl";
 import { Eye, EyeOff } from "lucide-react";
 import { login, type LoginState } from "@/actions/auth";
@@ -11,8 +12,18 @@ const initialState: LoginState = { status: "idle" };
 
 export function LoginForm() {
   const t = useTranslations("auth");
+  const searchParams = useSearchParams();
   const [state, formAction, pending] = useActionState(login, initialState);
   const [showPassword, setShowPassword] = useState(false);
+  const [returnTo, setReturnTo] = useState(searchParams.get("returnTo") ?? "");
+
+  // 錨點（#hash）不會進 server；瀏覽器 redirect 會保留 fragment，
+  // 在 client 端把它補回 returnTo，登入後即可回到原頁原位置（F-PUB-02）。
+  useEffect(() => {
+    if (window.location.hash) {
+      setReturnTo((prev) => (prev && !prev.includes("#") ? prev + window.location.hash : prev));
+    }
+  }, []);
 
   const errorMessage =
     state.status !== "error"
@@ -25,6 +36,7 @@ export function LoginForm() {
 
   return (
     <form action={formAction} className="flex flex-col gap-4">
+      <input type="hidden" name="returnTo" value={returnTo} />
       {errorMessage ? (
         <div
           role="alert"
