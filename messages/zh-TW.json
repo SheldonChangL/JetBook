@@ -229,7 +229,8 @@
   },
   "reading": {
     "edit": "編輯",
-    "lastUpdated": "最後更新：{time}"
+    "lastUpdated": "最後更新：{time}",
+    "history": "版本歷史"
   },
   "tree": {
     "label": "頁面",
@@ -257,5 +258,16 @@
     "pagesHeading": "頁面",
     "noPages": "這個空間還沒有頁面。",
     "childCount": "{count, plural, =0 {沒有子頁面} other {# 個子頁面}}"
+  },
+  "versionHistory": {
+    "metaTitle": "版本歷史 — {title}",
+    "title": "版本歷史（{count}）",
+    "listLabel": "版本列表",
+    "backToReading": "返回閱讀",
+    "versionLabel": "版本 {n}",
+    "autoSnapshot": "自動快照",
+    "unknownAuthor": "未知使用者",
+    "snapshotMeta": "版本 {n} · {time}",
+    "empty": "尚無版本紀錄"
   }
 }

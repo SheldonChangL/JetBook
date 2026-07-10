@@ -5,7 +5,7 @@ import { revalidatePath } from "next/cache";
 import { headers } from "next/headers";
 import { z } from "zod";
 import { db } from "@/lib/db";
-import { pages, pageSlugHistory, pageVersions, spaces } from "@/lib/db/schema";
+import { pages, pageSlugHistory, pageVersions, spaces, users } from "@/lib/db/schema";
 import { requireSession } from "@/lib/auth/current";
 import { assertCan } from "@/lib/authz/permission";
 import { positionBetween } from "@/lib/pages/position";
@@ -258,7 +258,7 @@ export async function countDescendants(input: string): Promise<number> {
   return Number(result.rows[0]?.count ?? 0);
 }
 
-/** 版本歷史列表（新到舊）。需 space 讀取權。 */
+/** 版本歷史列表（新到舊，含作者名；E-02）。需 space 讀取權。 */
 export async function listPageVersions(pageId: string) {
   const { user } = await requireSession();
   const page = await db.query.pages.findFirst({ where: eq(pages.id, pageId) });
@@ -270,10 +270,13 @@ export async function listPageVersions(pageId: string) {
       versionNo: pageVersions.versionNo,
       title: pageVersions.title,
       createdBy: pageVersions.createdBy,
+      /** 作者名；作者帳號被刪除（created_by set null）時為 null */
+      authorName: users.name,
       createdAt: pageVersions.createdAt,
       note: pageVersions.note,
     })
     .from(pageVersions)
+    .leftJoin(users, eq(pageVersions.createdBy, users.id))
     .where(eq(pageVersions.pageId, pageId))
     .orderBy(desc(pageVersions.versionNo));
 }
