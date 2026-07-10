@@ -225,7 +225,28 @@
     "lockedHint": "另一位使用者正在編輯這個頁面，請稍後再試。",
     "backToReading": "返回閱讀",
     "steal": "強制取得編輯權",
-    "stealConfirm": "搶鎖會中斷對方的編輯，確定要繼續嗎？"
+    "stealConfirm": "搶鎖會中斷對方的編輯，確定要繼續嗎？",
+    "slash": {
+      "label": "區塊選單",
+      "empty": "沒有符合的區塊",
+      "groups": {
+        "basic": "基本",
+        "advanced": "進階",
+        "ai": "AI"
+      },
+      "items": {
+        "text": { "label": "文字", "desc": "一般段落文字" },
+        "heading1": { "label": "標題 1", "desc": "大節標題" },
+        "heading2": { "label": "標題 2", "desc": "中節標題" },
+        "heading3": { "label": "標題 3", "desc": "小節標題" },
+        "bulletList": { "label": "無序清單", "desc": "以圓點符號列點" },
+        "orderedList": { "label": "有序清單", "desc": "以數字編號列點" },
+        "taskList": { "label": "任務清單", "desc": "可勾選的待辦事項" },
+        "blockquote": { "label": "引用", "desc": "標示引述內容" },
+        "divider": { "label": "分隔線", "desc": "以水平線分隔內容" },
+        "codeBlock": { "label": "程式碼區塊", "desc": "等寬字型的程式碼片段" }
+      }
+    }
   },
   "reading": {
     "edit": "編輯",
