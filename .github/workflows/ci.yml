@@ -1,0 +1,76 @@
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches:
+      - main
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  validate:
+    name: Validate
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Lint
+        run: npm run lint
+
+      - name: Typecheck
+        run: npm run typecheck
+
+      - name: Test
+        run: npm run test --if-present
+
+      - name: Build
+        run: npm run build
+
+  docker:
+    name: Build and push Docker image
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    needs: validate
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      # hashFiles 只能用於 step 層級（job 層級 if 不支援，且 checkout 前 workspace 為空）。
+      # A-02 merge Dockerfile 進 main 後，以下步驟自動生效。
+      - name: Set up Docker Buildx
+        if: hashFiles('Dockerfile') != ''
+        uses: docker/setup-buildx-action@v3
+
+      - name: Log in to GHCR
+        if: hashFiles('Dockerfile') != ''
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Build and push image
+        if: hashFiles('Dockerfile') != ''
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          push: true
+          tags: |
+            ghcr.io/sheldonchangl/jetbook:${{ github.sha }}
+            ghcr.io/sheldonchangl/jetbook:latest
