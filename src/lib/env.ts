@@ -15,6 +15,12 @@ const envSchema = z.object({
   /** 附件上傳目錄（M-01 StorageProvider 使用；容器內以 volume 掛載） */
   UPLOAD_DIR: z.string().min(1).default("uploads"),
 
+  // ── 檔案儲存（M-01） ──
+  /** 附件儲存根目錄（LocalStorageProvider；換路徑即換儲存根，未來 S3/MinIO 另加實作切換） */
+  UPLOAD_DIR: z.string().default("./data/uploads"),
+  /** 單檔上傳大小上限（MB） */
+  MAX_UPLOAD_MB: z.coerce.number().int().positive().default(50),
+
   // ── AI Provider（M2；全部 optional，未設定時 AI 功能不可用但系統正常運作，NFR-AVAIL-02） ──
   /** chat LLM 供應商；未設定＝AI 功能關閉 */
   LLM_PROVIDER: z.enum(["anthropic", "openai-compat"]).optional(),

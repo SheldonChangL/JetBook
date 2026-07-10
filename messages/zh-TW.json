@@ -249,5 +249,32 @@
   "reading": {
     "edit": "編輯",
     "lastUpdated": "最後更新：{time}"
+  },
+  "tree": {
+    "label": "頁面",
+    "newRootPage": "新增頁面",
+    "addChild": "新增子頁面",
+    "nodeMenu": "更多動作",
+    "rename": "重新命名",
+    "renameTitle": "重新命名頁面",
+    "titleLabel": "標題",
+    "save": "儲存",
+    "cancel": "取消",
+    "delete": "刪除",
+    "deleteTitle": "刪除頁面",
+    "deleteDesc": "「{title}」將移至垃圾桶，30 天內可還原。",
+    "deleteDescWithChildren": "「{title}」與其 {count} 個子頁面將移至垃圾桶，30 天內可還原。",
+    "confirmDelete": "刪除",
+    "expand": "展開",
+    "collapse": "收合",
+    "emptyTitle": "還沒有頁面",
+    "emptyDesc": "建立第一個頁面，開始累積團隊知識。",
+    "createFirst": "建立第一個頁面",
+    "actionError": "操作失敗，請稍後再試"
+  },
+  "spaceHome": {
+    "pagesHeading": "頁面",
+    "noPages": "這個空間還沒有頁面。",
+    "childCount": "{count, plural, =0 {沒有子頁面} other {# 個子頁面}}"
   }
 }
