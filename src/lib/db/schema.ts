@@ -8,6 +8,7 @@
 import {
   boolean,
   index,
+  integer,
   pgEnum,
   pgTable,
   primaryKey,
@@ -93,6 +94,14 @@ export const passwordResetTokens = pgTable(
   },
   (table) => [index("ix_prt_user").on(table.userId)],
 );
+
+/** 帳號層級登入失敗節流（B-02，防撞庫；DB 存放供多副本共用）。 */
+export const loginThrottle = pgTable("login_throttle", {
+  email: text("email").primaryKey(),
+  failedCount: integer("failed_count").notNull().default(0),
+  lockedUntil: timestamp("locked_until", { withTimezone: true }),
+  lastFailedAt: timestamp("last_failed_at", { withTimezone: true }).notNull().defaultNow(),
+});
 
 export type User = typeof users.$inferSelect;
 export type Session = typeof sessions.$inferSelect;

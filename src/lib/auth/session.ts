@@ -94,14 +94,15 @@ export async function deleteExpiredSessions(): Promise<void> {
   await db.delete(sessions).where(lt(sessions.expiresAt, new Date()));
 }
 
-export async function setSessionCookie(token: string, expiresAt: Date): Promise<void> {
+/** expiresAt 省略時為 session cookie（關閉瀏覽器即失效；「記住我」未勾選）。 */
+export async function setSessionCookie(token: string, expiresAt?: Date): Promise<void> {
   const store = await cookies();
   store.set(SESSION_COOKIE, token, {
     httpOnly: true,
     secure: env.NODE_ENV === "production",
     sameSite: "lax",
     path: "/",
-    expires: expiresAt,
+    ...(expiresAt ? { expires: expiresAt } : {}),
   });
 }
 
