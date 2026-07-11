@@ -38,6 +38,12 @@ export interface EmbedPageResult {
 export interface EmbedPageOptions {
   /** 覆寫嵌入 provider（測試以真 HTTP mock 端點注入；預設走 env 單例）。 */
   provider?: EmbeddingProvider;
+  /**
+   * 忽略 content_hash 增量，強制重算每一個 chunk 的向量（H-07 全庫重嵌用）。
+   * 換嵌入模型時內容不變、content_hash 也不變，若沿用舊向量便無法真正換模型；
+   * 故 reindex-all 以 force=true 全量重算。
+   */
+  force?: boolean;
 }
 
 async function clearEmbeddings(pageId: string): Promise<number> {
@@ -97,7 +103,10 @@ export async function embedPage(
     .select({ chunkIndex: pageEmbeddings.chunkIndex, contentHash: pageEmbeddings.contentHash })
     .from(pageEmbeddings)
     .where(eq(pageEmbeddings.pageId, pageId));
-  const existingHashByIndex = new Map(existing.map((row) => [row.chunkIndex, row.contentHash]));
+  // force：視同無既有向量，強制每個 chunk 都重算（換模型全庫重嵌）。
+  const existingHashByIndex = options.force
+    ? new Map<number, string>()
+    : new Map(existing.map((row) => [row.chunkIndex, row.contentHash]));
 
   const changed = chunks.filter(
     (chunk) => existingHashByIndex.get(chunk.index) !== chunk.contentHash,

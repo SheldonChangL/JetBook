@@ -10,6 +10,12 @@ import {
   setUserActive,
   setUserOrgRole,
 } from "@/lib/admin/users";
+import { isEmbeddingConfigured } from "@/lib/llm";
+import {
+  enqueueReindexAll,
+  getReindexAllStatus,
+  type ReindexAllProgress,
+} from "@/lib/jobs/queue";
 import { logger } from "@/lib/logger";
 
 /**
@@ -117,4 +123,40 @@ export async function resetUserPasswordAction(
   } catch (err) {
     return toResult(err);
   }
+}
+
+// ── 全庫重嵌（H-07，F-AI-02） ─────────────────────────────────────────
+
+export type ReindexEnqueueResult =
+  | { ok: true; jobId: string | null }
+  | { ok: false; error: "EMBEDDING_NOT_CONFIGURED" };
+
+/**
+ * 觸發全庫重嵌（org admin only）：驗權限 → enqueue reindex-all 背景 job。
+ * 未設定 embedding 端點時直接回錯（不排入無法執行的 job）。實際重嵌邏輯在 worker。
+ */
+export async function reindexAllAction(): Promise<ReindexEnqueueResult> {
+  const admin = await requireOrgAdmin();
+  if (!isEmbeddingConfigured()) {
+    return { ok: false, error: "EMBEDDING_NOT_CONFIGURED" };
+  }
+  const jobId = await enqueueReindexAll();
+  logger.info({ adminId: admin.id, jobId }, "admin: reindex-all enqueued");
+  return { ok: true, jobId };
+}
+
+export type ReindexStatusResult =
+  | { ok: true; state: string; progress: ReindexAllProgress | null }
+  | { ok: false; error: "NOT_FOUND" };
+
+const jobIdSchema = z.uuid();
+
+/** 查詢 reindex-all job 狀態（org admin only；UI 輪詢進度／結果）。 */
+export async function reindexStatusAction(jobId: string): Promise<ReindexStatusResult> {
+  await requireOrgAdmin();
+  const parsed = jobIdSchema.safeParse(jobId);
+  if (!parsed.success) return { ok: false, error: "NOT_FOUND" };
+  const status = await getReindexAllStatus(parsed.data);
+  if (!status) return { ok: false, error: "NOT_FOUND" };
+  return { ok: true, state: status.state, progress: status.output };
 }

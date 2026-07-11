@@ -258,7 +258,25 @@
     "systemEnvBaseUrl": "BASE_URL",
     "systemEnvDatabaseUrl": "DATABASE_URL",
     "systemEnvUploadDir": "UPLOAD_DIR",
-    "systemEnvMasked": "已遮罩憑證"
+    "systemEnvMasked": "已遮罩憑證",
+    "reindexSectionTitle": "AI 全庫重嵌",
+    "reindexSectionDesc": "更換嵌入模型或維度變更後，重建全部頁面的語意索引。已關閉 AI 索引的空間會一併徹底清除既有向量，其內容不會送往嵌入端點。",
+    "reindexTrigger": "開始全庫重嵌",
+    "reindexQueued": "已排入背景佇列",
+    "reindexAlreadyRunning": "已有一個全庫重嵌正在進行中",
+    "reindexNotConfigured": "尚未設定 embedding 端點，無法執行重嵌",
+    "reindexNotConfiguredHint": "尚未設定 embedding 端點（EMBEDDING_BASE_URL）",
+    "reindexProgress": "已處理 {done}/{total} 頁",
+    "reindexIndexed": "已建立索引",
+    "reindexCleared": "已清除",
+    "reindexPurged": "已清除排除空間",
+    "reindexFailed": "失敗",
+    "reindexPhase": {
+      "scanning": "掃描中…",
+      "indexing": "重嵌進行中…",
+      "completed": "重嵌完成",
+      "failed": "重嵌失敗"
+    }
   },
   "trash": {
     "title": "垃圾桶",

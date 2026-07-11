@@ -196,3 +196,88 @@ export async function getImportZipStatus(jobId: string): Promise<ImportZipStatus
     output: output ?? null,
   };
 }
+
+// ── 全庫重嵌（H-07） ───────────────────────────────────────────
+
+/** reindex-all job 執行寬限（大庫全量重嵌）；避免長工作被判過期而重跑。 */
+const REINDEX_ALL_EXPIRE_SECONDS = 60 * 60;
+
+/** 全庫重嵌 job 進度／結果報告（寫入 job output；UI 輪詢顯示）。 */
+export interface ReindexAllProgress {
+  phase: "scanning" | "indexing" | "completed" | "failed";
+  /** 需處理的未刪頁面總數（進度分母） */
+  total: number;
+  /** 已處理頁面數 */
+  done: number;
+  /** 已（重）建向量的頁面數 */
+  indexed: number;
+  /** 已清除向量的頁面數（關閉索引／內容為空／軟刪） */
+  cleared: number;
+  /** 被徹底清除向量的「關閉 AI 索引」空間數（NFR-COMP-03） */
+  purgedDisabledSpaces: number;
+  /** 失敗頁面總數 */
+  failedCount: number;
+  /** 失敗頁面樣本（上限見 reindex.ts FAILED_SAMPLE_CAP，避免 output 無限膨脹） */
+  failed: { pageId: string; error: string }[];
+  /** phase=failed 時的錯誤碼／訊息 */
+  errorCode?: string;
+  errorMessage?: string;
+}
+
+/** 確保 reindex-all 佇列存在（enqueue 與 worker 兩端一致）。 */
+export async function ensureReindexAllQueue(boss: PgBoss): Promise<void> {
+  await boss.createQueue(JOBS.reindexAll);
+}
+
+/**
+ * enqueue 全庫重嵌 job（H-07，換模型／維度變更後重建，F-AI-02）。
+ * - singletonKey 固定為全庫唯一鍵：同時間僅允許一個 reindex-all 在佇列／執行中，
+ *   避免重複全量重算彼此干擾。
+ * - retryLimit=0：長工作不自動重試；重嵌本身冪等（content_hash 增量），失敗時由
+ *   admin 檢視 output 後重新觸發。expireInSeconds 放寬給大庫全量。
+ */
+export async function enqueueReindexAll(): Promise<string | null> {
+  const boss = await getBoss();
+  await ensureReindexAllQueue(boss);
+  return boss.send(
+    JOBS.reindexAll,
+    {},
+    {
+      singletonKey: "reindex-all",
+      retryLimit: 0,
+      expireInSeconds: REINDEX_ALL_EXPIRE_SECONDS,
+    },
+  );
+}
+
+/**
+ * 將進度寫入 reindex-all job 的 output 欄位（best-effort，同 import-zip 模式）。
+ * job 完成時 pg-boss 以 handler 回傳值覆寫 output（＝最終報告）。
+ */
+export async function updateReindexAllProgress(
+  jobId: string,
+  progress: ReindexAllProgress,
+): Promise<void> {
+  try {
+    await db.execute(
+      sql`UPDATE ${sql.raw(`${PGBOSS_SCHEMA}.job`)} SET output = ${JSON.stringify(progress)}::jsonb
+          WHERE name = ${JOBS.reindexAll} AND id = ${jobId}::uuid`,
+    );
+  } catch (error) {
+    logger.warn({ err: error, jobId }, "更新 reindex-all 進度失敗（不中斷重嵌）");
+  }
+}
+
+export interface ReindexAllStatus {
+  state: "created" | "retry" | "active" | "completed" | "cancelled" | "failed";
+  output: ReindexAllProgress | null;
+}
+
+/** 查詢 reindex-all job 狀態與進度／結果（UI 輪詢用）。找不到回 null。 */
+export async function getReindexAllStatus(jobId: string): Promise<ReindexAllStatus | null> {
+  const boss = await getBoss();
+  const job = await boss.getJobById(JOBS.reindexAll, jobId);
+  if (!job) return null;
+  const output = job.output as ReindexAllProgress | null;
+  return { state: job.state, output: output ?? null };
+}
