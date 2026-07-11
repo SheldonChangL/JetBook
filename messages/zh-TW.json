@@ -556,6 +556,10 @@
           "label": "Mermaid 圖表",
           "desc": "以 Mermaid 語法繪製流程圖"
         },
+        "embed": {
+          "label": "嵌入內容",
+          "desc": "貼上 URL 嵌入影片或設計稿"
+        },
         "attachment": {
           "label": "檔案",
           "desc": "上傳並插入附件卡片"
@@ -591,6 +595,13 @@
       "diagramLabel": "Mermaid 圖表",
       "rendering": "圖表渲染中…",
       "errorTitle": "圖表語法錯誤"
+    },
+    "embed": {
+      "urlLabel": "嵌入網址",
+      "urlPlaceholder": "貼上網址（例：https://www.youtube.com/watch?v=…）",
+      "emptyHint": "貼上網址即可嵌入；白名單外的網址會顯示為連結卡片。",
+      "statusEmbedded": "已嵌入",
+      "statusFallbackCard": "白名單外，顯示為連結卡片"
     },
     "table": {
       "addColumnBefore": "在左方插入欄",
@@ -865,6 +876,10 @@
       "download": "下載",
       "downloadAria": "下載附件 {fileName}",
       "unnamed": "未命名檔案"
+    },
+    "embed": {
+      "frameTitle": "{host} 的嵌入內容",
+      "invalid": "無效的嵌入網址"
     }
   },
   "settings": {

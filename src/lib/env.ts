@@ -1,5 +1,6 @@
 import "server-only";
 import { z } from "zod";
+import { parseEmbedDomains } from "./content/embed";
 
 /**
  * 環境變數唯一入口（12-factor）。
@@ -18,6 +19,18 @@ const envSchema = z.object({
   UPLOAD_DIR: z.string().default("./data/uploads"),
   /** 單檔上傳大小上限（MB） */
   MAX_UPLOAD_MB: z.coerce.number().int().positive().default(50),
+
+  // ── 編輯器 Embed 白名單（D-14，F-EDIT-15） ──
+  /**
+   * 允許 iframe 嵌入的網域白名單（逗號分隔，如 "youtube.com,youtu.be,figma.com"）。
+   * 未設定＝白名單為空：所有嵌入 URL 一律退化為連結卡片（預設拒絕）。
+   * 由管理者以部署設定控管（12-factor：白名單即設定；D-14 取捨——不另建 org_settings 欄以免 migration）。
+   * 轉換後為已正規化的網域陣列（見 lib/content/embed.ts 的 parseEmbedDomains）。
+   */
+  EMBED_ALLOWED_DOMAINS: z
+    .string()
+    .optional()
+    .transform((v) => parseEmbedDomains(v)),
 
   // ── Email／SMTP（B-05；全部 optional，未設 SMTP_HOST 時不寄信，改由 logger 輸出信件內容，僅供開發） ──
   /** SMTP 主機；未設定＝不寄信（開發／CI fallback） */

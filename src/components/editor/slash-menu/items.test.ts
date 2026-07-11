@@ -111,7 +111,15 @@ describe("filterSlashMenuItems（F-EDIT-02 中英文關鍵字過濾）", () => {
     }
   });
 
-  it("涵蓋所有已實作區塊（D-01/D-03/D-04/D-05/D-06/D-08/D-12/D-13 現有節點）且 group 合法", () => {
+  it("Embed：「嵌入」/「內嵌」/ embed / youtube / figma 皆命中（D-14）", () => {
+    for (const q of ["嵌入", "內嵌", "embed", "youtube", "figma", "iframe"]) {
+      expect(filterSlashMenuItems(SLASH_MENU_ITEMS, q).map((i) => i.id)).toContain(
+        "embed",
+      );
+    }
+  });
+
+  it("涵蓋所有已實作區塊（D-01/D-03/D-04/D-05/D-06/D-08/D-12/D-13/D-14 現有節點）且 group 合法", () => {
     const ids = SLASH_MENU_ITEMS.map((i) => i.id);
     expect(ids).toEqual([
       "text",
@@ -133,6 +141,7 @@ describe("filterSlashMenuItems（F-EDIT-02 中英文關鍵字過濾）", () => {
       "details",
       "stepper",
       "mermaid",
+      "embed",
       "attachment",
     ]);
     for (const item of SLASH_MENU_ITEMS) {
