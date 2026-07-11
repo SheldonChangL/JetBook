@@ -638,6 +638,11 @@
     "copyAnchor": "複製此段落連結",
     "linkCopied": "連結已複製到剪貼簿",
     "copyFailed": "複製失敗，請手動複製網址列連結",
+    "moreActions": "更多動作",
+    "copyMarkdown": "複製為 Markdown",
+    "downloadMarkdown": "下載 .md",
+    "markdownCopied": "已複製 Markdown 到剪貼簿",
+    "markdownCopyFailed": "複製 Markdown 失敗，請稍後再試",
     "image": {
       "zoom": "點擊放大圖片",
       "close": "關閉",
@@ -842,7 +847,20 @@
     "importErrPATH_TRAVERSAL": "偵測到不安全的檔案路徑（路徑穿越），已拒絕匯入。",
     "importErrINVALID_ZIP": "無法解析壓縮檔（格式錯誤或損毀）。",
     "importErrEMPTY_ARCHIVE": "壓縮檔內沒有可匯入的檔案。",
-    "importErrUNKNOWN": "匯入處理發生非預期錯誤。"
+    "importErrUNKNOWN": "匯入處理發生非預期錯誤。",
+    "exportHeading": "匯出",
+    "exportDesc": "將整個空間匯出為 Markdown 壓縮檔（含頁面樹目錄結構與站內圖片、附件）。",
+    "exportStartButton": "匯出整個空間",
+    "exportStarting": "正在建立匯出工作…",
+    "exportCollecting": "正在收集頁面…",
+    "exportPackaging": "正在打包壓縮檔…",
+    "exportProgress": "已處理 {done} / {total} 頁",
+    "exportCompleted": "匯出完成",
+    "exportCompletedSummary": "匯出 {pages} 頁、內含 {assets} 個附件。",
+    "exportDownload": "下載 .zip",
+    "exportFailed": "匯出失敗",
+    "exportError": "無法建立匯出工作，請稍後再試。",
+    "exportErrUNKNOWN": "匯出處理發生非預期錯誤。"
   },
   "content": {
     "attachment": {

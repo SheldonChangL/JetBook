@@ -1,9 +1,9 @@
 import "server-only";
 import { createReadStream } from "node:fs";
-import { access, mkdir, unlink, writeFile } from "node:fs/promises";
+import { access, mkdir, readdir, stat, unlink, writeFile } from "node:fs/promises";
 import path from "node:path";
 import type { Readable } from "node:stream";
-import type { StorageProvider } from "./provider";
+import type { StorageObject, StorageProvider } from "./provider";
 
 /**
  * 本地檔案系統實作：所有檔案存於根目錄（env.UPLOAD_DIR）之下。
@@ -46,5 +46,28 @@ export class LocalStorageProvider implements StorageProvider {
       if ((error as NodeJS.ErrnoException).code === "ENOENT") return; // 冪等
       throw error;
     }
+  }
+
+  async list(prefix: string): Promise<StorageObject[]> {
+    const dir = path.resolve(this.root, prefix);
+    // 只允許根目錄本身或其子目錄（防前綴跳脫）。
+    if (dir !== this.root && !dir.startsWith(this.root + path.sep)) {
+      throw new Error(`非法 storage 前綴：${prefix}`);
+    }
+    let names: string[];
+    try {
+      names = await readdir(dir);
+    } catch (error) {
+      if ((error as NodeJS.ErrnoException).code === "ENOENT") return []; // 前綴目錄尚不存在
+      throw error;
+    }
+    const normalizedPrefix = prefix === "" || prefix.endsWith("/") ? prefix : `${prefix}/`;
+    const out: StorageObject[] = [];
+    for (const name of names) {
+      const s = await stat(path.join(dir, name));
+      if (!s.isFile()) continue;
+      out.push({ key: `${normalizedPrefix}${name}`, sizeBytes: s.size, modifiedMs: s.mtimeMs });
+    }
+    return out;
   }
 }
