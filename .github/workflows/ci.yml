@@ -47,6 +47,69 @@ jobs:
       - name: Build
         run: npm run build
 
+  e2e:
+    name: E2E smoke（Playwright，MVP 出貨閘門 N-02）
+    runs-on: ubuntu-latest
+    env:
+      DATABASE_URL: postgresql://jetbook:local-dev-password@127.0.0.1:5432/jetbook
+      BASE_URL: http://127.0.0.1:3121
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Start PostgreSQL（pgroonga + pgvector，與正式同一 db image）
+        run: |
+          docker build -t jetbook-db:e2e ./db
+          docker run -d --name jetbook-e2e-db \
+            -e POSTGRES_USER=jetbook \
+            -e POSTGRES_PASSWORD=local-dev-password \
+            -e POSTGRES_DB=jetbook \
+            -p 5432:5432 jetbook-db:e2e
+          for i in $(seq 1 60); do
+            if docker exec jetbook-e2e-db pg_isready -U jetbook -d jetbook >/dev/null 2>&1; then
+              echo "postgres accepting connections"; break
+            fi
+            echo "waiting for postgres ($i)"; sleep 2
+          done
+
+      - name: Prepare .env
+        run: |
+          {
+            echo "BASE_URL=${BASE_URL}"
+            echo "DATABASE_URL=${DATABASE_URL}"
+          } > .env
+
+      - name: Apply migrations（初始化競態下重試，等 init 建好 extension）
+        run: |
+          for i in $(seq 1 30); do
+            if npm run db:migrate; then echo "migrated"; exit 0; fi
+            echo "migrate retry $i"; sleep 3
+          done
+          exit 1
+
+      - name: Install Playwright browser（chromium）
+        run: npx playwright install --with-deps chromium
+
+      - name: E2E smoke（登入→建空間→建頁→編輯→閱讀→搜尋→私有隔離→登出）
+        run: npm run test:e2e
+
+      - name: Upload Playwright report
+        if: ${{ !cancelled() }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-report
+          path: playwright-report/
+          retention-days: 7
+
   docker:
     name: Build and push Docker image
     if: github.event_name == 'push' && github.ref == 'refs/heads/main'

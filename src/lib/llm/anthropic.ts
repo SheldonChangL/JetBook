@@ -1,7 +1,7 @@
 import "server-only";
 import Anthropic from "@anthropic-ai/sdk";
 import { logger } from "@/lib/logger";
-import type { ChatDelta, ChatParams, ChatResult, LLMProvider } from "./provider";
+import type { ChatDelta, ChatParams, ChatResult, ChatUsage, LLMProvider } from "./provider";
 
 export interface AnthropicProviderOptions {
   apiKey: string;
@@ -30,7 +30,7 @@ export class AnthropicProvider implements LLMProvider {
     return this.models[tier];
   }
 
-  async *chatStream(params: ChatParams): AsyncIterable<ChatDelta> {
+  async *chatStream(params: ChatParams): AsyncGenerator<ChatDelta, ChatUsage> {
     const stream = this.client.messages.stream(
       {
         model: this.model(params.tier),
@@ -46,15 +46,15 @@ export class AnthropicProvider implements LLMProvider {
       }
     }
     const final = await stream.finalMessage();
+    const usage: ChatUsage = {
+      inputTokens: final.usage.input_tokens,
+      outputTokens: final.usage.output_tokens,
+    };
     logger.info(
-      {
-        provider: this.name,
-        model: final.model,
-        inputTokens: final.usage.input_tokens,
-        outputTokens: final.usage.output_tokens,
-      },
+      { provider: this.name, model: final.model, ...usage },
       "llm usage",
     );
+    return usage;
   }
 
   async chat(params: ChatParams): Promise<ChatResult> {

@@ -1,381 +1,298 @@
+import { marked, type Token, type Tokens } from "marked";
 import type { ProseMirrorDoc, ProseMirrorMark, ProseMirrorNode } from "./types";
 
 /**
- * Markdown → TipTap/ProseMirror JSON（canonical）轉換器（J-01 / F-IE-01）。
+ * Markdown → TipTap/ProseMirror JSON（D-10，F-EDIT-05）。
  *
- * 產出節點對齊 `buildExtensions()`（StarterKit + TaskList/Table/Image/CodeBlock）：
- * 段落、heading(1–3)、bulletList/orderedList、taskList、codeBlock、blockquote、
- * table、image、horizontalRule；行內：bold/italic/strike/code/link。
+ * 以 marked 的 lexer 取得 AST，再走訪 token 樹產出 canonical JSON（ADR-002）。
+ * 純函式、零 UI 相依：編輯器 handlePaste（貼上多段 Markdown）與 J-01 匯入共用同一入口。
  *
- * 依賴約束：不引入 markdown 解析套件（避免新增相依，R1 降險），以字典序 line-based
- * 掃描解析常見 Markdown 子集。此為 docToMarkdown()（serialize.ts）的近似逆向，
- * 供 Markdown 匯入與貼上重用。
+ * 對應區塊：標題(H1–H3)、段落、引用、程式碼區塊、清單/巢狀清單、任務清單、
+ *          表格、水平線；行內：粗/斜/刪除線/行內碼/連結、硬換行。
+ * 刻意排除：圖片（本專案 image 節點僅渲染同源上傳檔，外部 markdown 圖片會在閱讀端被擋，
+ *          故 `![alt](url)` 一律降級為連結以免內容遺失）；區塊級 raw HTML 以純文字保留。
+ *
+ * 產出的 JSON 皆為一般物件（非 null-prototype），可直接餵 savePage 與 Server Action。
  */
 
-const HR_RE = /^ {0,3}(?:-{3,}|\*{3,}|_{3,})\s*$/;
-const ATX_RE = /^ {0,3}(#{1,6})\s+(.*?)\s*#*\s*$/;
-const FENCE_RE = /^( {0,3})(`{3,}|~{3,})\s*([^\s`]*)\s*$/;
-const BLOCKQUOTE_RE = /^ {0,3}>\s?(.*)$/;
-const UL_RE = /^(\s*)([-*+])\s+(.*)$/;
-const OL_RE = /^(\s*)(\d+)[.)]\s+(.*)$/;
-const TASK_RE = /^\[([ xX])\]\s+(.*)$/;
-const IMAGE_ONLY_RE = /^ {0,3}!\[([^\]]*)\]\(([^)\s]+)(?:\s+"([^"]*)")?\)\s*$/;
-const TABLE_SEP_RE = /^\s*\|?(?:\s*:?-{1,}:?\s*\|)+(?:\s*:?-{1,}:?\s*)?\|?\s*$/;
+const NAMED_ENTITIES: Record<string, string> = {
+  amp: "&",
+  lt: "<",
+  gt: ">",
+  quot: '"',
+  apos: "'",
+  nbsp: " ",
+};
 
-function clampHeadingLevel(level: number): number {
-  // 編輯器僅支援 H1–H3（extensions.ts heading.levels）；更深標題降級為 H3。
-  return Math.min(Math.max(level, 1), 3);
-}
-
-/** 拆出一列表格的 cell（去除首尾 pipe，處理跳脫的 \| ）。 */
-function splitTableRow(line: string): string[] {
-  const trimmed = line.trim().replace(/^\|/, "").replace(/\|\s*$/, "");
-  const cells: string[] = [];
-  let buf = "";
-  for (let i = 0; i < trimmed.length; i++) {
-    const ch = trimmed[i];
-    if (ch === "\\" && trimmed[i + 1] === "|") {
-      buf += "|";
-      i++;
-    } else if (ch === "|") {
-      cells.push(buf.trim());
-      buf = "";
-    } else {
-      buf += ch;
+/** 解碼常見 HTML 實體（marked 的 text token 會原樣保留 `&amp;` 等）。 */
+function decodeEntities(input: string): string {
+  return input.replace(/&(#x?[0-9a-fA-F]+|[a-zA-Z][a-zA-Z0-9]*);/g, (match, body: string) => {
+    if (body[0] === "#") {
+      const isHex = body[1] === "x" || body[1] === "X";
+      const code = isHex ? parseInt(body.slice(2), 16) : parseInt(body.slice(1), 10);
+      if (Number.isFinite(code) && code >= 0 && code <= 0x10ffff) {
+        try {
+          return String.fromCodePoint(code);
+        } catch {
+          return match;
+        }
+      }
+      return match;
     }
-  }
-  cells.push(buf.trim());
-  return cells;
+    const named = NAMED_ENTITIES[body] ?? NAMED_ENTITIES[body.toLowerCase()];
+    return named ?? match;
+  });
 }
 
-/** 段落內文字包成 paragraph 節點（空內容 → 空 paragraph）。 */
-function paragraph(text: string): ProseMirrorNode {
-  const inline = parseInline(text);
-  return inline.length > 0
-    ? { type: "paragraph", content: inline }
-    : { type: "paragraph" };
+/** 行內純文字：解碼實體並把 markdown 軟換行（單一 \n）折成空白，與 HTML 呈現一致。 */
+function normalizeText(raw: string): string {
+  return decodeEntities(raw).replace(/\r?\n/g, " ");
 }
 
-// --- 行內解析（marks） -------------------------------------------------------
-
-interface InlineToken {
-  re: RegExp;
-  build: (m: RegExpExecArray) => ProseMirrorNode[];
+function textNode(text: string, marks: ProseMirrorMark[]): ProseMirrorNode {
+  return marks.length > 0 ? { type: "text", text, marks: marks.map((m) => ({ ...m })) } : { type: "text", text };
 }
 
-function withMark(nodes: ProseMirrorNode[], mark: ProseMirrorMark): ProseMirrorNode[] {
-  return nodes.map((n) =>
-    n.type === "text"
-      ? { ...n, marks: [...(n.marks ?? []), mark] }
-      : n,
-  );
+function withMark(marks: ProseMirrorMark[], mark: ProseMirrorMark): ProseMirrorMark[] {
+  return [...marks, mark];
 }
 
-function textNode(text: string): ProseMirrorNode {
-  return { type: "text", text };
-}
-
-/**
- * 行內語法解析：找出最早出現的行內標記，遞迴處理其內容與其後文字。
- * 優先序以「最左出現位置」決定；inline code 內部不再解析其他標記。
- */
-function parseInline(input: string): ProseMirrorNode[] {
-  if (input === "") return [];
-  const tokens: InlineToken[] = [
-    // inline code：反引號內原文，不再套用其他標記
-    {
-      re: /`([^`]+)`/,
-      build: (m) => [{ ...textNode(m[1]!), marks: [{ type: "code" }] }],
-    },
-    // image（行內）：TipTap image 為 block node，行內圖片以 alt 文字保底呈現
-    {
-      re: /!\[([^\]]*)\]\(([^)\s]+)(?:\s+"[^"]*")?\)/,
-      build: (m) => (m[1] ? [textNode(m[1]!)] : []),
-    },
-    // link
-    {
-      re: /\[([^\]]+)\]\(([^)\s]+)(?:\s+"([^"]*)")?\)/,
-      build: (m) =>
-        withMark(parseInline(m[1]!), {
-          type: "link",
-          attrs: { href: m[2]!, ...(m[3] ? { title: m[3] } : {}) },
-        }),
-    },
-    // bold（** 或 __）
-    {
-      re: /\*\*([^*]+)\*\*|__([^_]+)__/,
-      build: (m) => withMark(parseInline(m[1] ?? m[2]!), { type: "bold" }),
-    },
-    // strike
-    {
-      re: /~~([^~]+)~~/,
-      build: (m) => withMark(parseInline(m[1]!), { type: "strike" }),
-    },
-    // italic（* 或 _）
-    {
-      re: /\*([^*]+)\*|_([^_]+)_/,
-      build: (m) => withMark(parseInline(m[1] ?? m[2]!), { type: "italic" }),
-    },
-  ];
-
-  let earliest: { index: number; length: number; nodes: ProseMirrorNode[] } | null = null;
-  for (const tok of tokens) {
-    const m = tok.re.exec(input);
-    if (m && (earliest === null || m.index < earliest.index)) {
-      earliest = { index: m.index, length: m[0].length, nodes: tok.build(m) };
-    }
-  }
-
-  if (!earliest) return [textNode(input)];
-
-  const before = input.slice(0, earliest.index);
-  const after = input.slice(earliest.index + earliest.length);
+/** 行內 token → 文字/marks 節點串。marks 由外層包裹（strong/em/del/link）累積傳入。 */
+function inlineTokensToNodes(tokens: Token[] | undefined, marks: ProseMirrorMark[]): ProseMirrorNode[] {
   const out: ProseMirrorNode[] = [];
-  if (before) out.push(textNode(before));
-  out.push(...earliest.nodes);
-  if (after) out.push(...parseInline(after));
+  for (const token of tokens ?? []) {
+    switch (token.type) {
+      case "text": {
+        const t = token as Tokens.Text;
+        if (t.tokens && t.tokens.length > 0) {
+          out.push(...inlineTokensToNodes(t.tokens, marks));
+        } else {
+          const text = normalizeText(t.text);
+          if (text) out.push(textNode(text, marks));
+        }
+        break;
+      }
+      case "escape": {
+        const text = (token as Tokens.Escape).text;
+        if (text) out.push(textNode(text, marks));
+        break;
+      }
+      case "strong":
+        out.push(...inlineTokensToNodes((token as Tokens.Strong).tokens, withMark(marks, { type: "bold" })));
+        break;
+      case "em":
+        out.push(...inlineTokensToNodes((token as Tokens.Em).tokens, withMark(marks, { type: "italic" })));
+        break;
+      case "del":
+        out.push(...inlineTokensToNodes((token as Tokens.Del).tokens, withMark(marks, { type: "strike" })));
+        break;
+      case "codespan": {
+        const text = (token as Tokens.Codespan).text; // 行內碼保留原字元，不解碼實體
+        if (text) out.push(textNode(text, withMark(marks, { type: "code" })));
+        break;
+      }
+      case "link": {
+        const link = token as Tokens.Link;
+        out.push(
+          ...inlineTokensToNodes(link.tokens, withMark(marks, { type: "link", attrs: { href: link.href ?? "" } })),
+        );
+        break;
+      }
+      case "image": {
+        // 外部圖片降級為連結（本專案僅渲染同源上傳圖片）：保留 href 不遺失內容。
+        const image = token as Tokens.Image;
+        const label = normalizeText(image.text || image.href || "");
+        if (label) out.push(textNode(label, withMark(marks, { type: "link", attrs: { href: image.href ?? "" } })));
+        break;
+      }
+      case "br":
+        out.push({ type: "hardBreak" });
+        break;
+      case "html": {
+        const text = normalizeText((token as Tokens.HTML).text);
+        if (text) out.push(textNode(text, marks));
+        break;
+      }
+      default: {
+        const generic = token as { tokens?: Token[]; text?: string };
+        if (generic.tokens && generic.tokens.length > 0) {
+          out.push(...inlineTokensToNodes(generic.tokens, marks));
+        } else if (typeof generic.text === "string") {
+          const text = normalizeText(generic.text);
+          if (text) out.push(textNode(text, marks));
+        }
+      }
+    }
+  }
   return out;
 }
 
-// --- 區塊解析 ----------------------------------------------------------------
-
-interface ListItemLine {
-  indent: number;
-  marker: "ul" | "ol";
-  text: string;
-  task: boolean;
-  checked: boolean;
+function clampHeadingLevel(depth: number): number {
+  return Math.min(Math.max(Math.trunc(depth) || 1, 1), 3);
 }
 
-function matchListItem(line: string): ListItemLine | null {
-  const ul = UL_RE.exec(line);
-  if (ul) {
-    const rest = ul[3]!;
-    const task = TASK_RE.exec(rest);
+/** 段落節點（inline 為空時省略 content，保留空段落合法）。 */
+function paragraph(tokens: Token[] | undefined): ProseMirrorNode {
+  const content = inlineTokensToNodes(tokens, []);
+  return content.length > 0 ? { type: "paragraph", content } : { type: "paragraph" };
+}
+
+/** 儲存格內容：block+，永遠至少一個段落。 */
+function cellParagraph(cell: Tokens.TableCell): ProseMirrorNode {
+  return paragraph(cell.tokens);
+}
+
+/** 清單項目內容：paragraph block*，確保首個子節點為段落。 */
+function listItemContent(item: Tokens.ListItem): ProseMirrorNode[] {
+  const content = blockTokensToNodes(item.tokens);
+  if (content[0]?.type !== "paragraph") {
+    content.unshift({ type: "paragraph" });
+  }
+  return content;
+}
+
+function listToNode(list: Tokens.List): ProseMirrorNode {
+  const items = list.items;
+  if (list.ordered) {
+    const node: ProseMirrorNode = {
+      type: "orderedList",
+      content: items.map((item) => ({ type: "listItem", content: listItemContent(item) })),
+    };
+    const start = typeof list.start === "number" ? list.start : Number(list.start);
+    if (Number.isFinite(start) && start !== 1) node.attrs = { start };
+    return node;
+  }
+  const allTasks = items.length > 0 && items.every((item) => item.task);
+  if (allTasks) {
     return {
-      indent: ul[1]!.length,
-      marker: "ul",
-      text: task ? task[2]! : rest,
-      task: Boolean(task),
-      checked: task ? task[1]!.toLowerCase() === "x" : false,
+      type: "taskList",
+      content: items.map((item) => ({
+        type: "taskItem",
+        attrs: { checked: Boolean(item.checked) },
+        content: listItemContent(item),
+      })),
     };
   }
-  const ol = OL_RE.exec(line);
-  if (ol) {
-    return { indent: ol[1]!.length, marker: "ol", text: ol[3]!, task: false, checked: false };
-  }
-  return null;
+  return {
+    type: "bulletList",
+    content: items.map((item) => ({ type: "listItem", content: listItemContent(item) })),
+  };
 }
 
-/** 從 lines[start] 起連續同層級的清單解析為 list 節點；回傳節點與下一行索引。 */
-function parseList(lines: string[], start: number): { node: ProseMirrorNode; next: number } {
-  const first = matchListItem(lines[start]!)!;
-  const baseIndent = first.indent;
-  const isTask = first.task;
-  const isOrdered = first.marker === "ol";
-  const items: ProseMirrorNode[] = [];
-  let i = start;
-
-  while (i < lines.length) {
-    const line = lines[i]!;
-    if (line.trim() === "") {
-      // 允許項目間單一空行；若下一非空行仍是同層清單則續，否則結束
-      let j = i + 1;
-      while (j < lines.length && lines[j]!.trim() === "") j++;
-      const nextItem = j < lines.length ? matchListItem(lines[j]!) : null;
-      if (nextItem && nextItem.indent === baseIndent && nextItem.marker === first.marker) {
-        i = j;
-        continue;
-      }
-      break;
-    }
-    const item = matchListItem(line);
-    if (!item || item.indent < baseIndent) break;
-    if (item.indent > baseIndent || item.marker !== first.marker) {
-      // 巢狀子清單：附加到最後一個 item
-      const nested = parseList(lines, i);
-      const last = items[items.length - 1];
-      if (last) (last.content ??= []).push(nested.node);
-      i = nested.next;
-      continue;
-    }
-    // 同層 item
-    const itemNode: ProseMirrorNode = isTask
-      ? { type: "taskItem", attrs: { checked: item.checked }, content: [paragraph(item.text)] }
-      : { type: "listItem", content: [paragraph(item.text)] };
-    items.push(itemNode);
-    i++;
-  }
-
-  const node: ProseMirrorNode = isTask
-    ? { type: "taskList", content: items }
-    : isOrdered
-      ? { type: "orderedList", content: items }
-      : { type: "bulletList", content: items };
-  return { node, next: i };
-}
-
-function buildTable(header: string[], rows: string[][]): ProseMirrorNode {
+function tableToNode(table: Tokens.Table): ProseMirrorNode {
   const headerRow: ProseMirrorNode = {
     type: "tableRow",
-    content: header.map((cell) => ({
-      type: "tableHeader",
-      content: [paragraph(cell)],
-    })),
+    content: table.header.map((cell) => ({ type: "tableHeader", content: [cellParagraph(cell)] })),
   };
-  const bodyRows: ProseMirrorNode[] = rows.map((cells) => ({
+  const bodyRows: ProseMirrorNode[] = table.rows.map((row) => ({
     type: "tableRow",
-    content: header.map((_, idx) => ({
-      type: "tableCell",
-      content: [paragraph(cells[idx] ?? "")],
-    })),
+    content: row.map((cell) => ({ type: "tableCell", content: [cellParagraph(cell)] })),
   }));
   return { type: "table", content: [headerRow, ...bodyRows] };
 }
 
-/** Markdown → ProseMirror doc（canonical）。 */
-export function markdownToDoc(markdown: string): ProseMirrorDoc {
-  const lines = markdown.replace(/\r\n?/g, "\n").split("\n");
-  const content: ProseMirrorNode[] = [];
-  let i = 0;
-
-  while (i < lines.length) {
-    const line = lines[i]!;
-
-    // 空行
-    if (line.trim() === "") {
-      i++;
-      continue;
-    }
-
-    // 圍欄程式碼區塊
-    const fence = FENCE_RE.exec(line);
-    if (fence) {
-      const marker = fence[2]![0]!; // ` 或 ~
-      const lang = fence[3] ?? "";
-      const codeLines: string[] = [];
-      i++;
-      while (i < lines.length) {
-        const closing = new RegExp(`^ {0,3}${marker === "`" ? "`{3,}" : "~{3,}"}\\s*$`);
-        if (closing.test(lines[i]!)) {
-          i++;
-          break;
-        }
-        codeLines.push(lines[i]!);
-        i++;
-      }
-      const code = codeLines.join("\n");
-      content.push({
-        type: "codeBlock",
-        attrs: { language: lang || null },
-        ...(code ? { content: [textNode(code)] } : {}),
-      });
-      continue;
-    }
-
-    // ATX 標題
-    const atx = ATX_RE.exec(line);
-    if (atx) {
-      const level = clampHeadingLevel(atx[1]!.length);
-      content.push({
-        type: "heading",
-        attrs: { level },
-        ...(atx[2] ? { content: parseInline(atx[2]!) } : {}),
-      });
-      i++;
-      continue;
-    }
-
-    // 水平線
-    if (HR_RE.test(line)) {
-      content.push({ type: "horizontalRule" });
-      i++;
-      continue;
-    }
-
-    // 單獨一行的圖片 → image block
-    const img = IMAGE_ONLY_RE.exec(line);
-    if (img) {
-      content.push({
-        type: "image",
-        attrs: {
-          src: img[2]!,
-          alt: img[1] || null,
-          title: img[3] ?? null,
-        },
-      });
-      i++;
-      continue;
-    }
-
-    // 表格（GFM）：本行有 pipe 且下一行為分隔列
-    if (line.includes("|") && i + 1 < lines.length && TABLE_SEP_RE.test(lines[i + 1]!)) {
-      const header = splitTableRow(line);
-      const rows: string[][] = [];
-      i += 2;
-      while (i < lines.length && lines[i]!.includes("|") && lines[i]!.trim() !== "") {
-        rows.push(splitTableRow(lines[i]!));
-        i++;
-      }
-      content.push(buildTable(header, rows));
-      continue;
-    }
-
-    // 引用（含 GitHub admonition → callout）
-    const bq = BLOCKQUOTE_RE.exec(line);
-    if (bq) {
-      const inner: string[] = [];
-      while (i < lines.length) {
-        const m = BLOCKQUOTE_RE.exec(lines[i]!);
-        if (!m) break;
-        inner.push(m[1]!);
-        i++;
-      }
-      const admonition = /^\s*\[!(\w+)\]\s*$/.exec(inner[0] ?? "");
-      const innerDoc = markdownToDoc(inner.slice(admonition ? 1 : 0).join("\n"));
-      const innerNodes = innerDoc.content ?? [];
-      if (admonition) {
-        const kind = admonition[1]!.toLowerCase();
-        content.push({ type: "callout", attrs: { kind }, content: innerNodes });
-      } else {
-        content.push({
-          type: "blockquote",
-          content: innerNodes.length > 0 ? innerNodes : [{ type: "paragraph" }],
-        });
-      }
-      continue;
-    }
-
-    // 清單
-    if (matchListItem(line)) {
-      const { node, next } = parseList(lines, i);
-      content.push(node);
-      i = next;
-      continue;
-    }
-
-    // 段落：收集連續非空、非特殊行（軟換行以空白接續）
-    const para: string[] = [line];
-    i++;
-    while (i < lines.length) {
-      const l = lines[i]!;
-      if (
-        l.trim() === "" ||
-        FENCE_RE.test(l) ||
-        ATX_RE.test(l) ||
-        HR_RE.test(l) ||
-        BLOCKQUOTE_RE.test(l) ||
-        matchListItem(l) ||
-        IMAGE_ONLY_RE.test(l) ||
-        (l.includes("|") && i + 1 < lines.length && TABLE_SEP_RE.test(lines[i + 1]!))
-      ) {
+/** 區塊 token 串 → 節點串。 */
+function blockTokensToNodes(tokens: Token[] | undefined): ProseMirrorNode[] {
+  const out: ProseMirrorNode[] = [];
+  for (const token of tokens ?? []) {
+    switch (token.type) {
+      case "space":
+      case "def":
+        break;
+      case "heading": {
+        const h = token as Tokens.Heading;
+        const content = inlineTokensToNodes(h.tokens, []);
+        const node: ProseMirrorNode = { type: "heading", attrs: { level: clampHeadingLevel(h.depth) } };
+        if (content.length > 0) node.content = content;
+        out.push(node);
         break;
       }
-      para.push(l);
-      i++;
+      case "paragraph":
+        out.push(paragraph((token as Tokens.Paragraph).tokens));
+        break;
+      case "text": {
+        // 清單項目（tight list）內文以 text token 承載行內內容 → 包成段落。
+        const t = token as Tokens.Text;
+        out.push(paragraph(t.tokens && t.tokens.length > 0 ? t.tokens : [{ type: "text", text: t.text } as Token]));
+        break;
+      }
+      case "blockquote": {
+        const children = blockTokensToNodes((token as Tokens.Blockquote).tokens);
+        out.push({ type: "blockquote", content: children.length > 0 ? children : [{ type: "paragraph" }] });
+        break;
+      }
+      case "code": {
+        const c = token as Tokens.Code;
+        const language = (c.lang ?? "").trim().split(/\s+/)[0] || null;
+        const node: ProseMirrorNode = { type: "codeBlock", attrs: { language } };
+        if (c.text.length > 0) node.content = [{ type: "text", text: c.text }];
+        out.push(node);
+        break;
+      }
+      case "list":
+        out.push(listToNode(token as Tokens.List));
+        break;
+      case "table":
+        out.push(tableToNode(token as Tokens.Table));
+        break;
+      case "hr":
+        out.push({ type: "horizontalRule" });
+        break;
+      case "html": {
+        const text = (token as Tokens.HTML).text.trim();
+        if (text) out.push({ type: "paragraph", content: [{ type: "text", text }] });
+        break;
+      }
+      default: {
+        const generic = token as { tokens?: Token[] };
+        if (generic.tokens && generic.tokens.length > 0) out.push(...blockTokensToNodes(generic.tokens));
+      }
     }
-    content.push(paragraph(para.join(" ")));
   }
+  return out;
+}
 
+/**
+ * Markdown 字串 → ProseMirror doc（canonical JSON）。
+ * 空輸入回傳空 doc（content: []），與 EMPTY_DOC 慣例一致。
+ */
+export function markdownToDoc(markdown: string): ProseMirrorDoc {
+  const tokens = marked.lexer(markdown, { gfm: true });
+  const content = blockTokensToNodes(tokens);
   return { type: "doc", content };
+}
+
+/** 純區塊節點串（供插入既有文件時使用，避免多包一層 doc）。 */
+export function markdownToBlockNodes(markdown: string): ProseMirrorNode[] {
+  return blockTokensToNodes(marked.lexer(markdown, { gfm: true }));
+}
+
+const MARKDOWN_BLOCK_SIGNALS: RegExp[] = [
+  /^#{1,6}\s+\S/m, // ATX 標題
+  /^(?:```|~~~)/m, // 圍籬程式碼
+  /^\s*>\s+\S/m, // 引用
+  /^\s*[-*+]\s+\S/m, // 無序清單／任務清單
+  /^\s*\d+[.)]\s+\S/m, // 有序清單
+  /^\s*\|?[ :]*-{3,}[-| :]*$/m, // 表格分隔列
+  /^\s*([-*_])(?:\s*\1){2,}\s*$/m, // 水平線
+];
+
+const MARKDOWN_INLINE_SIGNALS: RegExp[] = [
+  /\*\*[^*\n]+\*\*/, // 粗體
+  /__[^_\n]+__/, // 粗體（底線）
+  /`[^`\n]+`/, // 行內碼
+  /\[[^\]\n]+\]\([^)\n]+\)/, // 連結
+];
+
+/**
+ * 是否具備 Markdown 特徵（供貼上判斷）。
+ * 命中任一區塊特徵，或任一行內特徵即視為 Markdown。
+ * 呼叫端另行判斷「多行」條件（handlePaste 僅在多行時才轉換）。
+ */
+export function looksLikeMarkdown(text: string): boolean {
+  if (!text) return false;
+  return (
+    MARKDOWN_BLOCK_SIGNALS.some((re) => re.test(text)) ||
+    MARKDOWN_INLINE_SIGNALS.some((re) => re.test(text))
+  );
 }

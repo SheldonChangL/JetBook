@@ -600,5 +600,12 @@
     "themeDark": "深色",
     "themeSystem": "跟隨系統",
     "appearanceUpdated": "外觀偏好已更新"
+  },
+  "ai": {
+    "noResults": "知識庫中找不到相關資訊。",
+    "disabled": "AI 功能未啟用",
+    "unauthorized": "需登入",
+    "invalidRequest": "問題內容不正確",
+    "failed": "AI 回答產生失敗，請稍後再試"
   }
 }

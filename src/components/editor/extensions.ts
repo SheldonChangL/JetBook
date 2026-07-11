@@ -10,6 +10,7 @@ import { SlashCommand } from "./slash-menu/slash-command";
 import { createImageExtension } from "./image/image-extension";
 import { createAttachmentExtension } from "./attachment/attachment-extension";
 import { Callout } from "./callout/callout-extension";
+import { MarkdownPaste } from "./markdown-paste";
 
 /**
  * 程式碼區塊（D-04，F-EDIT-06）：以 CodeBlockLowlight 取代 StarterKit 內建 codeBlock，
@@ -49,6 +50,7 @@ const CodeBlock = CodeBlockLowlight.extend({
  * D-07 加入：圖片區塊（drop/貼上上傳 + 可編輯圖說）。
  * D-08 加入：附件區塊（slash「檔案」→ 上傳 → 卡片，編輯與閱讀一致）。
  * D-06 加入：callout 提示區塊（四語意 kind、左緣色條 + 淡底、kind 切換）。
+ * D-10 加入：Markdown 貼上（多行含 md 特徵 → 轉區塊插入，否則預設）。
  * 其餘進階區塊（mention…）於後續 issue 各自加入。
  *
  * R1 降險：一律採用現成 TipTap extension，不自研核心編輯行為。
@@ -70,6 +72,7 @@ export function buildExtensions(): Extensions {
     createImageExtension(), // D-07：圖片區塊與上傳整合
     createAttachmentExtension(), // D-08：附件卡片區塊
     Callout, // D-06：四語意提示區塊（kind 可切換）
+    MarkdownPaste, // D-10：Markdown 貼上轉區塊
     SlashCommand,
   ];
 }
