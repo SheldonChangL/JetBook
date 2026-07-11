@@ -8,10 +8,17 @@ import { db } from "@/lib/db";
 import { spaces } from "@/lib/db/schema";
 import { requireSession } from "@/lib/auth/current";
 import { can } from "@/lib/authz/permission";
-import { listActiveUsers, listSpaceMembers } from "@/lib/spaces/manage";
+import {
+  listActiveUsers,
+  listSpaceGroupMembers,
+  listSpaceGroups,
+  listSpaceMembers,
+} from "@/lib/spaces/manage";
+import { listGroups } from "@/lib/admin/groups";
 import { Badge } from "@/components/ui/badge";
 import { VisibilitySection } from "./visibility-section";
 import { MemberSection } from "./member-section";
+import { GroupSection } from "./group-section";
 import { ImportSection } from "./import-section";
 import { ArchiveSection } from "./archive-section";
 import { DeleteSection } from "./delete-section";
@@ -40,10 +47,14 @@ export default async function SpaceSettingsPage({
   if (!(await can(user, "space.manage", { type: "space", spaceId: space.id }))) notFound();
 
   const t = await getTranslations("spaceSettings");
-  const [members, candidates] = await Promise.all([
+  const [members, groupMembers, spaceGroups, candidates, allGroups] = await Promise.all([
     listSpaceMembers(space.id),
+    listSpaceGroupMembers(space.id),
+    listSpaceGroups(space.id),
     listActiveUsers(),
+    listGroups(),
   ]);
+  const groupCandidates = allGroups.map((g) => ({ id: g.id, name: g.name }));
 
   return (
     <main className="mx-auto flex max-w-[880px] flex-col gap-8 px-6 py-8">
@@ -77,8 +88,11 @@ export default async function SpaceSettingsPage({
         spaceId={space.id}
         currentUserId={user.id}
         members={members}
+        groupMembers={groupMembers}
         candidates={candidates}
       />
+
+      <GroupSection spaceId={space.id} groups={spaceGroups} candidates={groupCandidates} />
 
       <ImportSection spaceId={space.id} spaceSlug={space.slug} />
 

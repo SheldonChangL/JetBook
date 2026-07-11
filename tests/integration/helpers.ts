@@ -1,7 +1,11 @@
 import { randomUUID } from "node:crypto";
+import { and, eq } from "drizzle-orm";
 import { db } from "@/lib/db";
 import {
+  groupMembers,
+  groups,
   pages,
+  spaceMemberGroups,
   spaceMembers,
   spaces,
   users,
@@ -47,6 +51,36 @@ export async function seedSpace(
 
 export async function addMember(spaceId: string, userId: string, role: SpaceRole) {
   await db.insert(spaceMembers).values({ spaceId, userId, role });
+}
+
+export async function seedGroup(overrides: { name?: string } = {}) {
+  const suffix = randomUUID().slice(0, 8);
+  const [group] = await db
+    .insert(groups)
+    .values({ name: overrides.name ?? `測試群組 ${suffix}` })
+    .returning();
+  if (!group) throw new Error("seedGroup failed");
+  return group;
+}
+
+export async function addGroupMember(groupId: string, userId: string) {
+  await db.insert(groupMembers).values({ groupId, userId }).onConflictDoNothing();
+}
+
+export async function removeGroupMemberRow(groupId: string, userId: string) {
+  await db
+    .delete(groupMembers)
+    .where(and(eq(groupMembers.groupId, groupId), eq(groupMembers.userId, userId)));
+}
+
+export async function attachGroupToSpace(spaceId: string, groupId: string, role: SpaceRole) {
+  await db
+    .insert(spaceMemberGroups)
+    .values({ spaceId, groupId, role })
+    .onConflictDoUpdate({
+      target: [spaceMemberGroups.spaceId, spaceMemberGroups.groupId],
+      set: { role },
+    });
 }
 
 export async function seedPage(

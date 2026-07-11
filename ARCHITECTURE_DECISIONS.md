@@ -17,6 +17,7 @@
 | ADR-008 | 版本歷史存完整 JSON 快照，diff 顯示時計算 | 已接受 | — |
 | ADR-009 | LLM Provider 抽象層不暴露 sampling 參數 | 已接受 | C6 |
 | ADR-010 | v1 採直接編輯，無草稿/發布閘門 | 已接受 | C2 |
+| ADR-011 | Space 授權主體泛化：新增 `space_member_groups`，有效角色取最高 | 已接受 | C5 |
 
 ---
 
@@ -312,3 +313,26 @@ UI 移除發布按鈕、草稿側欄、「僅發布版」篩選；`pages` 表**�
 - **失**：半成品內容立即可見、立即進搜尋與 RAG——內部信任環境可接受；作者可用 space/頁面權限（private space、restricted page）作為事實上的草稿區。
 - **失**：若未來需要「審核後才發布」的治理流程（如對外文件），須以新 ADR 引入 `pages.status` ＋ `published_version_no` 並回補 UI——schema 屆時為加欄位的向前遷移，不需破壞性變更；v1.x 的「變更請求」（F-COLLAB Should，M4）是該方向的第一步。
 - **關聯**：離線編輯同屬 v1 Won't（C7）——連線中斷僅「提示＋編輯器記憶體保留＋自動重試儲存」，不承諾本機持久化。
+
+---
+
+## ADR-011：Space 授權主體泛化——群組掛載（`space_member_groups`），有效角色取最高
+
+- **狀態**：已接受
+- **日期**：2026-07-12
+- **對應審查編號**：C5
+
+### 背景
+
+授權主體原本僅有「直接成員」（`space_members`）與 org 角色／visibility 隱含角色。K-03 需要以「使用者群組」為授權主體：一個群組以某角色掛在某 space，群組全體成員即繼承該存取權，且「移出群組即失效」須即時（F-SEC-06）。`groups`／`group_members` 於 B-01 已建立（schema 一次補齊），缺的是「群組↔space」的掛載關係與 authz 解析的泛化。
+
+### 決策
+
+新增 `space_member_groups(space_id, group_id, role)` 掛載表（複合主鍵，`group_id` 建索引；對 `spaces`／`groups` 皆 `on delete cascade`）。授權解析改為：**org admin 全通 → 顯式角色（直接成員 ＋ 各掛載群組來源角色）取最高（`highestRole`）→ visibility 隱含角色 → 預設拒絕**。SQL 層過濾（`accessibleSpaceCondition`／`getAccessiblePageIds`／`getEditableSpaceIds`）一律以 `space_member_groups join group_members` 的 `exists` 子查詢併入群組成員；不做「先取回再過濾」，維持 N-04 出貨阻斷條件。
+
+### 取捨與後果
+
+- **得**：授權主體以 join 即時解析，移出群組或移除掛載後下一個請求立即失效（F-SEC-06），無需額外快取失效機制。
+- **得**：`can()`／`getAccessiblePageIds()` 仍為唯一入口，RAG 權限過濾同一條 SQL 路徑自動涵蓋群組，N-04 隔離不需另立邏輯。
+- **失**：有效角色解析從「單列成員查詢」變為 union 多來源後取最高，單 space 判定多一次小查詢——在內網規模下可忽略；熱點時可加成員↔space 的物化視圖，屬可後補最佳化。
+- **關聯**：巢狀群組（群組含群組）非 v1 範圍；如日後需要，於 `group_members` 之上加遞迴解析並以新 ADR 記錄。

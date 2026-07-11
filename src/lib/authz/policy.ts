@@ -37,6 +37,18 @@ export function roleAtLeast(role: SpaceRole | null, required: SpaceRole): boolea
   return ROLE_RANK[role] >= ROLE_RANK[required];
 }
 
+/**
+ * 取一組角色中權限最高者（K-03 主體泛化）：使用者對某 space 的有效角色＝
+ * 直接成員與各群組來源角色取最高。空集合回 null（無任何顯式角色）。
+ */
+export function highestRole(roles: readonly SpaceRole[]): SpaceRole | null {
+  let best: SpaceRole | null = null;
+  for (const role of roles) {
+    if (best === null || ROLE_RANK[role] > ROLE_RANK[best]) best = role;
+  }
+  return best;
+}
+
 /** 給定 space 角色是否可執行動作。 */
 export function actionAllowedForRole(action: Action, role: SpaceRole | null): boolean {
   return roleAtLeast(role, REQUIRED_ROLE[action]);

@@ -1,8 +1,21 @@
 import { describe, expect, it } from "vitest";
-import { actionAllowedForRole, roleAtLeast, type Action } from "./policy";
+import { actionAllowedForRole, highestRole, roleAtLeast, type Action } from "./policy";
 import type { SpaceRole } from "@/lib/db/schema";
 
 const ROLES: (SpaceRole | null)[] = [null, "viewer", "commenter", "editor", "admin"];
+
+describe("highestRole（有效角色取最高，K-03 主體泛化）", () => {
+  it("空集合回 null", () => {
+    expect(highestRole([])).toBeNull();
+  });
+  it("取權限最高者，與順序無關", () => {
+    expect(highestRole(["viewer", "editor"])).toBe("editor");
+    expect(highestRole(["editor", "viewer"])).toBe("editor");
+    expect(highestRole(["viewer", "admin", "commenter"])).toBe("admin");
+    expect(highestRole(["commenter"])).toBe("commenter");
+    expect(highestRole(["viewer", "viewer"])).toBe("viewer");
+  });
+});
 
 describe("roleAtLeast", () => {
   it("null 一律不足", () => {
