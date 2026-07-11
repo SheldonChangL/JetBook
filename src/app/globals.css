@@ -324,6 +324,16 @@ html.dark {
     text-decoration: underline;
   }
 
+  /* 錨點目標高亮（G-05）：分享連結載入含 hash 時短暫閃現，2s 後由 JS 移除 class 淡出。 */
+  .anchor-target-highlight {
+    background-color: var(--warning-tint);
+    box-shadow: 0 0 0 4px var(--warning-tint);
+    border-radius: var(--radius-xs);
+    transition:
+      background-color 0.4s ease,
+      box-shadow 0.4s ease;
+  }
+
   /* 程式碼區塊（D-04）：編輯與閱讀共用 .jb-code 結構（工具列 + 行號 + 高亮）。 */
   .prose-editor .jb-code {
     margin: 1rem 0;
