@@ -23,6 +23,8 @@ export const JOBS = {
   cleanupSessions: "cleanup-sessions",
   /** 回收桶逾期清除（C-08，cron） */
   purgeTrash: "purge-trash",
+  /** 孤兒附件回收（M-03，cron）：回收未被引用且逾寬限期的附件（storage 檔＋metadata 列） */
+  gcOrphanAttachments: "gc-orphan-attachments",
   /** Zip 批次匯入（J-02）：{ storageKey, fileName, spaceId, parentId, userId } */
   importZip: "import-zip",
   /** 整個 Space Markdown 匯出（J-03）：{ spaceId, spaceName, userId } */
