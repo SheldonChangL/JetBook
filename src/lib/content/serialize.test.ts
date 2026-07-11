@@ -60,6 +60,25 @@ describe("docToMarkdown 圖片節點（D-07）", () => {
   });
 });
 
+describe("Embed 節點序列化（D-14）", () => {
+  const withEmbed: ProseMirrorDoc = {
+    type: "doc",
+    content: [
+      { type: "embed", attrs: { url: "https://www.youtube.com/watch?v=abc" } },
+      { type: "embed", attrs: { url: "" } },
+    ],
+  };
+  it("embed 節點序列化為 Markdown 連結（URL 進匯出/RAG）", () => {
+    const md = docToMarkdown(withEmbed);
+    expect(md).toContain(
+      "[https://www.youtube.com/watch?v=abc](https://www.youtube.com/watch?v=abc)",
+    );
+  });
+  it("embed URL 併入純文字供全文索引", () => {
+    expect(docToPlainText(withEmbed)).toContain("https://www.youtube.com/watch?v=abc");
+  });
+});
+
 describe("docToMarkdown 表格節點（D-05）", () => {
   const tableDoc: ProseMirrorDoc = {
     type: "doc",

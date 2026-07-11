@@ -6,6 +6,7 @@ import { getTranslations } from "next-intl/server";
 import { History, Pencil } from "lucide-react";
 import { db } from "@/lib/db";
 import { spaces } from "@/lib/db/schema";
+import { env } from "@/lib/env";
 import { getCurrentSession, requireSession } from "@/lib/auth/current";
 import { can } from "@/lib/authz/permission";
 import { denyPageRead } from "@/lib/authz/deny";
@@ -103,7 +104,10 @@ export default async function PageReadPage({
 
       <p className="mb-6 text-caption text-fg-tertiary">{t("lastUpdated", { time: updated })}</p>
 
-      <RenderContent doc={(page.content as ProseMirrorDoc | null) ?? null} />
+      <RenderContent
+        doc={(page.content as ProseMirrorDoc | null) ?? null}
+        embedAllowedDomains={env.EMBED_ALLOWED_DOMAINS}
+      />
       <AnchorHighlight />
 
       <CommentsPanel

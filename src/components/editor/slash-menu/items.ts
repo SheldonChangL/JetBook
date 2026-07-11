@@ -12,6 +12,7 @@ import {
   ListCollapse,
   ListOrdered,
   ListTodo,
+  MonitorPlay,
   Minus,
   OctagonAlert,
   Paperclip,
@@ -200,6 +201,15 @@ export const SLASH_MENU_ITEMS: readonly SlashMenuItem[] = [
     keywords: ["圖表", "流程圖", "圖", "mermaid", "diagram", "flowchart", "graph", "chart", "uml"],
     command: ({ editor, range }) =>
       editor.chain().focus().deleteRange(range).setMermaid().run(),
+  },
+  {
+    // D-14（F-EDIT-15）：Embed 嵌入區塊。插入空區塊，於 NodeView 貼上 URL；白名單內 iframe、名單外連結卡片。
+    id: "embed",
+    group: "advanced",
+    icon: MonitorPlay,
+    keywords: ["嵌入", "內嵌", "影片", "iframe", "embed", "youtube", "figma", "video"],
+    command: ({ editor, range }) =>
+      editor.chain().focus().deleteRange(range).setEmbed().run(),
   },
   {
     id: "attachment",

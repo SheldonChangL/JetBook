@@ -37,6 +37,8 @@ export interface PageEditorProps {
   initialVersionNo: number;
   /** AI 是否已設定（isLlmConfigured）；決定是否掛載選取文字的 AI 寫作輔助（I-08）。 */
   aiEnabled: boolean;
+  /** Embed 白名單網域（env EMBED_ALLOWED_DOMAINS，已正規化）；供嵌入區塊即時判斷 iframe/連結卡片（D-14）。 */
+  embedAllowedDomains: string[];
 }
 
 /**
@@ -52,6 +54,7 @@ export function PageEditor({
   initialContent,
   initialVersionNo,
   aiEnabled,
+  embedAllowedDomains,
 }: PageEditorProps) {
   const t = useTranslations("editor");
   const router = useRouter();
@@ -208,6 +211,12 @@ export function PageEditor({
     storage.onError = showAttachmentError;
     storage.openPicker = openAttachmentPicker;
   }, [editor, spaceId, pageId, showAttachmentError, openAttachmentPicker]);
+
+  // D-14：把 Embed 白名單填入 embed extension 的 storage，供 NodeView 於渲染當下判斷 iframe/連結卡片。
+  useEffect(() => {
+    if (!editor) return;
+    editor.storage.embed.allowedDomains = embedAllowedDomains;
+  }, [editor, embedAllowedDomains]);
 
   const doSave = useCallback(async () => {
     if (!editor || lockLostRef.current) return;

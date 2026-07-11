@@ -5,11 +5,13 @@ import { HeadingAnchor } from "@/components/content/heading-anchor";
 import { codeLanguageLabel } from "@/lib/content/lowlight";
 import { highlightToReact } from "@/lib/content/highlight-to-react";
 import { normalizeCalloutKind } from "@/lib/content/callout";
+import { isEmbedUrlAllowed, normalizeEmbedUrl, parseHttpUrl } from "@/lib/content/embed";
 import { CALLOUT_ICONS } from "@/components/content/callout-icons";
 import { CodeBlockReader } from "./code-block-reader";
 import { ContentImage } from "./content-image";
 import { ContentAttachment } from "./content-attachment";
 import { ContentTabs } from "./content-tabs";
+import { ContentEmbed } from "./content-embed";
 import { MermaidDiagram } from "./mermaid-diagram";
 
 /**
@@ -20,6 +22,16 @@ import { MermaidDiagram } from "./mermaid-diagram";
  */
 
 type Slugger = (text: string) => string;
+
+/**
+ * 渲染上下文：slug 產生器 + Embed 白名單（D-14）。
+ * embed 的「iframe/連結卡片」判斷須於渲染當下依白名單推導，故白名單須隨遞迴傳遞
+ * （含巢狀於 details/tabs/stepper 內的 embed），避免巢狀嵌入誤退化為卡片。
+ */
+interface RenderCtx {
+  slug: Slugger;
+  embedAllowedDomains: readonly string[];
+}
 
 /**
  * 由首列儲存格的 colwidth 屬性推導 <colgroup>（D-05）：
@@ -86,8 +98,8 @@ function renderMarks(text: string, marks: ProseMirrorNode["marks"], key: number)
   return <Fragment key={key}>{node}</Fragment>;
 }
 
-function renderChildren(nodes: ProseMirrorNode[] | undefined, slug: Slugger): ReactNode {
-  return (nodes ?? []).map((node, i) => renderNode(node, i, slug));
+function renderChildren(nodes: ProseMirrorNode[] | undefined, ctx: RenderCtx): ReactNode {
+  return (nodes ?? []).map((node, i) => renderNode(node, i, ctx));
 }
 
 function renderInline(nodes: ProseMirrorNode[] | undefined): ReactNode {
@@ -98,14 +110,14 @@ function renderInline(nodes: ProseMirrorNode[] | undefined): ReactNode {
   });
 }
 
-function renderNode(node: ProseMirrorNode, key: number, slug: Slugger): ReactNode {
+function renderNode(node: ProseMirrorNode, key: number, ctx: RenderCtx): ReactNode {
   switch (node.type) {
     case "paragraph":
       return <p key={key}>{renderInline(node.content)}</p>;
     case "heading": {
       const level = Math.min(Math.max(Number(node.attrs?.level ?? 1), 1), 3);
       const Tag = (`h${level}` as "h1" | "h2" | "h3");
-      const id = slug(headingNodeText(node));
+      const id = ctx.slug(headingNodeText(node));
       return (
         <Tag key={key} id={id} className="group relative scroll-mt-20">
           {renderInline(node.content)}
@@ -114,15 +126,15 @@ function renderNode(node: ProseMirrorNode, key: number, slug: Slugger): ReactNod
       );
     }
     case "bulletList":
-      return <ul key={key}>{renderChildren(node.content, slug)}</ul>;
+      return <ul key={key}>{renderChildren(node.content, ctx)}</ul>;
     case "orderedList":
-      return <ol key={key}>{renderChildren(node.content, slug)}</ol>;
+      return <ol key={key}>{renderChildren(node.content, ctx)}</ol>;
     case "listItem":
-      return <li key={key}>{renderChildren(node.content, slug)}</li>;
+      return <li key={key}>{renderChildren(node.content, ctx)}</li>;
     case "taskList":
       return (
         <ul key={key} data-type="taskList">
-          {renderChildren(node.content, slug)}
+          {renderChildren(node.content, ctx)}
         </ul>
       );
     case "taskItem":
@@ -131,11 +143,11 @@ function renderNode(node: ProseMirrorNode, key: number, slug: Slugger): ReactNod
           <label>
             <input type="checkbox" defaultChecked={Boolean(node.attrs?.checked)} disabled />
           </label>
-          <div>{renderChildren(node.content, slug)}</div>
+          <div>{renderChildren(node.content, ctx)}</div>
         </li>
       );
     case "blockquote":
-      return <blockquote key={key}>{renderChildren(node.content, slug)}</blockquote>;
+      return <blockquote key={key}>{renderChildren(node.content, ctx)}</blockquote>;
     case "callout": {
       // D-06：與編輯端共用 .jb-callout 樣式（左緣色條 + 淡底，依 data-kind 取語意 token）。
       const kind = normalizeCalloutKind(node.attrs?.kind);
@@ -145,7 +157,7 @@ function renderNode(node: ProseMirrorNode, key: number, slug: Slugger): ReactNod
           <span className="jb-callout__icon" aria-hidden>
             <Icon />
           </span>
-          <div className="jb-callout__body">{renderChildren(node.content, slug)}</div>
+          <div className="jb-callout__body">{renderChildren(node.content, ctx)}</div>
         </div>
       );
     }
@@ -175,22 +187,22 @@ function renderNode(node: ProseMirrorNode, key: number, slug: Slugger): ReactNod
         <div key={key} className="tableWrapper overflow-x-auto">
           <table>
             {renderColgroup(node, 0)}
-            <tbody>{renderChildren(node.content, slug)}</tbody>
+            <tbody>{renderChildren(node.content, ctx)}</tbody>
           </table>
         </div>
       );
     case "tableRow":
-      return <tr key={key}>{renderChildren(node.content, slug)}</tr>;
+      return <tr key={key}>{renderChildren(node.content, ctx)}</tr>;
     case "tableHeader":
       return (
         <th key={key} {...cellSpanProps(node)}>
-          {renderChildren(node.content, slug)}
+          {renderChildren(node.content, ctx)}
         </th>
       );
     case "tableCell":
       return (
         <td key={key} {...cellSpanProps(node)}>
-          {renderChildren(node.content, slug)}
+          {renderChildren(node.content, ctx)}
         </td>
       );
     case "attachment": {
@@ -219,6 +231,17 @@ function renderNode(node: ProseMirrorNode, key: number, slug: Slugger): ReactNod
         </div>
       );
     }
+    case "embed": {
+      // D-14：閱讀端依白名單決定 iframe 嵌入或退化連結卡片（判斷於此當下推導，不信任文件內舊狀態）。
+      const url = normalizeEmbedUrl(node.attrs?.url);
+      if (!url) return <Fragment key={key} />;
+      // 縱深防禦：先在伺服端過濾為合法 http(s) URL，才傳入 client 元件——非法 scheme
+      // （javascript:/data: 等）於閱讀端一律不輸出，且不會被序列化進 client props/flight。
+      const parsed = parseHttpUrl(url);
+      if (!parsed) return <Fragment key={key} />;
+      const allowed = isEmbedUrlAllowed(parsed.href, ctx.embedAllowedDomains);
+      return <ContentEmbed key={key} url={parsed.href} allowed={allowed} />;
+    }
     case "horizontalRule":
       return <hr key={key} />;
     case "tabs": {
@@ -227,7 +250,7 @@ function renderNode(node: ProseMirrorNode, key: number, slug: Slugger): ReactNod
         .filter((c) => c.type === "tabItem")
         .map((item) => ({
           label: typeof item.attrs?.label === "string" ? item.attrs.label : "",
-          content: renderChildren(item.content, slug),
+          content: renderChildren(item.content, ctx),
         }));
       if (!tabs.length) return <Fragment key={key} />;
       return <ContentTabs key={key} tabs={tabs} />;
@@ -239,7 +262,7 @@ function renderNode(node: ProseMirrorNode, key: number, slug: Slugger): ReactNod
       return (
         <details key={key} className="jb-details" open={open}>
           <summary className="jb-details__summary-reader">{summary}</summary>
-          <div className="jb-details__body">{renderChildren(node.content, slug)}</div>
+          <div className="jb-details__body">{renderChildren(node.content, ctx)}</div>
         </details>
       );
     }
@@ -251,19 +274,26 @@ function renderNode(node: ProseMirrorNode, key: number, slug: Slugger): ReactNod
         <div key={key} className="jb-stepper">
           {steps.map((step, i) => (
             <div key={i} className="jb-step">
-              <div className="jb-step__body">{renderChildren(step.content, slug)}</div>
+              <div className="jb-step__body">{renderChildren(step.content, ctx)}</div>
             </div>
           ))}
         </div>
       );
     }
     default:
-      return <Fragment key={key}>{renderChildren(node.content, slug)}</Fragment>;
+      return <Fragment key={key}>{renderChildren(node.content, ctx)}</Fragment>;
   }
 }
 
-export function RenderContent({ doc }: { doc: ProseMirrorDoc | null }) {
+export function RenderContent({
+  doc,
+  embedAllowedDomains = [],
+}: {
+  doc: ProseMirrorDoc | null;
+  /** Embed 白名單網域（env EMBED_ALLOWED_DOMAINS）；未提供＝空白名單，嵌入一律退化為連結卡片（D-14）。 */
+  embedAllowedDomains?: readonly string[];
+}) {
   if (!doc?.content?.length) return null;
-  const slug = createHeadingSlugger();
-  return <div className="prose-editor max-w-none">{renderChildren(doc.content, slug)}</div>;
+  const ctx: RenderCtx = { slug: createHeadingSlugger(), embedAllowedDomains };
+  return <div className="prose-editor max-w-none">{renderChildren(doc.content, ctx)}</div>;
 }
