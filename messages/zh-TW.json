@@ -237,6 +237,16 @@
     "backToReading": "返回閱讀",
     "steal": "強制取得編輯權",
     "stealConfirm": "搶鎖會中斷對方的編輯，確定要繼續嗎？",
+    "image": {
+      "uploading": "圖片上傳中…",
+      "uploadError": "圖片上傳失敗，請再試一次",
+      "errorTooLarge": "圖片超過大小上限",
+      "errorType": "不支援的圖片格式",
+      "errorForbidden": "沒有上傳圖片的權限",
+      "retry": "重試",
+      "captionPlaceholder": "新增圖說（同時作為替代文字）…",
+      "captionLabel": "圖片說明"
+    },
     "slash": {
       "label": "區塊選單",
       "empty": "沒有符合的區塊",
@@ -262,7 +272,12 @@
   "reading": {
     "edit": "編輯",
     "lastUpdated": "最後更新：{time}",
-    "history": "版本歷史"
+    "history": "版本歷史",
+    "image": {
+      "zoom": "點擊放大圖片",
+      "close": "關閉",
+      "preview": "圖片預覽"
+    }
   },
   "tree": {
     "label": "頁面",
