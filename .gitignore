@@ -4,6 +4,9 @@ node_modules/
 data/
 dist/
 coverage/
+# Playwright E2E 產物（報告／失敗截圖／trace，不入 repo）
+test-results/
+playwright-report/
 *.log
 .env
 .env.local
