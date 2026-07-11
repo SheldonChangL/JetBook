@@ -17,8 +17,10 @@ import { usePathname, useRouter } from "next/navigation";
 import { useTranslations } from "next-intl";
 import {
   ChevronRight,
+  Copy,
   Ellipsis,
   FileText,
+  FolderInput,
   GripVertical,
   Pencil,
   Plus,
@@ -27,14 +29,18 @@ import {
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import {
+  copyPageToSpace,
   countDescendants,
   createPage,
   deletePage,
   importMarkdownPage,
+  listMoveTargetSpaces,
   movePage,
+  movePageToSpace,
   renamePage,
 } from "@/actions/page";
 import { Button } from "@/components/ui/button";
+import { Combobox } from "@/components/ui/combobox";
 import { EmptyState } from "@/components/ui/empty-state";
 import { IconButton } from "@/components/ui/icon-button";
 import { Input } from "@/components/ui/input";
@@ -399,6 +405,79 @@ export function PageTree({ spaceId, spaceSlug, nodes, canEdit }: PageTreeProps) 
     });
   }
 
+  /** 以客端樹資料算出某節點子樹（含自身）的 slug 集合（判斷目前頁是否隨操作離開本 space）。 */
+  function subtreeSlugsOf(rootId: string): Set<string> {
+    const slugs = new Set<string>();
+    const collect = (id: string) => {
+      const n = byId.get(id);
+      if (!n) return;
+      slugs.add(n.slug);
+      for (const c of childrenOf.get(id) ?? []) collect(c.id);
+    };
+    collect(rootId);
+    return slugs;
+  }
+
+  // --- 跨 Space 移動／複製（C-10）：⋯選單觸發，Combobox 選目標空間 ---
+  const [crossTarget, setCrossTarget] = useState<{ node: PageTreeNode; mode: "move" | "copy" } | null>(
+    null,
+  );
+  const [spaceOptions, setSpaceOptions] = useState<
+    { id: string; slug: string; name: string }[] | null
+  >(null);
+  const [selectedSpaceId, setSelectedSpaceId] = useState<string | null>(null);
+
+  function openCrossSpace(node: PageTreeNode, mode: "move" | "copy") {
+    setCrossTarget({ node, mode });
+    setSelectedSpaceId(null);
+    setSpaceOptions(null);
+    startTransition(async () => {
+      try {
+        setSpaceOptions(await listMoveTargetSpaces(spaceId));
+      } catch {
+        setSpaceOptions([]);
+      }
+    });
+  }
+
+  function handleCrossSpace() {
+    const target = crossTarget;
+    const destId = selectedSpaceId;
+    if (!target || !destId) return;
+    const destName = spaceOptions?.find((s) => s.id === destId)?.name ?? "";
+    startTransition(async () => {
+      try {
+        if (target.mode === "move") {
+          // 搬移前先以客端樹資料判斷目前頁是否隨子樹離開本 space（移動後本 space 樹已無該頁）。
+          const subtreeSlugs = subtreeSlugsOf(target.node.id);
+          const { rootSlug, targetSpaceSlug } = await movePageToSpace({
+            pageId: target.node.id,
+            targetSpaceId: destId,
+          });
+          setCrossTarget(null);
+          toast({ variant: "success", title: t("moveSuccess", { space: destName }) });
+          if (currentSlug && subtreeSlugs.has(currentSlug)) {
+            // 目前頁已移到新 space：導向搬移後的子樹根頁（子頁新 slug 不必然可知，導根頁最穩妥）。
+            const suffix = decodeURIComponent(pathname).endsWith("/edit") ? "/edit" : "";
+            router.push(`/s/${targetSpaceSlug}/${rootSlug}${suffix}`);
+          } else {
+            router.refresh();
+          }
+        } else {
+          const { rootSlug, targetSpaceSlug } = await copyPageToSpace({
+            pageId: target.node.id,
+            targetSpaceId: destId,
+          });
+          setCrossTarget(null);
+          toast({ variant: "success", title: t("copySuccess", { space: destName }) });
+          router.push(`/s/${targetSpaceSlug}/${rootSlug}`);
+        }
+      } catch {
+        toast({ variant: "error", title: t("actionError") });
+      }
+    });
+  }
+
   return (
     <div className="flex flex-col py-2">
       <div className="flex h-8 items-center justify-between pl-3 pr-2">
@@ -576,6 +655,18 @@ export function PageTree({ spaceId, spaceSlug, nodes, canEdit }: PageTreeProps) 
                             </MenuItem>
                           </PopoverClose>
                           <PopoverClose asChild>
+                            <MenuItem onClick={() => openCrossSpace(node, "move")}>
+                              <FolderInput aria-hidden className="size-4" />
+                              {t("moveToSpace")}
+                            </MenuItem>
+                          </PopoverClose>
+                          <PopoverClose asChild>
+                            <MenuItem onClick={() => openCrossSpace(node, "copy")}>
+                              <Copy aria-hidden className="size-4" />
+                              {t("copyToSpace")}
+                            </MenuItem>
+                          </PopoverClose>
+                          <PopoverClose asChild>
                             <MenuItem danger onClick={() => openDelete(node)}>
                               <Trash2 aria-hidden className="size-4" />
                               {t("delete")}
@@ -642,6 +733,55 @@ export function PageTree({ spaceId, spaceSlug, nodes, canEdit }: PageTreeProps) 
             <Button variant="danger" loading={pending} onClick={handleDelete}>
               {t("confirmDelete")}
             </Button>
+          </div>
+        </ModalContent>
+      </Modal>
+
+      {/* 跨 Space 移動／複製 modal（Combobox 選目標空間） */}
+      <Modal open={crossTarget !== null} onOpenChange={(open) => !open && setCrossTarget(null)}>
+        <ModalContent
+          size="sm"
+          title={crossTarget?.mode === "copy" ? t("copyTitle") : t("moveTitle")}
+          closeLabel={t("cancel")}
+        >
+          <div className="flex flex-col gap-4">
+            <p className="text-body-ui text-fg-secondary">
+              {crossTarget?.mode === "copy"
+                ? t("copyDesc", { title: crossTarget?.node.title ?? "" })
+                : t("moveDesc", { title: crossTarget?.node.title ?? "" })}
+            </p>
+            {spaceOptions !== null && spaceOptions.length === 0 ? (
+              <p className="text-body-ui text-fg-tertiary">{t("noTargetSpaces")}</p>
+            ) : (
+              <div className="flex flex-col gap-1.5">
+                <span className="text-caption font-medium text-fg-secondary">
+                  {t("targetSpaceLabel")}
+                </span>
+                <Combobox
+                  options={(spaceOptions ?? []).map((s) => ({ value: s.id, label: s.name }))}
+                  value={selectedSpaceId}
+                  onValueChange={setSelectedSpaceId}
+                  placeholder={spaceOptions === null ? t("targetSpaceLoading") : t("targetSpacePlaceholder")}
+                  searchPlaceholder={t("targetSpaceSearch")}
+                  emptyText={t("targetSpaceEmpty")}
+                  disabled={spaceOptions === null || spaceOptions.length === 0}
+                />
+              </div>
+            )}
+            <div className="flex justify-end gap-2">
+              <ModalClose asChild>
+                <Button type="button" variant="secondary">
+                  {t("cancel")}
+                </Button>
+              </ModalClose>
+              <Button
+                loading={pending}
+                disabled={!selectedSpaceId}
+                onClick={handleCrossSpace}
+              >
+                {crossTarget?.mode === "copy" ? t("copyConfirm") : t("moveConfirm")}
+              </Button>
+            </div>
           </div>
         </ModalContent>
       </Modal>
