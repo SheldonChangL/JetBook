@@ -463,6 +463,10 @@
           "label": "步驟",
           "desc": "編號的操作步驟"
         },
+        "mermaid": {
+          "label": "Mermaid 圖表",
+          "desc": "以 Mermaid 語法繪製流程圖"
+        },
         "attachment": {
           "label": "檔案",
           "desc": "上傳並插入附件卡片"
@@ -491,6 +495,13 @@
     "stepper": {
       "addStep": "新增步驟",
       "removeStep": "刪除此步驟"
+    },
+    "mermaid": {
+      "sourceLabel": "Mermaid 原始碼",
+      "sourcePlaceholder": "輸入 Mermaid 語法（例：graph TD; A-->B）…",
+      "diagramLabel": "Mermaid 圖表",
+      "rendering": "圖表渲染中…",
+      "errorTitle": "圖表語法錯誤"
     },
     "table": {
       "addColumnBefore": "在左方插入欄",

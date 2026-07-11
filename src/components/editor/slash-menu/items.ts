@@ -19,6 +19,7 @@ import {
   Table,
   TriangleAlert,
   Type,
+  Workflow,
   type LucideIcon,
 } from "lucide-react";
 import type { CalloutKind } from "@/lib/content/callout";
@@ -190,6 +191,15 @@ export const SLASH_MENU_ITEMS: readonly SlashMenuItem[] = [
     keywords: ["步驟", "步驟區塊", "流程", "教學", "操作", "stepper", "step", "steps", "guide"],
     command: ({ editor, range }) =>
       editor.chain().focus().deleteRange(range).setStepper().run(),
+  },
+  {
+    // D-13（F-EDIT-14）：Mermaid 圖表區塊。插入帶預設範例，於 NodeView 即時預覽。
+    id: "mermaid",
+    group: "advanced",
+    icon: Workflow,
+    keywords: ["圖表", "流程圖", "圖", "mermaid", "diagram", "flowchart", "graph", "chart", "uml"],
+    command: ({ editor, range }) =>
+      editor.chain().focus().deleteRange(range).setMermaid().run(),
   },
   {
     id: "attachment",

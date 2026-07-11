@@ -103,7 +103,15 @@ describe("filterSlashMenuItems（F-EDIT-02 中英文關鍵字過濾）", () => {
     }
   });
 
-  it("涵蓋所有已實作區塊（D-01/D-03/D-04/D-05/D-06/D-08/D-12 現有節點）且 group 合法", () => {
+  it("Mermaid：「圖表」/「流程圖」/ mermaid / diagram 皆命中（D-13）", () => {
+    for (const q of ["圖表", "流程圖", "mermaid", "diagram", "flowchart"]) {
+      expect(filterSlashMenuItems(SLASH_MENU_ITEMS, q).map((i) => i.id)).toContain(
+        "mermaid",
+      );
+    }
+  });
+
+  it("涵蓋所有已實作區塊（D-01/D-03/D-04/D-05/D-06/D-08/D-12/D-13 現有節點）且 group 合法", () => {
     const ids = SLASH_MENU_ITEMS.map((i) => i.id);
     expect(ids).toEqual([
       "text",
@@ -124,6 +132,7 @@ describe("filterSlashMenuItems（F-EDIT-02 中英文關鍵字過濾）", () => {
       "tabs",
       "details",
       "stepper",
+      "mermaid",
       "attachment",
     ]);
     for (const item of SLASH_MENU_ITEMS) {
