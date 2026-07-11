@@ -338,11 +338,34 @@ html.dark {
     text-underline-offset: 2px;
     cursor: pointer;
   }
-  /* 目標不可讀或已刪除（未解析）：不連結、去色，避免看似有效連結。 */
+  /* 目標不可讀或已清除（未解析）：不連結、去色，避免看似有效連結。 */
   .prose-editor .jb-page-link--unresolved {
     color: var(--fg-tertiary);
     text-decoration: line-through;
     cursor: default;
+  }
+  /* C-13 死鏈 chip：目標頁已刪除（回收桶／清除中）。灰底小標籤＋刪除線；
+     具還原權限者渲染為 <a>（可點擊直達回收桶），無權限者為 <span>（僅提示）。 */
+  .prose-editor .jb-page-link--deleted {
+    display: inline-flex;
+    align-items: baseline;
+    padding: 0 6px;
+    border-radius: var(--radius-sm);
+    background: var(--bg-hover);
+    border: 1px solid var(--border-default);
+    color: var(--fg-tertiary);
+    text-decoration: line-through;
+    text-decoration-color: var(--fg-tertiary);
+    font-size: 0.9375em;
+    white-space: nowrap;
+    cursor: default;
+  }
+  .prose-editor a.jb-page-link--deleted {
+    cursor: pointer;
+  }
+  .prose-editor a.jb-page-link--deleted:hover {
+    border-color: var(--border-strong);
+    color: var(--fg-secondary);
   }
 
   /* Callout 提示區塊（D-06，F-EDIT-08）：四語意色，左緣 3px 色條 + 淡底（token）。
