@@ -11,6 +11,7 @@ import { assertCan, assertOrgAdmin } from "@/lib/authz/permission";
 import {
   restoreSpace as restoreSpaceRow,
   setSpaceArchived,
+  setSpaceGroupRole,
   setSpaceMemberRole,
   softDeleteSpace,
 } from "@/lib/spaces/manage";
@@ -117,6 +118,35 @@ export async function setSpaceMember(input: z.infer<typeof memberSchema>) {
     targetType: "space",
     targetId: data.spaceId,
     metadata: { memberId: data.userId, role: data.role },
+    ip: ipFromHeaders(await headers()),
+  });
+  revalidatePath("/spaces");
+  revalidatePath("/s/[spaceSlug]", "layout");
+}
+
+const groupSchema = z.object({
+  spaceId: z.uuid(),
+  groupId: z.uuid(),
+  role: z.enum(["admin", "editor", "commenter", "viewer"]).nullable(),
+});
+
+/**
+ * 掛載/變更/移除群組於某 space（K-03 主體泛化）。role=null 移除掛載。
+ * space admin（space.manage）可執行；群組全體成員即以該角色繼承存取權。
+ */
+export async function setSpaceGroup(input: z.infer<typeof groupSchema>) {
+  const { user } = await requireSession();
+  const data = groupSchema.parse(input);
+  await assertCan(user, "space.manage", { type: "space", spaceId: data.spaceId });
+
+  await setSpaceGroupRole(data.spaceId, data.groupId, data.role);
+
+  await writeAudit({
+    actorId: user.id,
+    action: "space.group_set",
+    targetType: "space",
+    targetId: data.spaceId,
+    metadata: { groupId: data.groupId, role: data.role },
     ip: ipFromHeaders(await headers()),
   });
   revalidatePath("/spaces");

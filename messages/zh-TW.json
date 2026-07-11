@@ -209,6 +209,7 @@
   "admin": {
     "title": "管理後台",
     "navUsers": "使用者",
+    "navGroups": "群組",
     "navSystem": "系統狀態",
     "navSpaces": "已刪除空間",
     "navAi": "AI 設定",
@@ -556,6 +557,10 @@
           "label": "Mermaid 圖表",
           "desc": "以 Mermaid 語法繪製流程圖"
         },
+        "embed": {
+          "label": "嵌入內容",
+          "desc": "貼上 URL 嵌入影片或設計稿"
+        },
         "attachment": {
           "label": "檔案",
           "desc": "上傳並插入附件卡片"
@@ -591,6 +596,13 @@
       "diagramLabel": "Mermaid 圖表",
       "rendering": "圖表渲染中…",
       "errorTitle": "圖表語法錯誤"
+    },
+    "embed": {
+      "urlLabel": "嵌入網址",
+      "urlPlaceholder": "貼上網址（例：https://www.youtube.com/watch?v=…）",
+      "emptyHint": "貼上網址即可嵌入；白名單外的網址會顯示為連結卡片。",
+      "statusEmbedded": "已嵌入",
+      "statusFallbackCard": "白名單外，顯示為連結卡片"
     },
     "table": {
       "addColumnBefore": "在左方插入欄",
@@ -643,6 +655,11 @@
     "downloadMarkdown": "下載 .md",
     "markdownCopied": "已複製 Markdown 到剪貼簿",
     "markdownCopyFailed": "複製 Markdown 失敗，請稍後再試",
+    "deadLink": {
+      "label": "已刪除頁面",
+      "tooltip": "此連結的目標頁面已刪除（移至回收桶）",
+      "restore": "此連結的目標頁面已刪除，點擊前往回收桶還原"
+    },
     "image": {
       "zoom": "點擊放大圖片",
       "close": "關閉",
@@ -707,7 +724,23 @@
     "importSuccess": "已匯入 Markdown 頁面",
     "importError": "匯入失敗，請確認檔案格式後再試",
     "importTooLarge": "檔案過大，無法匯入（上限 2 MB）",
-    "importEmpty": "檔案是空的，無內容可匯入"
+    "importEmpty": "檔案是空的，無內容可匯入",
+    "moveToSpace": "移動到其他空間…",
+    "copyToSpace": "複製到其他空間…",
+    "moveTitle": "移動到其他空間",
+    "copyTitle": "複製到其他空間",
+    "moveDesc": "將「{title}」與其所有子頁面移動到所選空間。附件歸屬與版本歷史一併轉移。",
+    "copyDesc": "將「{title}」與其所有子頁面複製到所選空間，原頁面保留不變。",
+    "targetSpaceLabel": "目標空間",
+    "targetSpacePlaceholder": "選擇空間…",
+    "targetSpaceLoading": "載入空間中…",
+    "targetSpaceSearch": "搜尋空間…",
+    "targetSpaceEmpty": "找不到符合的空間",
+    "noTargetSpaces": "沒有可移動或複製的目標空間（需要目標空間的編輯權限）。",
+    "moveConfirm": "移動",
+    "copyConfirm": "複製",
+    "moveSuccess": "已移動到「{space}」",
+    "copySuccess": "已複製到「{space}」"
   },
   "spaceHome": {
     "pagesHeading": "頁面",
@@ -746,6 +779,57 @@
     "diffLegendRemoved": "刪除",
     "diffLegendModified": "修改"
   },
+  "adminGroups": {
+    "title": "群組管理",
+    "desc": "建立使用者群組並管理成員；群組可掛在空間上，讓全體成員一次繼承存取權。",
+    "empty": "尚未建立任何群組。",
+    "createGroup": "建立群組",
+    "createGroupTitle": "建立新群組",
+    "createSuccess": "群組已建立",
+    "updateSuccess": "群組已更新",
+    "deleteSuccess": "群組已刪除",
+    "editGroupTitle": "編輯群組",
+    "deleteGroupTitle": "刪除群組",
+    "deleteConfirmBody": "刪除「{name}」後，其成員與所有空間掛載都會一併移除，依賴此群組取得存取權的使用者將立即失效。確定要繼續嗎？",
+    "fieldName": "群組名稱",
+    "fieldDescription": "描述（選填）",
+    "errorNameTaken": "此群組名稱已被使用",
+    "colName": "群組",
+    "colDescription": "描述",
+    "colMemberCount": "成員數",
+    "colMember": "成員",
+    "colJoinedAt": "加入時間",
+    "colActions": "操作",
+    "memberCount": "{count} 人",
+    "manageMembers": "管理成員",
+    "backToGroups": "返回群組列表",
+    "edit": "編輯",
+    "delete": "刪除",
+    "save": "儲存",
+    "cancel": "取消",
+    "done": "完成",
+    "remove": "移除",
+    "membersHeading": "群組成員",
+    "membersDesc": "管理群組成員；成員異動於下一個請求即時反映到所有掛載此群組的空間。",
+    "emptyMembers": "這個群組還沒有成員。",
+    "addMemberLabel": "加入成員",
+    "addMemberPlaceholder": "選擇使用者",
+    "addMemberSearchPlaceholder": "搜尋姓名或 Email",
+    "addMemberEmpty": "找不到使用者",
+    "addButton": "加入",
+    "memberAdded": "已加入成員",
+    "memberRemoved": "已移除成員",
+    "removeMemberTitle": "移除群組成員",
+    "removeConfirmBody": "確定要將「{name}」從這個群組移除嗎？其經由此群組取得的空間存取權將立即失效。",
+    "csvImport": "批次匯入",
+    "csvImportTitle": "批次匯入成員",
+    "csvImportLabel": "貼上 Email 清單",
+    "csvImportHelper": "以逗號、分號、空白或換行分隔；系統會比對現有帳號，找不到者會回報但不自動建立帳號。",
+    "csvImportSubmit": "匯入",
+    "csvResultSummary": "已加入 {added} 人，{already} 人原本就在群組中。",
+    "csvResultNotFound": "{count} 個 Email 找不到對應帳號：",
+    "actionError": "操作失敗，請稍後再試"
+  },
   "spaceSettings": {
     "title": "空間設定",
     "backToSpace": "返回空間",
@@ -776,9 +860,27 @@
     "colMember": "成員",
     "colSource": "來源",
     "sourceDirect": "直接",
+    "sourceGroup": "經由群組",
+    "sourceGroupTooltip": "經由群組 {groups} 繼承存取權",
     "colRole": "角色",
     "colJoinedAt": "加入時間",
     "colActions": "操作",
+    "groupsHeading": "群組授權",
+    "groupsDesc": "將群組掛在這個空間並指定角色；群組全體成員即以該角色繼承存取權，異動群組成員即時生效。",
+    "attachGroupLabel": "掛載群組",
+    "attachGroupPlaceholder": "選擇群組",
+    "attachGroupSearchPlaceholder": "搜尋群組名稱",
+    "attachGroupEmpty": "找不到群組",
+    "attachButton": "掛載",
+    "colGroup": "群組",
+    "colMemberCount": "成員數",
+    "groupMemberCount": "{count} 人",
+    "emptyGroups": "尚未掛載任何群組。",
+    "groupAdded": "已掛載群組",
+    "groupRemoved": "已移除群組掛載",
+    "groupRemove": "移除掛載",
+    "groupRemoveConfirmTitle": "移除群組掛載",
+    "groupRemoveConfirmBody": "確定要移除「{name}」的掛載嗎？其成員經由此群組取得的存取權將立即失效。",
     "roleLabel": "角色",
     "roleAdmin": "管理員",
     "roleAdminHint": "管理成員與設定、刪除空間",
@@ -867,6 +969,10 @@
       "download": "下載",
       "downloadAria": "下載附件 {fileName}",
       "unnamed": "未命名檔案"
+    },
+    "embed": {
+      "frameTitle": "{host} 的嵌入內容",
+      "invalid": "無效的嵌入網址"
     }
   },
   "settings": {

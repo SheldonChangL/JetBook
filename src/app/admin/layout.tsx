@@ -2,7 +2,15 @@ import type { ReactNode } from "react";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { getTranslations } from "next-intl/server";
-import { ArrowLeft, Activity, Archive, ScrollText, Sparkles, Users } from "lucide-react";
+import {
+  ArrowLeft,
+  Activity,
+  Archive,
+  ScrollText,
+  Sparkles,
+  Users,
+  UsersRound,
+} from "lucide-react";
 import { requireSession } from "@/lib/auth/current";
 import { isOrgAdmin } from "@/lib/authz/permission";
 
@@ -28,6 +36,9 @@ export default async function AdminLayout({ children }: { children: ReactNode })
           <nav className="flex flex-col gap-0.5 text-body-ui">
             <AdminNavLink href="/admin/users" icon={<Users aria-hidden className="size-4" />}>
               {t("navUsers")}
+            </AdminNavLink>
+            <AdminNavLink href="/admin/groups" icon={<UsersRound aria-hidden className="size-4" />}>
+              {t("navGroups")}
             </AdminNavLink>
             <AdminNavLink href="/admin/spaces" icon={<Archive aria-hidden className="size-4" />}>
               {t("navSpaces")}
