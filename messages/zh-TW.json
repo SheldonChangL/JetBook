@@ -295,9 +295,13 @@
     "conflictHint": "內容已被他人更新，請重新載入頁面後再編輯。",
     "lockedTitle": "此頁面正在被編輯",
     "lockedHint": "另一位使用者正在編輯這個頁面，請稍後再試。",
+    "lockedByHint": "{name} 正在編輯這個頁面，請稍後再試。",
     "backToReading": "返回閱讀",
     "steal": "強制取得編輯權",
     "stealConfirm": "搶鎖會中斷對方的編輯，確定要繼續嗎？",
+    "lockLostToast": "編輯鎖已被取得，內容已轉為唯讀",
+    "lockLostHint": "此頁面的編輯權已被他人取得，你的編輯已轉為唯讀；未儲存的變更仍保留在此頁面。",
+    "lockLostByHint": "{name} 已取得此頁面的編輯權，你的編輯已轉為唯讀；未儲存的變更仍保留在此頁面。",
     "codeBlock": {
       "plainText": "純文字",
       "selectLanguage": "選擇語言",
