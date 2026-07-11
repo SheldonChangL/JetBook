@@ -7,6 +7,7 @@ import { Menu, PanelLeftClose, Search } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { IconButton } from "@/components/ui/icon-button";
 import { Kbd } from "@/components/ui/kbd";
+import { CommandPalette } from "./command-palette";
 import { OfflineBanner } from "./offline-banner";
 import { ThemeToggle } from "./theme-toggle";
 import { UserMenu } from "./user-menu";
@@ -28,6 +29,7 @@ export function AppShell({ user, sidebar, children }: AppShellProps) {
   const t = useTranslations("shell");
   const [collapsed, setCollapsed] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
+  const [paletteOpen, setPaletteOpen] = useState(false);
 
   useEffect(() => {
     setCollapsed(localStorage.getItem(SIDEBAR_KEY) === "1");
@@ -74,15 +76,16 @@ export function AppShell({ user, sidebar, children }: AppShellProps) {
         </Link>
 
         <div className="mx-auto w-full max-w-md">
-          <Link
-            href="/search"
-            className="flex h-8 items-center gap-2 rounded-md border border-edge bg-sidebar px-3 text-body-ui text-fg-tertiary transition-colors hover:border-edge-strong"
+          <button
+            type="button"
+            onClick={() => setPaletteOpen(true)}
+            className="flex h-8 w-full items-center gap-2 rounded-md border border-edge bg-sidebar px-3 text-body-ui text-fg-tertiary transition-colors hover:border-edge-strong"
           >
             <Search className="size-4" />
             <span className="flex-1 text-left">{t("searchPlaceholder")}</span>
             <Kbd>⌘</Kbd>
             <Kbd>K</Kbd>
-          </Link>
+          </button>
         </div>
 
         <div className="flex items-center gap-1">
@@ -131,6 +134,9 @@ export function AppShell({ user, sidebar, children }: AppShellProps) {
         {/* 內容區 */}
         <main className="min-w-0 flex-1 overflow-y-auto bg-base">{children}</main>
       </div>
+
+      {/* 全域搜尋命令面板（F-SEARCH-02，⌘K 呼出） */}
+      <CommandPalette open={paletteOpen} onOpenChange={setPaletteOpen} />
     </div>
   );
 }

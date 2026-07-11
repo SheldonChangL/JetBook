@@ -267,6 +267,23 @@
     "title": "搜尋",
     "noResults": "找不到符合的結果"
   },
+  "commandPalette": {
+    "label": "全域搜尋",
+    "inputPlaceholder": "搜尋文件或問 AI…",
+    "recentHeading": "最近瀏覽",
+    "resultsHeading": "文件",
+    "askAi": "問 AI：「{query}」",
+    "aiBadge": "M2",
+    "showAll": "顯示全部 {count} 筆結果",
+    "loading": "搜尋中…",
+    "noResults": "找不到「{query}」的結果",
+    "emptyRecent": "開始輸入以搜尋文件",
+    "loadError": "載入失敗，請稍後再試",
+    "hintSelect": "選擇",
+    "hintOpen": "開啟",
+    "hintNewTab": "新分頁",
+    "hintClose": "關閉"
+  },
   "editor": {
     "back": "返回",
     "done": "完成編輯",
