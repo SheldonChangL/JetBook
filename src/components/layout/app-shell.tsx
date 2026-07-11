@@ -18,6 +18,10 @@ export interface AppShellProps {
   user: { name: string; email: string; isAdmin?: boolean };
   sidebar: ReactNode;
   children: ReactNode;
+  /** AI 生成已設定（isLlmConfigured）：Cmd+K「問 AI」列據此啟用。 */
+  llmConfigured?: boolean;
+  /** 語意索引已設定（isEmbeddingConfigured）：Cmd+K 語意區據此渲染。 */
+  embeddingConfigured?: boolean;
 }
 
 /**
@@ -25,7 +29,13 @@ export interface AppShellProps {
  * 56px 頂部列 + 可收合左側欄（⌘\、記憶狀態）+ 內容區。右側 TOC/AI 抽屜由頁面掛載。
  * 響應式：md 以下側欄轉 overlay 抽屜。
  */
-export function AppShell({ user, sidebar, children }: AppShellProps) {
+export function AppShell({
+  user,
+  sidebar,
+  children,
+  llmConfigured = false,
+  embeddingConfigured = false,
+}: AppShellProps) {
   const t = useTranslations("shell");
   const [collapsed, setCollapsed] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
@@ -135,8 +145,13 @@ export function AppShell({ user, sidebar, children }: AppShellProps) {
         <main className="min-w-0 flex-1 overflow-y-auto bg-base">{children}</main>
       </div>
 
-      {/* 全域搜尋命令面板（F-SEARCH-02，⌘K 呼出） */}
-      <CommandPalette open={paletteOpen} onOpenChange={setPaletteOpen} />
+      {/* 全域搜尋命令面板（F-SEARCH-02，⌘K 呼出；I-05 語意區＋問 AI） */}
+      <CommandPalette
+        open={paletteOpen}
+        onOpenChange={setPaletteOpen}
+        llmConfigured={llmConfigured}
+        embeddingConfigured={embeddingConfigured}
+      />
     </div>
   );
 }

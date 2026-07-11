@@ -36,6 +36,7 @@ export interface RetrievedChunk {
   score: number;
   title: string;
   spaceSlug: string;
+  spaceName: string;
   pageSlug: string;
 }
 
@@ -44,6 +45,13 @@ export interface RetrieveOptions {
   spaceId?: string;
   /** 輸出 chunk 數上限（預設 10）。 */
   limit?: number;
+  /**
+   * 檢索模式：
+   * - `hybrid`（預設）：全文＋向量兩路 RRF 融合。
+   * - `semantic`：僅走向量路（供 I-05 Cmd+K 語意區——與全文區互補，命中近義未含原詞的頁）。
+   * 兩模式共用同一權限過濾與向量查詢，語意模式只是略過全文路。
+   */
+  mode?: "hybrid" | "semantic";
   /** 覆寫嵌入 provider（測試注入；預設走 env 單例）。 */
   provider?: EmbeddingProvider;
 }
@@ -95,11 +103,13 @@ export async function retrieve(
   if (accessibleIds.length === 0) return [];
 
   const limit = Math.min(Math.max(options.limit ?? DEFAULT_RESULT_LIMIT, 1), 50);
+  const mode = options.mode ?? "hybrid";
   const provider = options.provider ?? getEmbeddingProvider();
 
   // 兩路查詢並行（皆以 accessibleIds 於 SQL WHERE 過濾）。
+  // 語意模式略過全文路（fulltextPageIds 留空 → RRF 只計向量分數）。
   const [fulltextPageIds, vectorRows] = await Promise.all([
-    fulltextPageRanking(q, accessibleIds),
+    mode === "semantic" ? Promise.resolve<string[]>([]) : fulltextPageRanking(q, accessibleIds),
     vectorChunkRanking(q, accessibleIds, provider),
   ]);
 
@@ -179,6 +189,7 @@ export async function retrieve(
         score,
         title: m.title,
         spaceSlug: m.spaceSlug,
+        spaceName: m.spaceName,
         pageSlug: m.pageSlug,
       } satisfies RetrievedChunk;
     })
@@ -274,9 +285,10 @@ interface PageMeta {
   title: string;
   pageSlug: string;
   spaceSlug: string;
+  spaceName: string;
 }
 
-/** 批次取頁面 metadata（title/slug/spaceSlug）供結果回填。 */
+/** 批次取頁面 metadata（title/slug/spaceSlug/spaceName）供結果回填。 */
 async function pageMetadata(pageIds: string[]): Promise<Map<string, PageMeta>> {
   const unique = [...new Set(pageIds)];
   if (unique.length === 0) return new Map();
@@ -286,11 +298,15 @@ async function pageMetadata(pageIds: string[]): Promise<Map<string, PageMeta>> {
       title: pages.title,
       pageSlug: pages.slug,
       spaceSlug: spaces.slug,
+      spaceName: spaces.name,
     })
     .from(pages)
     .innerJoin(spaces, eq(pages.spaceId, spaces.id))
     .where(inArray(pages.id, unique));
   return new Map(
-    rows.map((r) => [r.pageId, { title: r.title, pageSlug: r.pageSlug, spaceSlug: r.spaceSlug }]),
+    rows.map((r) => [
+      r.pageId,
+      { title: r.title, pageSlug: r.pageSlug, spaceSlug: r.spaceSlug, spaceName: r.spaceName },
+    ]),
   );
 }
