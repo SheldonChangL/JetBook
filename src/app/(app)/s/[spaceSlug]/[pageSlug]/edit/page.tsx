@@ -4,7 +4,7 @@ import { db } from "@/lib/db";
 import { pages, spaces } from "@/lib/db/schema";
 import { requireSession } from "@/lib/auth/current";
 import { can } from "@/lib/authz/permission";
-import { acquireLock } from "@/lib/pages/lock";
+import { acquireLock, getLockState } from "@/lib/pages/lock";
 import { PageEditor } from "@/components/editor/page-editor";
 import { EditLockNotice } from "./edit-lock-notice";
 import type { ProseMirrorDoc } from "@/lib/content/types";
@@ -31,11 +31,13 @@ export default async function EditPage({
   // 嘗試取鎖；他人持鎖則顯示鎖定提示（唯讀），Admin 可搶鎖
   const acquired = await acquireLock(page.id, user.id);
   if (!acquired) {
+    const lock = await getLockState(page.id, user.id);
     return (
       <EditLockNotice
         pageId={page.id}
         spaceSlug={spaceSlug}
         isOrgAdmin={user.orgRole === "admin"}
+        lockedByName={lock.lockedByName}
       />
     );
   }

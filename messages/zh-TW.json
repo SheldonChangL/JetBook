@@ -168,6 +168,7 @@
     "toggleSidebar": "切換側欄",
     "collapseSidebar": "收合側欄",
     "userMenu": "使用者選單",
+    "personalSettings": "個人設定",
     "adminConsole": "管理後台",
     "logout": "登出",
     "offlineBanner": "網路連線中斷，請勿關閉分頁，系統將自動重試儲存"
@@ -267,6 +268,23 @@
     "title": "搜尋",
     "noResults": "找不到符合的結果"
   },
+  "commandPalette": {
+    "label": "全域搜尋",
+    "inputPlaceholder": "搜尋文件或問 AI…",
+    "recentHeading": "最近瀏覽",
+    "resultsHeading": "文件",
+    "askAi": "問 AI：「{query}」",
+    "aiBadge": "M2",
+    "showAll": "顯示全部 {count} 筆結果",
+    "loading": "搜尋中…",
+    "noResults": "找不到「{query}」的結果",
+    "emptyRecent": "開始輸入以搜尋文件",
+    "loadError": "載入失敗，請稍後再試",
+    "hintSelect": "選擇",
+    "hintOpen": "開啟",
+    "hintNewTab": "新分頁",
+    "hintClose": "關閉"
+  },
   "editor": {
     "back": "返回",
     "done": "完成編輯",
@@ -278,9 +296,13 @@
     "conflictHint": "內容已被他人更新，請重新載入頁面後再編輯。",
     "lockedTitle": "此頁面正在被編輯",
     "lockedHint": "另一位使用者正在編輯這個頁面，請稍後再試。",
+    "lockedByHint": "{name} 正在編輯這個頁面，請稍後再試。",
     "backToReading": "返回閱讀",
     "steal": "強制取得編輯權",
     "stealConfirm": "搶鎖會中斷對方的編輯，確定要繼續嗎？",
+    "lockLostToast": "編輯鎖已被取得，內容已轉為唯讀",
+    "lockLostHint": "此頁面的編輯權已被他人取得，你的編輯已轉為唯讀；未儲存的變更仍保留在此頁面。",
+    "lockLostByHint": "{name} 已取得此頁面的編輯權，你的編輯已轉為唯讀；未儲存的變更仍保留在此頁面。",
     "codeBlock": {
       "plainText": "純文字",
       "selectLanguage": "選擇語言",
@@ -540,5 +562,37 @@
       "downloadAria": "下載附件 {fileName}",
       "unnamed": "未命名檔案"
     }
+  },
+  "settings": {
+    "title": "個人設定",
+    "subtitle": "管理你的基本資料、密碼與外觀偏好",
+    "backToApp": "返回",
+    "save": "儲存",
+    "actionError": "操作失敗，請稍後再試",
+    "profileHeading": "基本資料",
+    "profileDesc": "更新你的顯示名稱；電子郵件由管理者維護，無法自行變更。",
+    "emailLabel": "電子郵件",
+    "displayNameLabel": "顯示名稱",
+    "profileUpdated": "顯示名稱已更新",
+    "passwordHeading": "變更密碼",
+    "passwordDesc": "變更密碼後，你在其他裝置的登入將立即失效，需要重新登入。",
+    "currentPasswordLabel": "目前密碼",
+    "newPasswordLabel": "新密碼",
+    "confirmPasswordLabel": "確認新密碼",
+    "passwordHelper": "至少 {min} 個字元，勿使用常見弱密碼。",
+    "changePasswordButton": "變更密碼",
+    "passwordChanged": "密碼已變更，其他裝置已登出",
+    "errCurrentInvalid": "目前密碼不正確",
+    "errWeak": "新密碼不符合安全原則",
+    "errMismatch": "兩次輸入的新密碼不一致",
+    "errSame": "新密碼不可與目前密碼相同",
+    "errNotLocal": "此帳號由單一登入（SSO）管理，無法在此變更密碼",
+    "ssoManaged": "此帳號由單一登入（SSO）管理，請至身分提供者變更密碼。",
+    "appearanceHeading": "外觀",
+    "appearanceDesc": "選擇介面主題；此偏好會儲存並在你登入的所有裝置間同步。",
+    "themeLight": "淺色",
+    "themeDark": "深色",
+    "themeSystem": "跟隨系統",
+    "appearanceUpdated": "外觀偏好已更新"
   }
 }

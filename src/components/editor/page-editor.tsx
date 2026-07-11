@@ -54,6 +54,10 @@ export function PageEditor({
   const toast = useToast();
   const [title, setTitle] = useState(initialTitle);
   const [saveState, setSaveState] = useState<SaveState>("idle");
+  // 編輯鎖被搶/逾時接手 → 降級唯讀（F-COLLAB-01 驗收 3）；記住新持有者姓名供提示
+  const [lockLostBy, setLockLostBy] = useState<string | null>(null);
+  const [lockLost, setLockLost] = useState(false);
+  const lockLostRef = useRef(false);
   const versionRef = useRef(initialVersionNo);
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
@@ -202,7 +206,7 @@ export function PageEditor({
   }, [editor, spaceId, pageId, showAttachmentError, openAttachmentPicker]);
 
   const doSave = useCallback(async () => {
-    if (!editor) return;
+    if (!editor || lockLostRef.current) return;
     setSaveState("saving");
     try {
       // JSON 正規化：ProseMirror 的 node.attrs 是 null-prototype 物件
@@ -243,16 +247,31 @@ export function PageEditor({
     };
   }, [editor, doSave]);
 
-  // 編輯鎖心跳；離開時釋放
+  // 編輯鎖心跳；離開時釋放。心跳失敗（被 Admin 搶鎖或逾時後遭他人接手）→ 即時降級唯讀。
   useEffect(() => {
-    const id = setInterval(() => {
-      void heartbeatLockAction(pageId);
+    const id = setInterval(async () => {
+      if (lockLostRef.current) return;
+      let res: Awaited<ReturnType<typeof heartbeatLockAction>>;
+      try {
+        res = await heartbeatLockAction(pageId);
+      } catch {
+        // 心跳暫時失敗（網路/伺服器）不視為失鎖，等下一次心跳重試，避免誤降級
+        return;
+      }
+      if (res.held || lockLostRef.current) return;
+      lockLostRef.current = true;
+      clearInterval(id);
+      if (timerRef.current) clearTimeout(timerRef.current);
+      editorRef.current?.setEditable(false);
+      setLockLostBy(res.lockedByName);
+      setLockLost(true);
+      toast({ variant: "error", title: t("lockLostToast") });
     }, HEARTBEAT_MS);
     return () => {
       clearInterval(id);
       void releaseLockAction(pageId);
     };
-  }, [pageId]);
+  }, [pageId, toast, t]);
 
   const statusText =
     saveState === "saving"
@@ -286,8 +305,10 @@ export function PageEditor({
 
       <input
         value={title}
+        readOnly={lockLost}
         onChange={(e) => setTitle(e.target.value)}
         onBlur={() => {
+          if (lockLost) return;
           const trimmed = title.trim();
           if (trimmed && trimmed !== initialTitle) {
             void renamePage({ pageId, title: trimmed });
@@ -297,6 +318,26 @@ export function PageEditor({
         className="w-full bg-transparent text-h1 text-fg outline-none placeholder:text-fg-tertiary"
         aria-label={t("titlePlaceholder")}
       />
+
+      {lockLost ? (
+        <div
+          role="alert"
+          className="flex flex-col gap-2 rounded-sm border border-warning/40 bg-warning-tint px-3 py-2 text-body-ui text-warning"
+        >
+          <span>
+            {lockLostBy ? t("lockLostByHint", { name: lockLostBy }) : t("lockLostHint")}
+          </span>
+          <div>
+            <Button
+              variant="secondary"
+              size="sm"
+              onClick={() => router.push(`/s/${spaceSlug}/${pageSlug}`)}
+            >
+              {t("backToReading")}
+            </Button>
+          </div>
+        </div>
+      ) : null}
 
       {saveState === "conflict" ? (
         <div role="alert" className="rounded-sm border border-warning/40 bg-warning-tint px-3 py-2 text-body-ui text-warning">

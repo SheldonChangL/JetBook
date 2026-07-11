@@ -23,9 +23,16 @@ export async function acquireLockAction(pageId: string, force = false) {
   return { acquired, state };
 }
 
+/**
+ * 心跳續租。仍持鎖回傳 { held: true }；鎖已被搶/接手回傳 { held: false, lockedByName }，
+ * 供編輯器即時降級唯讀並提示新持有者（F-COLLAB-01 驗收 3）。
+ */
 export async function heartbeatLockAction(pageId: string) {
   const { user } = await requireSession();
-  return heartbeatLock(pageId, user.id);
+  const held = await heartbeatLock(pageId, user.id);
+  if (held) return { held: true as const, lockedByName: null };
+  const state = await getLockState(pageId, user.id);
+  return { held: false as const, lockedByName: state.lockedByName };
 }
 
 export async function releaseLockAction(pageId: string) {

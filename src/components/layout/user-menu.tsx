@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useTranslations } from "next-intl";
-import { LogOut, ShieldCheck } from "lucide-react";
+import { LogOut, Settings, ShieldCheck } from "lucide-react";
 import { logout } from "@/actions/auth";
 import { Avatar } from "@/components/ui/avatar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
@@ -31,6 +31,13 @@ export function UserMenu({
           <p className="truncate text-body-ui font-medium text-fg">{name}</p>
           <p className="truncate text-caption text-fg-tertiary">{email}</p>
         </div>
+        <Link
+          href="/settings"
+          className="flex w-full items-center gap-2 border-b border-edge px-3 py-2 text-body-ui text-fg transition-colors hover:bg-hover"
+        >
+          <Settings aria-hidden className="size-4" />
+          {t("personalSettings")}
+        </Link>
         {isAdmin ? (
           <Link
             href="/admin"

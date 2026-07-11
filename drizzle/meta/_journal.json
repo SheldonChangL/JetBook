@@ -57,6 +57,13 @@
       "when": 1783658659405,
       "tag": "0007_jazzy_impossible_man",
       "breakpoints": true
+    },
+    {
+      "idx": 8,
+      "version": "7",
+      "when": 1783730373652,
+      "tag": "0008_curved_obadiah_stane",
+      "breakpoints": true
     }
   ]
 }
