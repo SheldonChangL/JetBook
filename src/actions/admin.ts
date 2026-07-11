@@ -11,6 +11,7 @@ import {
   setUserOrgRole,
 } from "@/lib/admin/users";
 import { isEmbeddingConfigured } from "@/lib/llm";
+import { setAiDailyQuotaPerUser } from "@/lib/ai/quota";
 import {
   testEmbeddingConnection,
   testLlmConnection,
@@ -185,4 +186,29 @@ export async function testAiConnectionAction(target: string): Promise<AiConnecti
   const outcome =
     parsed.data === "llm" ? await testLlmConnection() : await testEmbeddingConnection();
   return { ok: true, outcome };
+}
+
+// ── AI 每人每日配額（I-09，F-AI-11） ────────────────────────────────
+
+export type SetAiQuotaResult = { ok: true } | { ok: false; error: "INVALID_QUOTA" };
+
+// 配額為正整數（1 以上）或 null（不限）；上限給一個寬鬆的合理值防手誤打天文數字。
+const aiQuotaSchema = z.object({
+  quota: z.number().int().min(1).max(1_000_000).nullable(),
+});
+
+/**
+ * 設定 AI 每人每日配額（org admin only）：驗權限 → 寫入 org_settings（單列 upsert）。
+ * null＝不限。強制執行點在 /api/ai/chat（讀同一設定）。薄殼：商業邏輯在 lib/ai/quota。
+ */
+export async function setAiDailyQuotaAction(input: {
+  quota: number | null;
+}): Promise<SetAiQuotaResult> {
+  const admin = await requireOrgAdmin();
+  const parsed = aiQuotaSchema.safeParse(input);
+  if (!parsed.success) return { ok: false, error: "INVALID_QUOTA" };
+  await setAiDailyQuotaPerUser(parsed.data.quota);
+  logger.info({ adminId: admin.id, quota: parsed.data.quota }, "admin: ai daily quota set");
+  revalidatePath("/admin/ai");
+  return { ok: true };
 }
