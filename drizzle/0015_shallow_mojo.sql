@@ -1,0 +1,1 @@
+ALTER TABLE "org_settings" ADD COLUMN "ai_daily_quota_per_user" integer;

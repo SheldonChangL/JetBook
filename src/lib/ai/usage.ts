@@ -14,6 +14,12 @@ import { writeAudit } from "@/lib/audit";
  * writeAudit 內部吞例外（稽核失敗不中斷主流程），故本函式亦不擲出。
  */
 
+/**
+ * AI 查詢稽核事件動作。此模組為 `ai.query` 事件的產生端；用量聚合（L-03）與
+ * 每日配額計數（I-09）皆以此常數比對，集中定義避免字串漂移。
+ */
+export const AI_QUERY_AUDIT_ACTION = "ai.query";
+
 /** AI 查詢功能別（對應 audit metadata.mode，供用量分項統計）。 */
 export type AiQueryMode = "chat" | "assist" | "semantic" | "hybrid";
 
@@ -38,7 +44,7 @@ export interface AiUsageRecord {
 export async function recordAiUsage(record: AiUsageRecord): Promise<void> {
   await writeAudit({
     actorId: record.actorId,
-    action: "ai.query",
+    action: AI_QUERY_AUDIT_ACTION,
     targetType: "ai",
     metadata: {
       model: record.model,

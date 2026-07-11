@@ -7,10 +7,12 @@ import { isOrgAdmin } from "@/lib/authz/permission";
 import { isEmbeddingConfigured } from "@/lib/llm";
 import { getAiSettingsSummary } from "@/lib/llm/settings";
 import { getAiUsageDaily } from "@/lib/admin/ai-usage";
+import { getAiDailyQuotaPerUser } from "@/lib/ai/quota";
 import { Badge } from "@/components/ui/badge";
 import { ReindexButton } from "@/app/admin/system/reindex-button";
 import { TestConnectionButton } from "./test-connection-button";
 import { UsageChart } from "./usage-chart";
+import { QuotaForm } from "./quota-form";
 
 // 連線設定與用量即時反映 env／稽核，不做靜態化。
 export const dynamic = "force-dynamic";
@@ -36,6 +38,7 @@ export default async function AdminAiPage() {
   const settings = getAiSettingsSummary();
   const embeddingConfigured = isEmbeddingConfigured();
   const usage = await getAiUsageDaily(30);
+  const dailyQuota = await getAiDailyQuotaPerUser();
 
   const { llm, embedding } = settings;
 
@@ -123,7 +126,17 @@ export default async function AdminAiPage() {
         </div>
       </section>
 
-      {/* 卡片四：近 30 日用量統計 */}
+      {/* 卡片四：每人每日用量配額（I-09，F-AI-11） */}
+      <section className="rounded-md border border-edge">
+        <div className="border-b border-edge bg-sidebar px-4 py-2.5">
+          <h2 className="text-body-ui font-semibold text-fg">{t("aiQuotaCardTitle")}</h2>
+        </div>
+        <div className="px-4 py-4">
+          <QuotaForm currentQuota={dailyQuota} />
+        </div>
+      </section>
+
+      {/* 卡片五：近 30 日用量統計 */}
       <section className="rounded-md border border-edge">
         <div className="border-b border-edge bg-sidebar px-4 py-2.5">
           <h2 className="text-body-ui font-semibold text-fg">{t("aiUsageCardTitle")}</h2>

@@ -130,6 +130,8 @@ export const orgSettings = pgTable("org_settings", {
   logoUrl: text("logo_url"),
   defaultLocale: text("default_locale").notNull().default("zh-TW"),
   aiEnabled: boolean("ai_enabled").notNull().default(true),
+  /** AI 每人每日查詢配額（I-09，F-AI-11）；null＝不限。強制點於 /api/ai/chat。 */
+  aiDailyQuotaPerUser: integer("ai_daily_quota_per_user"),
   updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
 });
 
