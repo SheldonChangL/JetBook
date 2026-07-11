@@ -106,8 +106,9 @@ export class OpenAICompatProvider implements LLMProvider {
     return meta;
   }
 
-  async *chatStream(params: ChatParams): AsyncIterable<ChatDelta> {
-    yield* this.streamInternal(params);
+  async *chatStream(params: ChatParams): AsyncGenerator<ChatDelta, ChatUsage> {
+    const meta = yield* this.streamInternal(params);
+    return meta.usage;
   }
 
   async chat(params: ChatParams): Promise<ChatResult> {
