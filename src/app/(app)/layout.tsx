@@ -5,7 +5,9 @@ import { Home, Library, Trash2 } from "lucide-react";
 import { requireSession } from "@/lib/auth/current";
 import { isOrgAdmin } from "@/lib/authz/permission";
 import { listAccessibleSpaces } from "@/lib/spaces/queries";
+import type { Theme } from "@/lib/theme";
 import { AppShell } from "@/components/layout/app-shell";
+import { ThemeSync } from "@/components/layout/theme-sync";
 
 export default async function AppLayout({ children }: { children: ReactNode }) {
   const { user } = await requireSession();
@@ -33,13 +35,21 @@ export default async function AppLayout({ children }: { children: ReactNode }) {
     </nav>
   );
 
+  const serverTheme: Theme =
+    user.themePreference === "light" || user.themePreference === "dark"
+      ? user.themePreference
+      : "system";
+
   return (
-    <AppShell
-      user={{ name: user.name, email: user.email, isAdmin: isOrgAdmin(user) }}
-      sidebar={sidebar}
-    >
-      {children}
-    </AppShell>
+    <>
+      <ThemeSync serverTheme={serverTheme} />
+      <AppShell
+        user={{ name: user.name, email: user.email, isAdmin: isOrgAdmin(user) }}
+        sidebar={sidebar}
+      >
+        {children}
+      </AppShell>
+    </>
   );
 }
 

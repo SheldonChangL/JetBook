@@ -168,6 +168,7 @@
     "toggleSidebar": "切換側欄",
     "collapseSidebar": "收合側欄",
     "userMenu": "使用者選單",
+    "personalSettings": "個人設定",
     "adminConsole": "管理後台",
     "logout": "登出",
     "offlineBanner": "網路連線中斷，請勿關閉分頁，系統將自動重試儲存"
@@ -501,5 +502,37 @@
       "downloadAria": "下載附件 {fileName}",
       "unnamed": "未命名檔案"
     }
+  },
+  "settings": {
+    "title": "個人設定",
+    "subtitle": "管理你的基本資料、密碼與外觀偏好",
+    "backToApp": "返回",
+    "save": "儲存",
+    "actionError": "操作失敗，請稍後再試",
+    "profileHeading": "基本資料",
+    "profileDesc": "更新你的顯示名稱；電子郵件由管理者維護，無法自行變更。",
+    "emailLabel": "電子郵件",
+    "displayNameLabel": "顯示名稱",
+    "profileUpdated": "顯示名稱已更新",
+    "passwordHeading": "變更密碼",
+    "passwordDesc": "變更密碼後，你在其他裝置的登入將立即失效，需要重新登入。",
+    "currentPasswordLabel": "目前密碼",
+    "newPasswordLabel": "新密碼",
+    "confirmPasswordLabel": "確認新密碼",
+    "passwordHelper": "至少 {min} 個字元，勿使用常見弱密碼。",
+    "changePasswordButton": "變更密碼",
+    "passwordChanged": "密碼已變更，其他裝置已登出",
+    "errCurrentInvalid": "目前密碼不正確",
+    "errWeak": "新密碼不符合安全原則",
+    "errMismatch": "兩次輸入的新密碼不一致",
+    "errSame": "新密碼不可與目前密碼相同",
+    "errNotLocal": "此帳號由單一登入（SSO）管理，無法在此變更密碼",
+    "ssoManaged": "此帳號由單一登入（SSO）管理，請至身分提供者變更密碼。",
+    "appearanceHeading": "外觀",
+    "appearanceDesc": "選擇介面主題；此偏好會儲存並在你登入的所有裝置間同步。",
+    "themeLight": "淺色",
+    "themeDark": "深色",
+    "themeSystem": "跟隨系統",
+    "appearanceUpdated": "外觀偏好已更新"
   }
 }
