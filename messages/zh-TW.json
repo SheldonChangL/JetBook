@@ -171,6 +171,7 @@
     "personalSettings": "個人設定",
     "adminConsole": "管理後台",
     "logout": "登出",
+    "aiAssistant": "AI 助手（⌘J）",
     "offlineBanner": "網路連線中斷，請勿關閉分頁，系統將自動重試儲存"
   },
   "errors": {
@@ -632,6 +633,22 @@
     "disabled": "AI 功能未啟用",
     "unauthorized": "需登入",
     "invalidRequest": "問題內容不正確",
-    "failed": "AI 回答產生失敗，請稍後再試"
+    "failed": "AI 回答產生失敗，請稍後再試",
+    "title": "JetBook AI",
+    "closeLabel": "關閉 AI 抽屜",
+    "emptyTitle": "詢問知識庫",
+    "emptyDescription": "以自然語言提問，AI 會依你有權限的內部文件作答並附上引用來源。",
+    "inputPlaceholder": "詢問知識庫任何問題…",
+    "inputAriaLabel": "輸入問題",
+    "inputHint": "Enter 送出 · Shift+Enter 換行",
+    "send": "送出",
+    "stop": "停止生成",
+    "retry": "重試",
+    "retrieving": "檢索中…",
+    "generating": "找到 {count} 篇 · 生成中…",
+    "generatingPlain": "生成中…",
+    "sourcesLabel": "引用來源",
+    "citationLabel": "來源 {n}",
+    "disclaimer": "AI 回覆依內部文件生成，請以原文為準"
   }
 }
