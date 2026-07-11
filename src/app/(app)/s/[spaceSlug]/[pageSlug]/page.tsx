@@ -11,6 +11,8 @@ import { can } from "@/lib/authz/permission";
 import { denyPageRead } from "@/lib/authz/deny";
 import { recordVisit } from "@/lib/pages/visits";
 import { resolvePageBySlug } from "@/lib/pages/slug";
+import { resolvePageLinkTargets } from "@/lib/pages/link-resolve";
+import { collectPageLinkIds } from "@/lib/content/mentions";
 import { listPageComments } from "@/lib/comments/service";
 import { RenderContent } from "@/components/content/render-content";
 import { CopyLinkButton } from "@/components/content/copy-link-button";
@@ -68,6 +70,11 @@ export default async function PageReadPage({
     timeStyle: "short",
   }).format(page.updatedAt);
 
+  // D-11：預先解析內文中的頁面連結目標（現行 slug/title；權限在 lib 層 SQL 過濾），
+  // 交由渲染器以 pageId 對應——改名自動更新連結文字與 URL（F-EDIT-12）。
+  const pageDoc = (page.content as ProseMirrorDoc | null) ?? null;
+  const pageLinks = await resolvePageLinkTargets(user, [...collectPageLinkIds(pageDoc)]);
+
   return (
     <article className="mx-auto max-w-3xl px-6 py-8">
       <nav className="mb-2 text-caption text-fg-tertiary">
@@ -103,7 +110,7 @@ export default async function PageReadPage({
 
       <p className="mb-6 text-caption text-fg-tertiary">{t("lastUpdated", { time: updated })}</p>
 
-      <RenderContent doc={(page.content as ProseMirrorDoc | null) ?? null} />
+      <RenderContent doc={pageDoc} links={pageLinks} />
       <AnchorHighlight />
 
       <CommentsPanel
