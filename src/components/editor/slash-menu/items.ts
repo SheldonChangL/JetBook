@@ -9,6 +9,7 @@ import {
   ListTodo,
   Minus,
   Quote,
+  Table,
   Type,
   type LucideIcon,
 } from "lucide-react";
@@ -122,6 +123,20 @@ export const SLASH_MENU_ITEMS: readonly SlashMenuItem[] = [
     keywords: ["程式碼", "程式碼區塊", "程式", "代碼", "code", "codeblock", "pre", "snippet"],
     command: ({ editor, range }) =>
       editor.chain().focus().deleteRange(range).toggleCodeBlock().run(),
+  },
+  {
+    id: "table",
+    group: "advanced",
+    icon: Table,
+    keywords: ["表格", "表", "格子", "表列", "table", "grid", "spreadsheet"],
+    // D-05（F-EDIT-07）：預設插入 3x3 並含表頭列。
+    command: ({ editor, range }) =>
+      editor
+        .chain()
+        .focus()
+        .deleteRange(range)
+        .insertTable({ rows: 3, cols: 3, withHeaderRow: true })
+        .run(),
   },
 ];
 

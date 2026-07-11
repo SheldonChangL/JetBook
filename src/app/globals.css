@@ -564,6 +564,60 @@ html.dark {
     }
   }
 
+  /* 表格區塊（D-05；編輯與閱讀共用）。編輯端 resizable 由 TipTap 以 .tableWrapper
+     包裹並注入 .column-resize-handle / .selectedCell；閱讀端由 render-content 以
+     .tableWrapper.overflow-x-auto 包裹達成水平捲動（F-EDIT-07）。 */
+  .prose-editor :where(.tableWrapper) {
+    margin: 1rem 0;
+    overflow-x: auto;
+  }
+  .prose-editor :where(table) {
+    border-collapse: collapse;
+    table-layout: fixed;
+    width: 100%;
+    margin: 0;
+    overflow: hidden;
+  }
+  .prose-editor :where(table td, table th) {
+    position: relative;
+    min-width: 4rem;
+    padding: 0.5rem 0.75rem;
+    border: 1px solid var(--border-default);
+    vertical-align: top;
+    text-align: left;
+    box-sizing: border-box;
+  }
+  .prose-editor :where(table th) {
+    background: var(--bg-sidebar);
+    font-weight: 600;
+  }
+  .prose-editor :where(table td > p, table th > p) {
+    margin: 0;
+  }
+  /* 選取儲存格高亮（TipTap CellSelection 注入 .selectedCell）。 */
+  .prose-editor :where(table .selectedCell)::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background: var(--primary);
+    opacity: 0.12;
+    pointer-events: none;
+  }
+  /* 欄寬拖曳把手（resizable：TipTap 注入 .column-resize-handle）。 */
+  .prose-editor .column-resize-handle {
+    position: absolute;
+    top: 0;
+    right: -2px;
+    bottom: 0;
+    width: 4px;
+    background: var(--primary);
+    cursor: col-resize;
+    pointer-events: none;
+  }
+  .prose-editor .tableWrapper.resize-cursor {
+    cursor: col-resize;
+  }
+
   /* 動態偏好（§5.2） */
   @media (prefers-reduced-motion: reduce) {
     *,

@@ -60,6 +60,62 @@ describe("docToMarkdown 圖片節點（D-07）", () => {
   });
 });
 
+describe("docToMarkdown 表格節點（D-05）", () => {
+  const tableDoc: ProseMirrorDoc = {
+    type: "doc",
+    content: [
+      {
+        type: "table",
+        content: [
+          {
+            type: "tableRow",
+            content: [
+              {
+                type: "tableHeader",
+                content: [{ type: "paragraph", content: [{ type: "text", text: "型號" }] }],
+              },
+              {
+                type: "tableHeader",
+                content: [{ type: "paragraph", content: [{ type: "text", text: "溫度" }] }],
+              },
+            ],
+          },
+          {
+            type: "tableRow",
+            content: [
+              {
+                type: "tableCell",
+                content: [{ type: "paragraph", content: [{ type: "text", text: "JB-1" }] }],
+              },
+              {
+                type: "tableCell",
+                content: [{ type: "paragraph", content: [{ type: "text", text: "300°C" }] }],
+              },
+            ],
+          },
+        ],
+      },
+    ],
+  };
+
+  it("序列化為 GFM 表格（表頭列 + 分隔列 + 資料列）", () => {
+    const md = docToMarkdown(tableDoc);
+    const lines = md.split("\n");
+    expect(lines[0]).toBe("| 型號 | 溫度 |");
+    expect(lines[1]).toBe("| --- | --- |");
+    expect(lines[2]).toBe("| JB-1 | 300°C |");
+  });
+
+  it("純文字抽取涵蓋所有儲存格內容（供全文索引）", () => {
+    const text = docToPlainText(tableDoc);
+    for (const cell of ["型號", "溫度", "JB-1", "300°C"]) {
+      expect(text).toContain(cell);
+    }
+    expect(text).not.toContain("|");
+    expect(text).not.toContain("---");
+  });
+});
+
 describe("docToPlainText", () => {
   it("抽出全部文字供全文索引（去除 markdown 標記）", () => {
     const text = docToPlainText(doc);

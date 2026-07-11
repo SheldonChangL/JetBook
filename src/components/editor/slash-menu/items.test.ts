@@ -52,11 +52,19 @@ describe("filterSlashMenuItems（F-EDIT-02 中英文關鍵字過濾）", () => {
     }
   });
 
+  it("表格：「表格」/ table 皆命中（D-05）", () => {
+    for (const q of ["表格", "table", "grid"]) {
+      expect(filterSlashMenuItems(SLASH_MENU_ITEMS, q).map((i) => i.id)).toContain(
+        "table",
+      );
+    }
+  });
+
   it("無符合關鍵字回傳空陣列", () => {
     expect(filterSlashMenuItems(SLASH_MENU_ITEMS, "zzz不存在")).toEqual([]);
   });
 
-  it("涵蓋所有已實作區塊（D-01/D-03 現有節點）且 group 合法", () => {
+  it("涵蓋所有已實作區塊（D-01/D-03/D-04/D-05 現有節點）且 group 合法", () => {
     const ids = SLASH_MENU_ITEMS.map((i) => i.id);
     expect(ids).toEqual([
       "text",
@@ -69,6 +77,7 @@ describe("filterSlashMenuItems（F-EDIT-02 中英文關鍵字過濾）", () => {
       "blockquote",
       "divider",
       "codeBlock",
+      "table",
     ]);
     for (const item of SLASH_MENU_ITEMS) {
       expect(SLASH_MENU_GROUP_ORDER).toContain(item.group);
