@@ -96,6 +96,15 @@ export async function canReadPage(user: Actor, pageId: string): Promise<boolean>
   return can(user, "page.read", { type: "page", spaceId: page.spaceId });
 }
 
+/** 頁面可編輯性單點判斷（route handler 依此把關 page.edit，如編輯器 AI 輔助 I-08）。 */
+export async function canEditPage(user: Actor, pageId: string): Promise<boolean> {
+  const page = await db.query.pages.findFirst({
+    where: and(eq(pages.id, pageId), isNull(pages.deletedAt)),
+  });
+  if (!page) return false;
+  return can(user, "page.edit", { type: "page", spaceId: page.spaceId });
+}
+
 /** 批次過濾：從一組 pageId 篩出可讀者（保序）。 */
 export async function filterReadablePageIds(user: Actor, pageIds: string[]): Promise<string[]> {
   if (pageIds.length === 0) return [];

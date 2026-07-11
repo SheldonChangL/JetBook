@@ -442,6 +442,26 @@
       "errorType": "不支援的檔案類型",
       "errorForbidden": "沒有上傳附件的權限",
       "retry": "重試"
+    },
+    "ai": {
+      "trigger": "AI",
+      "menuLabel": "AI 寫作輔助",
+      "panelLabel": "AI 寫作輔助結果",
+      "title": "AI 寫作輔助",
+      "generating": "生成中…",
+      "ready": "完成",
+      "stop": "停止",
+      "replace": "取代選取",
+      "insertBelow": "插入下方",
+      "discard": "捨棄",
+      "error": "AI 產生失敗，請稍後再試",
+      "modes": {
+        "rewrite": "改寫",
+        "concise": "更精簡",
+        "formal": "更正式",
+        "fix": "修正文法",
+        "translate_en": "翻譯成英文"
+      }
     }
   },
   "reading": {
@@ -651,6 +671,8 @@
     "disabled": "AI 功能未啟用",
     "unauthorized": "需登入",
     "invalidRequest": "問題內容不正確",
+    "forbidden": "沒有編輯此頁面的權限",
+    "rateLimited": "AI 請求過於頻繁，請稍後再試",
     "failed": "AI 回答產生失敗，請稍後再試",
     "title": "JetBook AI",
     "closeLabel": "關閉 AI 抽屜",
