@@ -2,6 +2,9 @@ import { Fragment, type ReactNode } from "react";
 import type { ProseMirrorDoc, ProseMirrorNode } from "@/lib/content/types";
 import { createHeadingSlugger, headingNodeText } from "@/lib/content/heading-slug";
 import { HeadingAnchor } from "@/components/content/heading-anchor";
+import { codeLanguageLabel } from "@/lib/content/lowlight";
+import { highlightToReact } from "@/lib/content/highlight-to-react";
+import { CodeBlockReader } from "./code-block-reader";
 import { ContentImage } from "./content-image";
 
 /**
@@ -93,12 +96,19 @@ function renderNode(node: ProseMirrorNode, key: number, slug: Slugger): ReactNod
       );
     case "blockquote":
       return <blockquote key={key}>{renderChildren(node.content, slug)}</blockquote>;
-    case "codeBlock":
+    case "codeBlock": {
+      const code = (node.content ?? []).map((c) => c.text ?? "").join("");
+      const language = (node.attrs?.language as string | null | undefined) ?? null;
       return (
-        <pre key={key}>
-          <code>{(node.content ?? []).map((c) => c.text ?? "").join("")}</code>
-        </pre>
+        <CodeBlockReader
+          key={key}
+          code={code}
+          languageLabel={codeLanguageLabel(language)}
+        >
+          {highlightToReact(code, language)}
+        </CodeBlockReader>
       );
+    }
     case "image": {
       const src = typeof node.attrs?.src === "string" ? node.attrs.src : "";
       // 安全：只渲染同源上傳圖片（/api/files/），外部或被竄改的 src 一律不輸出
