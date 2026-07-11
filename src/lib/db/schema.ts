@@ -20,6 +20,7 @@ import {
   uniqueIndex,
   uuid,
   vector,
+  type AnyPgColumn,
 } from "drizzle-orm/pg-core";
 
 /** 系統層級角色：admin 可管理使用者與全部空間；member 為一般成員。 */
@@ -318,6 +319,42 @@ export const attachments = pgTable(
   ],
 );
 
+// ── 頁面留言（K-01；F-COLLAB-02 頁面級討論串，設計規範 §3.9） ────────────────
+
+/**
+ * 頁面留言（K-01，F-COLLAB-02）：頁面級討論串。
+ * - `parent_comment_id` 自關聯：null＝頂層討論串、非 null＝回覆（一層縮排即可，v1 不做多層巢狀）。
+ *   父留言硬刪時 cascade 連帶刪除回覆；一般刪除走 `deleted_at` 軟刪（保留討論串脈絡）。
+ * - `author_id` set null：作者帳號刪除後留言保留、僅作者顯示轉為未知。
+ * - `resolved_at` 僅對頂層留言有意義：標記解決後整串在 UI 收合至「已解決」。
+ * - 權限：留言需 commenter+（authz `page.comment`）；刪除限本人或 space admin（薄殼於 action 判斷）。
+ */
+export const comments = pgTable(
+  "comments",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    pageId: uuid("page_id")
+      .notNull()
+      .references(() => pages.id, { onDelete: "cascade" }),
+    /** 回覆指向的父留言；頂層討論串為 null（自關聯，父硬刪時 cascade） */
+    parentCommentId: uuid("parent_comment_id").references((): AnyPgColumn => comments.id, {
+      onDelete: "cascade",
+    }),
+    /** 作者；帳號刪除後留言保留、作者顯示為未知（set null） */
+    authorId: uuid("author_id").references(() => users.id, { onDelete: "set null" }),
+    body: text("body").notNull(),
+    /** 標記解決時間（僅頂層留言）；null＝未解決 */
+    resolvedAt: timestamp("resolved_at", { withTimezone: true }),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+    /** 軟刪除：保留討論串脈絡（有回覆的頂層留言刪除後以墓碑顯示） */
+    deletedAt: timestamp("deleted_at", { withTimezone: true }),
+  },
+  (table) => [
+    index("ix_comments_page").on(table.pageId),
+    index("ix_comments_parent").on(table.parentCommentId),
+  ],
+);
+
 // ── 頁面嵌入向量（H-06；語意檢索索引，ADR-005 BGE-M3 1024 維） ────────────────
 
 /**
@@ -394,3 +431,4 @@ export type Page = typeof pages.$inferSelect;
 export type PageVersion = typeof pageVersions.$inferSelect;
 export type Attachment = typeof attachments.$inferSelect;
 export type PageEmbedding = typeof pageEmbeddings.$inferSelect;
+export type Comment = typeof comments.$inferSelect;
