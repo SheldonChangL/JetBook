@@ -49,12 +49,23 @@ export function createMemoryRateLimiter(options: {
   };
 }
 
-const globalForRateLimit = globalThis as unknown as { jetbookLoginLimiter?: RateLimiter };
+const globalForRateLimit = globalThis as unknown as {
+  jetbookLoginLimiter?: RateLimiter;
+  jetbookPasswordResetLimiter?: RateLimiter;
+};
 
 /** 登入端點：5 次/分/IP（NFR-SEC-07）。 */
 export const loginRateLimiter: RateLimiter =
   globalForRateLimit.jetbookLoginLimiter ??
   (globalForRateLimit.jetbookLoginLimiter = createMemoryRateLimiter({
+    limit: 5,
+    windowMs: 60_000,
+  }));
+
+/** 忘記密碼端點：5 次/分/IP，防濫發重設信件轟炸（B-05）。 */
+export const passwordResetRateLimiter: RateLimiter =
+  globalForRateLimit.jetbookPasswordResetLimiter ??
+  (globalForRateLimit.jetbookPasswordResetLimiter = createMemoryRateLimiter({
     limit: 5,
     windowMs: 60_000,
   }));

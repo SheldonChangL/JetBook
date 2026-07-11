@@ -4,7 +4,14 @@ import type { NextRequest } from "next/server";
 const SESSION_COOKIE = "jetbook_session";
 
 /** 不需登入即可存取的路徑前綴。 */
-const PUBLIC_PATHS = ["/login", "/api/healthz", "/api/readyz", "/api/auth/oidc"];
+const PUBLIC_PATHS = [
+  "/login",
+  "/forgot-password",
+  "/reset-password",
+  "/api/healthz",
+  "/api/readyz",
+  "/api/auth/oidc",
+];
 
 function isPublicPath(pathname: string): boolean {
   return PUBLIC_PATHS.some((p) => pathname === p || pathname.startsWith(`${p}/`));
