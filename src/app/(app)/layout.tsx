@@ -6,17 +6,27 @@ import { requireSession } from "@/lib/auth/current";
 import { isOrgAdmin } from "@/lib/authz/permission";
 import { isEmbeddingConfigured, isLlmConfigured } from "@/lib/llm";
 import { countUnread, listNotifications } from "@/lib/notifications";
+import { listCollections } from "@/lib/spaces/collections";
+import { groupSpacesByCollection } from "@/lib/spaces/grouping";
 import { listAccessibleSpaces } from "@/lib/spaces/queries";
 import { AppShell } from "@/components/layout/app-shell";
 
 export default async function AppLayout({ children }: { children: ReactNode }) {
   const { user } = await requireSession();
   const t = await getTranslations("shell");
-  const [spaces, notifications, unreadNotifications] = await Promise.all([
+  const [spaces, collections, notifications, unreadNotifications] = await Promise.all([
     listAccessibleSpaces(user),
+    listCollections(),
     listNotifications(user.id),
     countUnread(user.id),
   ]);
+
+  // 側欄「我的空間」依 collection 分組，未分組排最後（C-09）。
+  const groups = groupSpacesByCollection(
+    spaces,
+    collections.map((c) => ({ id: c.id, name: c.name })),
+  );
+  const hasNamedCollection = groups.some((g) => g.collection !== null);
 
   const sidebar = (
     <nav className="flex flex-col gap-0.5 text-body-ui">
@@ -24,15 +34,25 @@ export default async function AppLayout({ children }: { children: ReactNode }) {
       <SidebarLink href="/spaces" icon={<Library className="size-4" />} label={t("allSpaces")} />
       <SidebarLink href="/trash" icon={<Trash2 className="size-4" />} label={t("trash")} />
       {spaces.length > 0 ? (
-        <div className="mt-4">
-          <p className="px-2 pb-1 text-caption font-medium text-fg-tertiary">{t("mySpaces")}</p>
-          {spaces.map((s) => (
-            <SidebarLink
-              key={s.id}
-              href={`/s/${s.slug}`}
-              icon={<span className="text-sm">{s.icon ?? "📘"}</span>}
-              label={s.name}
-            />
+        <div className="mt-4 flex flex-col gap-2">
+          <p className="px-2 text-caption font-medium text-fg-tertiary">{t("mySpaces")}</p>
+          {groups.map((group) => (
+            <div key={group.collection?.id ?? "__ungrouped__"} className="flex flex-col gap-0.5">
+              {/* 有具名分組時才顯示子標頭（含未分組）；全部未分組則維持平面列表。 */}
+              {hasNamedCollection ? (
+                <p className="px-2 pt-1 text-caption text-fg-tertiary">
+                  {group.collection ? group.collection.name : t("ungrouped")}
+                </p>
+              ) : null}
+              {group.spaces.map((s) => (
+                <SidebarLink
+                  key={s.id}
+                  href={`/s/${s.slug}`}
+                  icon={<span className="text-sm">{s.icon ?? "📘"}</span>}
+                  label={s.name}
+                />
+              ))}
+            </div>
           ))}
         </div>
       ) : null}
@@ -55,15 +75,7 @@ export default async function AppLayout({ children }: { children: ReactNode }) {
   );
 }
 
-function SidebarLink({
-  href,
-  icon,
-  label,
-}: {
-  href: string;
-  icon: ReactNode;
-  label: string;
-}) {
+function SidebarLink({ href, icon, label }: { href: string; icon: ReactNode; label: string }) {
   return (
     <Link
       href={href}
