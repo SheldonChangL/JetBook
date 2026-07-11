@@ -115,55 +115,71 @@ export async function runImportZip(
       }
     }
 
-    // 3. DFS 建頁（資料夾＝父頁；.md 走既有儲存管線）。
+    // 建立「帶內容」的頁：走既有儲存管線（三欄同交易同步 + 版本快照），並改寫站內圖片引用。
+    // baseDir＝該 Markdown 檔所在目錄（供相對圖片路徑解析）。回傳新頁 id。
+    const createContentPage = async (
+      parentId: string | null,
+      markdown: string,
+      fileName: string,
+      baseDir: string,
+    ): Promise<string> => {
+      let hits = 0;
+      const { title, doc } = buildMarkdownImport(markdown, fileName, {
+        resolveImageSrc: (href) => {
+          const key = resolveImageRefPath(baseDir, href);
+          if (!key) return null;
+          const id = imageIdByPath.get(key);
+          if (!id) return null;
+          hits += 1;
+          return `/api/files/${id}`;
+        },
+      });
+      const page = await db.transaction(async (tx) => {
+        const created = await createPageInTx(tx, {
+          spaceId: data.spaceId,
+          parentId,
+          title,
+          userId: data.userId,
+        });
+        // 新頁 currentVersionNo=0：以樂觀鎖初值走一次內容管線（三欄同交易同步 + 版本快照）。
+        await writePageContentTx(tx, {
+          pageId: created.id,
+          pageTitle: created.title,
+          expectedVersionNo: 0,
+          content: doc,
+          userId: data.userId,
+        });
+        return created;
+      });
+      progress.createdPages += 1;
+      progress.rewrittenImageLinks += hits;
+      await triggerEmbed(page.id);
+      return page.id;
+    };
+
+    // 3. DFS 建頁（資料夾＝父頁；.md 走既有儲存管線；資料夾帶 README/index 內容時亦走管線）。
     const createNode = async (node: ImportTreeNode, parentId: string | null): Promise<void> => {
       let pageId: string;
 
       if (node.kind === "folder") {
-        const page = await db.transaction((tx) =>
-          createPageInTx(tx, {
-            spaceId: data.spaceId,
-            parentId,
-            title: node.title,
-            userId: data.userId,
-          }),
-        );
-        pageId = page.id;
-        progress.createdPages += 1;
+        if (node.markdown !== undefined) {
+          // 資料夾自身內容（README/index）：baseDir＝資料夾路徑。
+          pageId = await createContentPage(parentId, node.markdown, node.fileName ?? node.path, node.path);
+        } else {
+          const page = await db.transaction((tx) =>
+            createPageInTx(tx, {
+              spaceId: data.spaceId,
+              parentId,
+              title: node.title,
+              userId: data.userId,
+            }),
+          );
+          pageId = page.id;
+          progress.createdPages += 1;
+        }
       } else {
         const baseDir = node.path.split("/").slice(0, -1).join("/");
-        let hits = 0;
-        const { title, doc } = buildMarkdownImport(node.markdown ?? "", node.fileName ?? node.path, {
-          resolveImageSrc: (href) => {
-            const key = resolveImageRefPath(baseDir, href);
-            if (!key) return null;
-            const id = imageIdByPath.get(key);
-            if (!id) return null;
-            hits += 1;
-            return `/api/files/${id}`;
-          },
-        });
-        const page = await db.transaction(async (tx) => {
-          const created = await createPageInTx(tx, {
-            spaceId: data.spaceId,
-            parentId,
-            title,
-            userId: data.userId,
-          });
-          // 新頁 currentVersionNo=0：以樂觀鎖初值走一次內容管線（三欄同交易同步 + 版本快照）。
-          await writePageContentTx(tx, {
-            pageId: created.id,
-            pageTitle: created.title,
-            expectedVersionNo: 0,
-            content: doc,
-            userId: data.userId,
-          });
-          return created;
-        });
-        pageId = page.id;
-        progress.createdPages += 1;
-        progress.rewrittenImageLinks += hits;
-        await triggerEmbed(pageId);
+        pageId = await createContentPage(parentId, node.markdown ?? "", node.fileName ?? node.path, baseDir);
       }
 
       progress.processed += 1;

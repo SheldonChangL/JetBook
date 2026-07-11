@@ -6,12 +6,15 @@ import { purgeExpiredTrash } from "@/lib/pages/trash";
 import { purgeExpiredSpaces } from "@/lib/spaces/manage";
 import {
   ensureEmbedQueues,
+  ensureExportSpaceQueue,
   ensureImportZipQueue,
   ensureReindexAllQueue,
   JOBS,
+  updateExportSpaceProgress,
   updateImportZipProgress,
   updateReindexAllProgress,
   type EmbedPageJob,
+  type ExportSpaceJob,
   type ImportZipJob,
   type ReindexAllProgress,
 } from "@/lib/jobs/queue";
@@ -19,6 +22,7 @@ import { isEmbeddingConfigured } from "@/lib/llm";
 import { embedPage } from "@/lib/rag/indexer";
 import { runReindexAll } from "@/lib/rag/reindex";
 import { runImportZip } from "@/lib/jobs/import-zip";
+import { purgeExpiredExports, runExportSpace } from "@/lib/jobs/export-space";
 
 /**
  * Worker entrypoint（H-01）：與 web 同 codebase、獨立行程（compose worker 服務）。
@@ -48,6 +52,14 @@ async function main() {
     const purgedPages = await purgeExpiredTrash();
     const purgedSpaces = await purgeExpiredSpaces();
     logger.info({ purgedPages, purgedSpaces }, "expired trash purged");
+  });
+
+  // 匯出暫存 zip 逾期清除（J-03）：每日刪除 storage export/ 下逾 EXPORT_TTL_MS 的暫存檔。
+  await boss.createQueue(JOBS.purgeExports);
+  await boss.schedule(JOBS.purgeExports, "45 3 * * *", {}, {});
+  await boss.work(JOBS.purgeExports, async () => {
+    const purgedExports = await purgeExpiredExports();
+    logger.info({ purgedExports }, "expired exports purged");
   });
 
   // ── 任務型 job：頁面嵌入索引（H-06） ──
@@ -108,6 +120,18 @@ async function main() {
     if (!job) return;
     return runImportZip(job.data, {
       onProgress: (progress) => updateImportZipProgress(job.id, progress),
+    });
+  });
+
+  // ── 任務型 job：整個 Space Markdown 匯出（J-03） ──
+  await ensureExportSpaceQueue(boss);
+  await boss.work(JOBS.exportSpace, { batchSize: 1 }, async (jobs: Job<ExportSpaceJob>[]) => {
+    // batchSize=1：每次僅取一個匯出 job；回傳最終報告（含 storageKey）寫入 job output。
+    const job = jobs[0];
+    if (!job) return;
+    return runExportSpace(job.data, {
+      jobId: job.id,
+      onProgress: (progress) => updateExportSpaceProgress(job.id, progress),
     });
   });
 

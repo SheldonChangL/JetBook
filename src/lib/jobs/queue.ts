@@ -25,6 +25,10 @@ export const JOBS = {
   purgeTrash: "purge-trash",
   /** Zip 批次匯入（J-02）：{ storageKey, fileName, spaceId, parentId, userId } */
   importZip: "import-zip",
+  /** 整個 Space Markdown 匯出（J-03）：{ spaceId, spaceName, userId } */
+  exportSpace: "export-space",
+  /** 匯出暫存檔逾期清除（J-03，cron） */
+  purgeExports: "purge-exports",
 } as const;
 
 export type JobName = (typeof JOBS)[keyof typeof JOBS];
@@ -189,6 +193,99 @@ export async function getImportZipStatus(jobId: string): Promise<ImportZipStatus
   const job = await boss.getJobById<ImportZipJob>(JOBS.importZip, jobId);
   if (!job) return null;
   const output = job.output as ImportZipProgress | null;
+  return {
+    state: job.state,
+    spaceId: job.data.spaceId,
+    startedBy: job.data.userId,
+    output: output ?? null,
+  };
+}
+
+// ── 整個 Space Markdown 匯出（J-03） ───────────────────────────────
+
+/** export-space job 執行寬限（大量頁面／附件打包）；避免長工作被判過期而重跑。 */
+const EXPORT_SPACE_EXPIRE_SECONDS = 15 * 60;
+
+/** export-space job 的 payload 型別（enqueue 與 worker handler 共用）。 */
+export interface ExportSpaceJob {
+  spaceId: string;
+  /** 空間名稱（下載檔名用；enqueue 當下快照，worker 免再查） */
+  spaceName: string;
+  /** 匯出發起者（enqueue 時已驗 space.manage 權限） */
+  userId: string;
+}
+
+/** 匯出 job 進度／結果報告（寫入 job output；UI 輪詢顯示）。 */
+export interface ExportSpaceProgress {
+  phase: "collecting" | "packaging" | "completed" | "failed";
+  /** 已處理頁面數 */
+  processed: number;
+  /** 需匯出的頁面總數 */
+  total: number;
+  exportedPages: number;
+  includedAssets: number;
+  /** 完成時：暫存 zip 的 storage key（下載 route 據此串流；不外洩給前端） */
+  storageKey?: string;
+  /** 完成時：下載檔名（如「空間名.zip」） */
+  fileName?: string;
+  /** 完成時：zip 位元組大小 */
+  sizeBytes?: number;
+  /** phase=failed 時的錯誤碼／訊息 */
+  errorCode?: string;
+  errorMessage?: string;
+}
+
+/** 確保 export-space 佇列存在（enqueue 與 worker 兩端一致）。 */
+export async function ensureExportSpaceQueue(boss: PgBoss): Promise<void> {
+  await boss.createQueue(JOBS.exportSpace);
+}
+
+/**
+ * enqueue Space 匯出 job。**retryLimit=0**：匯出產生暫存檔非冪等，失敗不自動重試——
+ * 由 UI 呈現錯誤、使用者重新觸發。expireInSeconds 放寬給大空間打包。
+ */
+export async function enqueueExportSpace(data: ExportSpaceJob): Promise<string | null> {
+  const boss = await getBoss();
+  await ensureExportSpaceQueue(boss);
+  return boss.send(JOBS.exportSpace, data, {
+    retryLimit: 0,
+    expireInSeconds: EXPORT_SPACE_EXPIRE_SECONDS,
+  });
+}
+
+/**
+ * 將進度寫入 export-space job 的 output 欄位（best-effort，同 import-zip 模式）。
+ * job 完成時 pg-boss 以 handler 回傳值覆寫 output（＝最終報告，含 storageKey）。
+ */
+export async function updateExportSpaceProgress(
+  jobId: string,
+  progress: ExportSpaceProgress,
+): Promise<void> {
+  try {
+    await db.execute(
+      sql`UPDATE ${sql.raw(`${PGBOSS_SCHEMA}.job`)} SET output = ${JSON.stringify(progress)}::jsonb
+          WHERE name = ${JOBS.exportSpace} AND id = ${jobId}::uuid`,
+    );
+  } catch (error) {
+    logger.warn({ err: error, jobId }, "更新 export-space 進度失敗（不中斷匯出）");
+  }
+}
+
+export interface ExportSpaceStatus {
+  state: "created" | "retry" | "active" | "completed" | "cancelled" | "failed";
+  /** 發起匯出的空間（供狀態／下載路由授權：需 space.manage 或發起者本人） */
+  spaceId: string;
+  /** 發起者（供狀態／下載路由授權） */
+  startedBy: string;
+  output: ExportSpaceProgress | null;
+}
+
+/** 查詢 export-space job 狀態與進度／結果（UI 輪詢／下載路由用）。找不到回 null。 */
+export async function getExportSpaceStatus(jobId: string): Promise<ExportSpaceStatus | null> {
+  const boss = await getBoss();
+  const job = await boss.getJobById<ExportSpaceJob>(JOBS.exportSpace, jobId);
+  if (!job) return null;
+  const output = job.output as ExportSpaceProgress | null;
   return {
     state: job.state,
     spaceId: job.data.spaceId,

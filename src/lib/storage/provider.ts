@@ -8,6 +8,14 @@ import { LocalStorageProvider } from "./local";
  * 檔案本體一律經 StorageProvider 存取——業務程式碼不得直接碰檔案系統。
  * 未來 S3/MinIO 只需新增實作並在 getStorageProvider() 切換，呼叫端不變。
  */
+/** 列出前綴下物件的最小 metadata（供暫存檔逾期清理）。 */
+export interface StorageObject {
+  key: string;
+  sizeBytes: number;
+  /** 最後修改時間（epoch ms） */
+  modifiedMs: number;
+}
+
 export interface StorageProvider {
   /** 寫入檔案內容；key 已存在時擲錯（storage key 為一次性 UUID，不覆寫）。 */
   put(key: string, data: Buffer): Promise<void>;
@@ -15,6 +23,11 @@ export interface StorageProvider {
   getStream(key: string): Promise<Readable>;
   /** 刪除檔案；key 不存在視為成功（冪等）。 */
   delete(key: string): Promise<void>;
+  /**
+   * 列出某前綴下的物件（單層，供暫存檔逾期清理，如匯出 zip）。前綴不存在時回空陣列。
+   * S3 對應 ListObjectsV2(prefix)；本地實作為讀取前綴目錄。
+   */
+  list(prefix: string): Promise<StorageObject[]>;
 }
 
 let instance: StorageProvider | null = null;

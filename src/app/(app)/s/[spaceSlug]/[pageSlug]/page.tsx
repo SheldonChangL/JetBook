@@ -21,6 +21,7 @@ import { AnchorHighlight } from "@/components/content/anchor-highlight";
 import { Button } from "@/components/ui/button";
 import type { ProseMirrorDoc } from "@/lib/content/types";
 import { CommentsPanel } from "./comments-panel";
+import { PageActionsMenu } from "./page-actions-menu";
 
 export async function generateMetadata({
   params,
@@ -106,6 +107,7 @@ export default async function PageReadPage({
               </Link>
             </Button>
           ) : null}
+          <PageActionsMenu pageId={page.id} />
         </div>
       </div>
 

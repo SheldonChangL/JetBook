@@ -3,6 +3,7 @@ import { zipSync, strToU8 } from "fflate";
 import {
   buildImportPlan,
   inferImageMime,
+  isFolderContentFile,
   normalizeEntryPath,
   parseImportZip,
   resolveImageRefPath,
@@ -180,6 +181,47 @@ describe("buildImportPlan — 資料夾→頁面樹", () => {
     expect(plan.tree.map((n) => n.path)).toEqual(["top.md"]);
     expect(plan.images).toHaveLength(2);
     expect(plan.pageCount).toBe(1);
+  });
+
+  it("資料夾內 README.md → 該資料夾頁自身內容（不另建子頁；J-03）", () => {
+    const files = parseImportZip(
+      makeZip({
+        "guide/README.md": "# 指南\n\n總說明。",
+        "guide/setup.md": "# 安裝",
+      }),
+    );
+    const plan = buildImportPlan(files);
+    const guide = findChild(plan.tree, (n) => n.path === "guide");
+    expect(guide.kind).toBe("folder");
+    expect(guide.markdown).toContain("# 指南");
+    expect(guide.fileName).toBe("README.md");
+    // 子頁只有 setup，README 未另建為子頁。
+    expect(guide.children.map((c) => c.path)).toEqual(["guide/setup.md"]);
+    // pageCount＝資料夾 guide(1) + 頁面 setup(1)（README 併入資料夾，不額外計數）。
+    expect(plan.pageCount).toBe(2);
+  });
+
+  it("index.md 同樣視為資料夾自身內容", () => {
+    const plan = buildImportPlan(parseImportZip(makeZip({ "sec/index.md": "# 章節" })));
+    const sec = findChild(plan.tree, (n) => n.path === "sec");
+    expect(sec.kind).toBe("folder");
+    expect(sec.markdown).toContain("# 章節");
+    expect(sec.children).toEqual([]);
+    expect(plan.pageCount).toBe(1);
+  });
+
+  it("根層 README.md 仍為一般頁面（無對應資料夾可歸屬）", () => {
+    const plan = buildImportPlan(parseImportZip(makeZip({ "README.md": "# 讀我" })));
+    expect(plan.tree.map((n) => `${n.kind}:${n.path}`)).toEqual(["page:README.md"]);
+  });
+});
+
+describe("isFolderContentFile", () => {
+  it.each(["a/README.md", "a/readme.markdown", "x/y/index.md", "x/INDEX.MD"])("%s → true", (p) => {
+    expect(isFolderContentFile(p)).toBe(true);
+  });
+  it.each(["README.md", "index.md", "a/intro.md", "a/readme.txt"])("%s → false", (p) => {
+    expect(isFolderContentFile(p)).toBe(false);
   });
 });
 
