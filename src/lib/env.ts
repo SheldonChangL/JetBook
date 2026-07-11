@@ -19,6 +19,20 @@ const envSchema = z.object({
   /** 單檔上傳大小上限（MB） */
   MAX_UPLOAD_MB: z.coerce.number().int().positive().default(50),
 
+  // ── Email／SMTP（B-05；全部 optional，未設 SMTP_HOST 時不寄信，改由 logger 輸出信件內容，僅供開發） ──
+  /** SMTP 主機；未設定＝不寄信（開發／CI fallback） */
+  SMTP_HOST: z.string().optional(),
+  SMTP_PORT: z.coerce.number().int().positive().default(587),
+  /** 直連 TLS（465）為 true；587 STARTTLS 為 false。字串明確比對，避免 coerce 把 "false" 判為 true */
+  SMTP_SECURE: z
+    .string()
+    .optional()
+    .transform((v) => v === "true" || v === "1"),
+  SMTP_USER: z.string().optional(),
+  SMTP_PASSWORD: z.string().optional(),
+  /** 寄件者位址（含顯示名） */
+  SMTP_FROM: z.string().default("JetBook <no-reply@jet-opto.com.tw>"),
+
   // ── OIDC SSO（B-06 預留；全部 optional，未設定時停用 SSO——路由回 404、登入頁不顯示按鈕） ──
   /** IdP issuer URL（OIDC discovery 起點，如 https://idp.example.com） */
   AUTH_OIDC_ISSUER: z.url().optional(),
