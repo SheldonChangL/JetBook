@@ -1,5 +1,12 @@
 import { describe, expect, it } from "vitest";
-import type { ChatDelta, ChatParams, ChatResult, ChatUsage, LLMProvider } from "@/lib/llm";
+import type {
+  ChatDelta,
+  ChatParams,
+  ChatResult,
+  ChatStreamResult,
+  ChatUsage,
+  LLMProvider,
+} from "@/lib/llm";
 import { ASSIST_MODES } from "./assist-modes";
 import { buildAssistSystemPrompt, streamAssist } from "./assist";
 
@@ -13,11 +20,12 @@ class FakeProvider implements LLMProvider {
   constructor(
     private deltas: string[] = ["結果"],
     private usage: ChatUsage = { inputTokens: 12, outputTokens: 4 },
+    private modelId = "fake-model",
   ) {}
-  async *chatStream(params: ChatParams): AsyncGenerator<ChatDelta, ChatUsage> {
+  async *chatStream(params: ChatParams): AsyncGenerator<ChatDelta, ChatStreamResult> {
     this.lastParams = params;
     for (const text of this.deltas) yield { type: "text", text };
-    return this.usage;
+    return { usage: this.usage, model: this.modelId };
   }
   async chat(): Promise<ChatResult> {
     throw new Error("未使用");
@@ -62,6 +70,17 @@ describe("streamAssist", () => {
     expect(provider.lastParams?.tier).toBe("light");
     expect(provider.lastParams?.system).toContain("精簡");
     expect(provider.lastParams?.messages[0]?.content).toBe("請把這段變精簡");
+  });
+
+  it("結束回傳用量摘要（usage + model），供 route 記錄 I-06 用量", async () => {
+    const gen = streamAssist({
+      mode: "rewrite",
+      text: "改寫我",
+      provider: new FakeProvider(["果"], { inputTokens: 15, outputTokens: 4 }, "light-x"),
+    });
+    let step = await gen.next();
+    while (!step.done) step = await gen.next();
+    expect(step.value).toEqual({ usage: { inputTokens: 15, outputTokens: 4 }, model: "light-x" });
   });
 
   it("signal 貫通至 provider（供 client 斷線停止生成）", async () => {
