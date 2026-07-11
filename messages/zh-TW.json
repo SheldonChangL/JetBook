@@ -650,6 +650,11 @@
     "copyAnchor": "複製此段落連結",
     "linkCopied": "連結已複製到剪貼簿",
     "copyFailed": "複製失敗，請手動複製網址列連結",
+    "deadLink": {
+      "label": "已刪除頁面",
+      "tooltip": "此連結的目標頁面已刪除（移至回收桶）",
+      "restore": "此連結的目標頁面已刪除，點擊前往回收桶還原"
+    },
     "image": {
       "zoom": "點擊放大圖片",
       "close": "關閉",

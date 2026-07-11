@@ -1,5 +1,7 @@
 import { Fragment, type ReactNode } from "react";
+import { getTranslations } from "next-intl/server";
 import type { ProseMirrorDoc, ProseMirrorNode } from "@/lib/content/types";
+import type { ResolvedPageLink } from "@/lib/pages/link-resolve";
 import { createHeadingSlugger, headingNodeText } from "@/lib/content/heading-slug";
 import { HeadingAnchor } from "@/components/content/heading-anchor";
 import { codeLanguageLabel } from "@/lib/content/lowlight";
@@ -27,8 +29,18 @@ import { MermaidDiagram } from "./mermaid-diagram";
 
 type Slugger = (text: string) => string;
 
-/** 頁面連結解析結果：pageId → 現行連結目標（改名自動更新，F-EDIT-12）。 */
-export type PageLinkMap = ReadonlyMap<string, { href: string; title: string }>;
+/** 頁面連結解析結果：pageId → 目標狀態（現行連結或死鏈，D-11 / C-13）。 */
+export type PageLinkMap = ReadonlyMap<string, ResolvedPageLink>;
+
+/** C-13：死鏈 chip 的 i18n 文案（於 RenderContent 一次取得後沿 ctx 下傳）。 */
+interface DeadLinkLabels {
+  /** chip 文字（「已刪除頁面」） */
+  label: string;
+  /** 無還原權限時的 tooltip */
+  tooltip: string;
+  /** 有還原權限時的 tooltip（點擊前往回收桶還原） */
+  restore: string;
+}
 
 /**
  * 渲染上下文：slug 產生器 + 頁面連結解析 Map（D-11）+ Embed 白名單（D-14）。
@@ -38,6 +50,7 @@ export type PageLinkMap = ReadonlyMap<string, { href: string; title: string }>;
 interface RenderCtx {
   slug: Slugger;
   links: PageLinkMap | undefined;
+  deadLink: DeadLinkLabels;
   embedAllowedDomains: readonly string[];
 }
 
@@ -120,19 +133,57 @@ function renderMention(node: ProseMirrorNode, key: number): ReactNode {
   );
 }
 
-/** D-11：頁面連結。解析到現行目標→連結（現行標題）；否則以 label 快照顯示為非連結。 */
-function renderPageLink(node: ProseMirrorNode, key: number, links: PageLinkMap | undefined): ReactNode {
+/**
+ * D-11 / C-13：頁面連結渲染。
+ * - `resolved`：連結至現行目標（現行標題，改名自動更新）。
+ * - `deleted`（死鏈，C-13）：「已刪除頁面」chip（灰刪除線＋tooltip）；具還原權限者外層為
+ *   連結，直達回收桶還原（還原後目標復活，下次渲染自動回 resolved）。
+ * - 未解析（不可讀 space／已清除）：退回作者插入時的 label 快照、不連結。
+ */
+function renderPageLink(node: ProseMirrorNode, key: number, ctx: RenderCtx): ReactNode {
   const pageId = typeof node.attrs?.id === "string" ? node.attrs.id : "";
   const label = typeof node.attrs?.label === "string" ? node.attrs.label : "";
-  const resolved = pageId ? links?.get(pageId) : undefined;
-  if (resolved) {
+  const resolved = pageId ? ctx.links?.get(pageId) : undefined;
+
+  if (resolved?.status === "resolved") {
     return (
       <a key={key} className="jb-page-link" data-type="pageLink" href={resolved.href}>
         {resolved.title}
       </a>
     );
   }
-  // 不可讀或已刪除：退回 label 快照、不連結（已刪頁 chip 由 C-13 精修）。
+
+  if (resolved?.status === "deleted") {
+    const chipClass = "jb-page-link jb-page-link--deleted";
+    // 具還原權限：chip 本身為連結，直達回收桶（限定該 space）；tooltip 提示可還原。
+    if (resolved.canRestore && resolved.trashHref) {
+      return (
+        <a
+          key={key}
+          className={chipClass}
+          data-type="pageLink"
+          data-deleted=""
+          href={resolved.trashHref}
+          title={ctx.deadLink.restore}
+        >
+          {ctx.deadLink.label}
+        </a>
+      );
+    }
+    // 無還原權限：僅 chip、不提供還原入口（非連結）。
+    return (
+      <span
+        key={key}
+        className={chipClass}
+        data-type="pageLink"
+        data-deleted=""
+        title={ctx.deadLink.tooltip}
+      >
+        {ctx.deadLink.label}
+      </span>
+    );
+  }
+
   return (
     <span key={key} className="jb-page-link jb-page-link--unresolved" data-type="pageLink">
       {label}
@@ -149,7 +200,7 @@ function renderInline(nodes: ProseMirrorNode[] | undefined, ctx: RenderCtx): Rea
     if (node.type === "text") return renderMarks(node.text ?? "", node.marks, i);
     if (node.type === "hardBreak") return <br key={i} />;
     if (node.type === "mention") return renderMention(node, i);
-    if (node.type === "pageLink") return renderPageLink(node, i, ctx.links);
+    if (node.type === "pageLink") return renderPageLink(node, i, ctx);
     return <Fragment key={i}>{renderInline(node.content, ctx)}</Fragment>;
   });
 }
@@ -329,24 +380,34 @@ function renderNode(node: ProseMirrorNode, key: number, ctx: RenderCtx): ReactNo
     case "mention":
       return renderMention(node, key);
     case "pageLink":
-      return renderPageLink(node, key, ctx.links);
+      return renderPageLink(node, key, ctx);
     default:
       return <Fragment key={key}>{renderChildren(node.content, ctx)}</Fragment>;
   }
 }
 
-export function RenderContent({
+export async function RenderContent({
   doc,
   links,
   embedAllowedDomains = [],
 }: {
   doc: ProseMirrorDoc | null;
-  /** D-11：頁面連結解析 Map（pageId → 現行 href/title）。未提供時連結退回 label 快照。 */
+  /** D-11 / C-13：頁面連結解析 Map（pageId → 現行連結或死鏈）。未提供時連結退回 label 快照。 */
   links?: PageLinkMap;
   /** Embed 白名單網域（env EMBED_ALLOWED_DOMAINS）；未提供＝空白名單，嵌入一律退化為連結卡片（D-14）。 */
   embedAllowedDomains?: readonly string[];
 }) {
   if (!doc?.content?.length) return null;
-  const ctx: RenderCtx = { slug: createHeadingSlugger(), links, embedAllowedDomains };
+  const t = await getTranslations("reading");
+  const ctx: RenderCtx = {
+    slug: createHeadingSlugger(),
+    links,
+    embedAllowedDomains,
+    deadLink: {
+      label: t("deadLink.label"),
+      tooltip: t("deadLink.tooltip"),
+      restore: t("deadLink.restore"),
+    },
+  };
   return <div className="prose-editor max-w-none">{renderChildren(doc.content, ctx)}</div>;
 }
