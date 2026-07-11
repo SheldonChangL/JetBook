@@ -6,6 +6,7 @@ import { codeLanguageLabel } from "@/lib/content/lowlight";
 import { highlightToReact } from "@/lib/content/highlight-to-react";
 import { CodeBlockReader } from "./code-block-reader";
 import { ContentImage } from "./content-image";
+import { ContentAttachment } from "./content-attachment";
 
 /**
  * TipTap JSON → React 元素（閱讀模式渲染，G-02）。
@@ -115,6 +116,22 @@ function renderNode(node: ProseMirrorNode, key: number, slug: Slugger): ReactNod
       if (!src.startsWith("/api/files/")) return <Fragment key={key} />;
       const alt = typeof node.attrs?.alt === "string" ? node.attrs.alt : "";
       return <ContentImage key={key} src={src} alt={alt} />;
+    }
+    case "attachment": {
+      const attachmentId =
+        typeof node.attrs?.attachmentId === "string" ? node.attrs.attachmentId : "";
+      // attachmentId 缺失（資料異常）不輸出；有效者由 /api/files 下載 API 驗權限
+      if (!attachmentId) return <Fragment key={key} />;
+      const fileName = typeof node.attrs?.fileName === "string" ? node.attrs.fileName : "";
+      const sizeBytes = typeof node.attrs?.sizeBytes === "number" ? node.attrs.sizeBytes : 0;
+      return (
+        <ContentAttachment
+          key={key}
+          attachmentId={attachmentId}
+          fileName={fileName}
+          sizeBytes={sizeBytes}
+        />
+      );
     }
     case "horizontalRule":
       return <hr key={key} />;

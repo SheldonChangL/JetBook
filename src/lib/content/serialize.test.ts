@@ -60,6 +60,21 @@ describe("docToMarkdown 圖片節點（D-07）", () => {
   });
 });
 
+describe("docToMarkdown 附件節點（D-08）", () => {
+  it("attachment 節點序列化為 Markdown 連結（檔名 + /api/files/<id>）", () => {
+    const withAttachment: ProseMirrorDoc = {
+      type: "doc",
+      content: [
+        {
+          type: "attachment",
+          attrs: { attachmentId: "abc-123", fileName: "規格書.pdf", sizeBytes: 20480 },
+        },
+      ],
+    };
+    expect(docToMarkdown(withAttachment)).toContain("[規格書.pdf](/api/files/abc-123)");
+  });
+});
+
 describe("docToPlainText", () => {
   it("抽出全部文字供全文索引（去除 markdown 標記）", () => {
     const text = docToPlainText(doc);
@@ -68,5 +83,18 @@ describe("docToPlainText", () => {
     expect(text).toContain("檢查濕度");
     expect(text).not.toContain("**");
     expect(text).not.toContain("#");
+  });
+
+  it("附件以檔名進全文索引（D-08）", () => {
+    const withAttachment: ProseMirrorDoc = {
+      type: "doc",
+      content: [
+        {
+          type: "attachment",
+          attrs: { attachmentId: "abc-123", fileName: "年度報告.docx", sizeBytes: 4096 },
+        },
+      ],
+    };
+    expect(docToPlainText(withAttachment)).toContain("年度報告.docx");
   });
 });

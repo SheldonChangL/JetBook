@@ -8,6 +8,7 @@ import {
   ListOrdered,
   ListTodo,
   Minus,
+  Paperclip,
   Quote,
   Type,
   type LucideIcon,
@@ -122,6 +123,17 @@ export const SLASH_MENU_ITEMS: readonly SlashMenuItem[] = [
     keywords: ["程式碼", "程式碼區塊", "程式", "代碼", "code", "codeblock", "pre", "snippet"],
     command: ({ editor, range }) =>
       editor.chain().focus().deleteRange(range).toggleCodeBlock().run(),
+  },
+  {
+    id: "attachment",
+    group: "advanced",
+    icon: Paperclip,
+    keywords: ["檔案", "附件", "附加檔案", "上傳", "下載", "file", "attachment", "attach", "upload"],
+    // 先移除觸發字元，再開檔案選擇器（設定與 openPicker 由 PageEditor 填入 storage）
+    command: ({ editor, range }) => {
+      editor.chain().focus().deleteRange(range).run();
+      editor.storage.attachment.openPicker(editor.state.selection.from);
+    },
   },
 ];
 

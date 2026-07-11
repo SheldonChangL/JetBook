@@ -1,6 +1,7 @@
 "use client";
 
 import { useActionState, useEffect, useState } from "react";
+import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { useTranslations } from "next-intl";
 import { Eye, EyeOff } from "lucide-react";
@@ -16,6 +17,7 @@ export function LoginForm({ oidcEnabled = false }: { oidcEnabled?: boolean }) {
   const [state, formAction, pending] = useActionState(login, initialState);
   const [showPassword, setShowPassword] = useState(false);
   const [returnTo, setReturnTo] = useState(searchParams.get("returnTo") ?? "");
+  const resetDone = searchParams.get("reset") === "success";
   const ssoFailed = searchParams.get("error") === "sso";
 
   // 錨點（#hash）不會進 server；瀏覽器 redirect 會保留 fragment，
@@ -39,6 +41,14 @@ export function LoginForm({ oidcEnabled = false }: { oidcEnabled?: boolean }) {
   return (
     <form action={formAction} className="flex flex-col gap-4">
       <input type="hidden" name="returnTo" value={returnTo} />
+      {resetDone && !alertMessage ? (
+        <div
+          role="status"
+          className="rounded-sm border border-success/30 bg-success-tint px-3 py-2 text-body-ui text-success"
+        >
+          {t("resetSuccess")}
+        </div>
+      ) : null}
       {alertMessage ? (
         <div
           role="alert"
@@ -90,10 +100,17 @@ export function LoginForm({ oidcEnabled = false }: { oidcEnabled?: boolean }) {
         </div>
       </div>
 
-      <label className={cn("flex select-none items-center gap-2 text-body-ui text-fg-secondary")}>
-        <input type="checkbox" name="remember" value="true" className="size-4 accent-primary" />
-        {t("rememberMe")}
-      </label>
+      <div className="flex items-center justify-between gap-2">
+        <label
+          className={cn("flex select-none items-center gap-2 text-body-ui text-fg-secondary")}
+        >
+          <input type="checkbox" name="remember" value="true" className="size-4 accent-primary" />
+          {t("rememberMe")}
+        </label>
+        <Link href="/forgot-password" className="text-body-ui text-primary hover:underline">
+          {t("forgotPasswordLink")}
+        </Link>
+      </div>
 
       <Button type="submit" loading={pending} className="w-full" size="lg">
         {pending ? t("submitting") : t("submit")}
