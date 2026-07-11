@@ -1,6 +1,6 @@
 "use server";
 
-import { and, desc, eq, inArray, isNull, sql } from "drizzle-orm";
+import { and, desc, eq, inArray, sql } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
 import { headers } from "next/headers";
 import { z } from "zod";
@@ -10,34 +10,15 @@ import { requireSession } from "@/lib/auth/current";
 import { enqueueEmbedPage } from "@/lib/jobs/queue";
 import { isEmbeddingConfigured } from "@/lib/llm";
 import { assertCan } from "@/lib/authz/permission";
-import { positionBetween } from "@/lib/pages/position";
 import { movePageNode } from "@/lib/pages/move";
 import { listSpaceTreeNodes } from "@/lib/pages/tree";
-import { reclaimSlug, recordSlugHistory, uniquePageSlug } from "@/lib/pages/slug";
-import { docToMarkdown, docToPlainText } from "@/lib/content/serialize";
+import { recordSlugHistory, reclaimSlug, uniquePageSlug } from "@/lib/pages/slug";
+import { createPageInTx } from "@/lib/pages/create";
+import { writePageContentTx } from "@/lib/pages/content-write";
 import { buildMarkdownImport } from "@/lib/content/import-markdown";
 import { EMPTY_DOC, type ProseMirrorDoc } from "@/lib/content/types";
-import { VersionConflictError } from "@/lib/pages/errors";
 import { ipFromHeaders, writeAudit } from "@/lib/audit";
 import { logger } from "@/lib/logger";
-
-/** 取得某父節點下最後一個 position，供新節點接在末尾。 */
-async function lastPositionUnder(spaceId: string, parentId: string | null): Promise<string | null> {
-  const rows = await db
-    .select({ position: pages.position })
-    .from(pages)
-    .where(
-      and(
-        eq(pages.spaceId, spaceId),
-        parentId === null ? isNull(pages.parentId) : eq(pages.parentId, parentId),
-        isNull(pages.deletedAt),
-      ),
-    )
-    // fractional index 為 base-62 位元組序鍵：必須 COLLATE "C" 排序（C-04 修正）
-    .orderBy(desc(sql`${pages.position} COLLATE "C"`))
-    .limit(1);
-  return rows[0]?.position ?? null;
-}
 
 async function requireEditor(spaceId: string) {
   const { user } = await requireSession();
@@ -71,29 +52,16 @@ const createSchema = z.object({
 export async function createPage(input: z.infer<typeof createSchema>) {
   const data = createSchema.parse(input);
   const user = await requireEditor(data.spaceId);
-  const title = data.title || "未命名頁面";
-  const slug = await uniquePageSlug(data.spaceId, title);
-  const last = await lastPositionUnder(data.spaceId, data.parentId);
-  const position = positionBetween(last, null);
 
-  const page = await db.transaction(async (tx) => {
-    const [created] = await tx
-      .insert(pages)
-      .values({
-        spaceId: data.spaceId,
-        parentId: data.parentId,
-        title,
-        slug,
-        position,
-        createdBy: user.id,
-        updatedBy: user.id,
-      })
-      .returning();
-    if (!created) throw new Error("page 建立失敗");
-    // 新頁佔用此 slug → 清掉指向他頁的同名舊 slug 歷史（避免陳舊 301）
-    await reclaimSlug(tx, data.spaceId, slug);
-    return created;
-  });
+  // 建頁核心（slug/position/insert/reclaim）走 lib/pages/create，與匯入 worker 共用單一來源。
+  const page = await db.transaction((tx) =>
+    createPageInTx(tx, {
+      spaceId: data.spaceId,
+      parentId: data.parentId,
+      title: data.title,
+      userId: user.id,
+    }),
+  );
 
   logger.info({ userId: user.id, pageId: page.id, spaceId: data.spaceId }, "page created");
   const space = await db.query.spaces.findFirst({ where: eq(spaces.id, data.spaceId) });
@@ -223,9 +191,6 @@ export async function deletePage(input: z.infer<typeof deleteSchema>) {
   if (space) revalidatePath(`/s/${space.slug}`);
 }
 
-/** Session 合併窗：同作者連續存檔於此時間內合併為單一版本（E-01）。 */
-const SNAPSHOT_MERGE_MS = 5 * 60 * 1000;
-
 const saveSchema = z.object({
   pageId: z.uuid(),
   /** 樂觀鎖：用戶端載入時的版本號；不符即拒寫（C1 第二道防線） */
@@ -245,61 +210,17 @@ export async function savePage(input: z.infer<typeof saveSchema>): Promise<{ ver
   if (!page || page.deletedAt) throw new Error("NOT_FOUND");
   const user = await requireEditor(page.spaceId);
 
-  const doc = data.content ?? EMPTY_DOC;
-  const contentMd = docToMarkdown(doc);
-  const contentText = docToPlainText(doc);
-
-  const nextVersion = await db.transaction(async (tx) => {
-    // 樂觀鎖：以 WHERE current_version_no = expected 原子更新
-    const updated = await tx
-      .update(pages)
-      .set({
-        content: doc,
-        contentMd,
-        contentText,
-        currentVersionNo: data.expectedVersionNo + 1,
-        updatedBy: user.id,
-        updatedAt: new Date(),
-      })
-      .where(and(eq(pages.id, data.pageId), eq(pages.currentVersionNo, data.expectedVersionNo)))
-      .returning({ versionNo: pages.currentVersionNo });
-
-    if (updated.length === 0) {
-      // 版本不符：讀回目前版本號供前端提示重載
-      const fresh = await tx.query.pages.findFirst({ where: eq(pages.id, data.pageId) });
-      throw new VersionConflictError(fresh?.currentVersionNo ?? 0);
-    }
-    const versionNo = updated[0]!.versionNo;
-
-    // 版本快照（E-01，ADR-008 完整 JSON）：同交易寫入。
-    // Session 合併：同一作者於 SNAPSHOT_MERGE_MS 內的連續存檔更新最後一筆快照，
-    // 避免高頻 autosave 產生數百筆微版本。
-    const last = await tx.query.pageVersions.findFirst({
-      where: eq(pageVersions.pageId, data.pageId),
-      orderBy: desc(pageVersions.versionNo),
-    });
-    const mergeable =
-      last &&
-      last.createdBy === user.id &&
-      Date.now() - last.createdAt.getTime() < SNAPSHOT_MERGE_MS;
-
-    if (mergeable) {
-      await tx
-        .update(pageVersions)
-        .set({ versionNo, title: page.title, content: doc, contentMd, createdAt: new Date() })
-        .where(eq(pageVersions.id, last.id));
-    } else {
-      await tx.insert(pageVersions).values({
-        pageId: data.pageId,
-        versionNo,
-        title: page.title,
-        content: doc,
-        contentMd,
-        createdBy: user.id,
-      });
-    }
-    return versionNo;
-  });
+  // 三欄同交易同步 + 版本快照走 lib/pages/content-write（唯一內容管線，架構鐵律 #5），
+  // 匯入 worker 亦呼叫同一函式。
+  const nextVersion = await db.transaction((tx) =>
+    writePageContentTx(tx, {
+      pageId: data.pageId,
+      pageTitle: page.title,
+      expectedVersionNo: data.expectedVersionNo,
+      content: data.content ?? EMPTY_DOC,
+      userId: user.id,
+    }),
+  );
 
   logger.info({ userId: user.id, pageId: data.pageId, versionNo: nextVersion }, "page saved");
   // 三欄同交易提交後才 enqueue 嵌入索引（架構鐵律 #5：儲存管線之後）。

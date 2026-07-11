@@ -2,9 +2,17 @@ import { PgBoss, type Job } from "pg-boss";
 import { env } from "@/lib/env";
 import { logger } from "@/lib/logger";
 import { deleteExpiredSessions } from "@/lib/auth/session";
-import { ensureEmbedQueues, JOBS, type EmbedPageJob } from "@/lib/jobs/queue";
+import {
+  ensureEmbedQueues,
+  ensureImportZipQueue,
+  JOBS,
+  updateImportZipProgress,
+  type EmbedPageJob,
+  type ImportZipJob,
+} from "@/lib/jobs/queue";
 import { isEmbeddingConfigured } from "@/lib/llm";
 import { embedPage } from "@/lib/rag/indexer";
+import { runImportZip } from "@/lib/jobs/import-zip";
 
 /**
  * Worker entrypoint（H-01）：與 web 同 codebase、獨立行程（compose worker 服務）。
@@ -48,6 +56,17 @@ async function main() {
         "embed-page job 進入死信佇列（重試耗盡）",
       );
     }
+  });
+
+  // ── 任務型 job：Zip 批次匯入（J-02） ──
+  await ensureImportZipQueue(boss);
+  await boss.work(JOBS.importZip, { batchSize: 1 }, async (jobs: Job<ImportZipJob>[]) => {
+    // batchSize=1：每次僅取一個匯入 job；回傳最終報告寫入 job output。
+    const job = jobs[0];
+    if (!job) return;
+    return runImportZip(job.data, {
+      onProgress: (progress) => updateImportZipProgress(job.id, progress),
+    });
   });
 
   const shutdown = async (signal: string) => {
