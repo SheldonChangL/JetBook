@@ -7,7 +7,7 @@ import { Trash2 } from "lucide-react";
 import { db } from "@/lib/db";
 import { spaces } from "@/lib/db/schema";
 import { requireSession } from "@/lib/auth/current";
-import { actionAllowedForRole, getSpaceRole } from "@/lib/authz/permission";
+import { actionAllowedForRole, resolveSpaceAccess } from "@/lib/authz/permission";
 import { listSpaceTreeNodes } from "@/lib/pages/tree";
 import { PageTree } from "@/components/tree/page-tree";
 
@@ -28,11 +28,12 @@ export default async function SpaceLayout({
   const space = await db.query.spaces.findFirst({ where: eq(spaces.slug, spaceSlug) });
   if (!space || space.deletedAt) notFound();
 
-  const role = await getSpaceRole(user, space.id);
+  const { role, archived } = await resolveSpaceAccess(user, space.id);
   if (!role) notFound();
 
   const nodes = await listSpaceTreeNodes(space.id);
-  const canEdit = actionAllowedForRole("page.edit", role);
+  // 封存 space 唯讀（F-ORG-04）：即使角色為 editor+ 也不顯示建立／拖曳／垃圾桶等寫入入口。
+  const canEdit = !archived && actionAllowedForRole("page.edit", role);
   // 還原需 page.delete（＝editor+）；與 canEdit 同級，故共用旗標控制垃圾桶入口顯示。
   const tShell = await getTranslations("shell");
 
