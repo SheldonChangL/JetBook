@@ -112,7 +112,40 @@ function ReindexProgressView({ progress }: { progress: ReindexAllProgress }) {
         <StatItem label={t("reindexPurged")} value={progress.purgedDisabledSpaces} />
         <StatItem label={t("reindexFailed")} value={progress.failedCount} />
       </dl>
+      {progress.failed.length > 0 && <ReindexFailedList progress={progress} />}
     </div>
+  );
+}
+
+/**
+ * 失敗頁面清單（F-AI-02「失敗清單可重試」）：列出失敗頁 id 與原因樣本
+ * （上限見 reindex.ts FAILED_SAMPLE_CAP）；失敗總數超過樣本時附提示。
+ * 重試＝再次觸發全庫重嵌（內容雜湊增量、冪等），由上方按鈕重新排入。
+ */
+function ReindexFailedList({ progress }: { progress: ReindexAllProgress }) {
+  const t = useTranslations("admin");
+  const remaining = progress.failedCount - progress.failed.length;
+
+  return (
+    <details className="rounded-sm border border-danger/40 bg-danger-tint/40 open:pb-2">
+      <summary className="cursor-pointer px-2 py-1.5 text-caption font-medium text-danger">
+        {t("reindexFailedListTitle", { count: progress.failedCount })}
+      </summary>
+      <ul className="flex flex-col gap-1 px-2 pt-1 text-caption text-fg-secondary">
+        {progress.failed.map((item) => (
+          <li key={item.pageId} className="flex flex-col gap-0.5 border-t border-edge pt-1">
+            <span className="break-all font-mono text-fg-tertiary">{item.pageId}</span>
+            <span className="break-words text-danger">{item.error}</span>
+          </li>
+        ))}
+        {remaining > 0 && (
+          <li className="border-t border-edge pt-1 text-fg-tertiary">
+            {t("reindexFailedListMore", { count: remaining })}
+          </li>
+        )}
+      </ul>
+      <p className="px-2 pt-2 text-caption text-fg-tertiary">{t("reindexFailedRetryHint")}</p>
+    </details>
   );
 }
 
