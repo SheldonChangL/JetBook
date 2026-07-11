@@ -15,6 +15,7 @@ export async function listAccessibleSpaces(user: Pick<User, "id" | "orgRole">) {
       description: spaces.description,
       icon: spaces.icon,
       visibility: spaces.visibility,
+      collectionId: spaces.collectionId,
     })
     .from(spaces)
     .where(accessibleSpaceCondition(user))
