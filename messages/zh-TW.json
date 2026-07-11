@@ -284,7 +284,11 @@
   "reading": {
     "edit": "編輯",
     "lastUpdated": "最後更新：{time}",
-    "history": "版本歷史"
+    "history": "版本歷史",
+    "copyLink": "複製連結",
+    "copyAnchor": "複製此段落連結",
+    "linkCopied": "連結已複製到剪貼簿",
+    "copyFailed": "複製失敗，請手動複製網址列連結"
   },
   "tree": {
     "label": "頁面",

@@ -286,6 +286,16 @@ html.dark {
     text-decoration: underline;
   }
 
+  /* 錨點目標高亮（G-05）：分享連結載入含 hash 時短暫閃現，2s 後由 JS 移除 class 淡出。 */
+  .anchor-target-highlight {
+    background-color: var(--warning-tint);
+    box-shadow: 0 0 0 4px var(--warning-tint);
+    border-radius: var(--radius-xs);
+    transition:
+      background-color 0.4s ease,
+      box-shadow 0.4s ease;
+  }
+
   /* 動態偏好（§5.2） */
   @media (prefers-reduced-motion: reduce) {
     *,

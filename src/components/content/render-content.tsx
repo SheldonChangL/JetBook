@@ -1,11 +1,16 @@
 import { Fragment, type ReactNode } from "react";
 import type { ProseMirrorDoc, ProseMirrorNode } from "@/lib/content/types";
+import { createHeadingSlugger, headingNodeText } from "@/lib/content/heading-slug";
+import { HeadingAnchor } from "@/components/content/heading-anchor";
 
 /**
  * TipTap JSON → React 元素（閱讀模式渲染，G-02）。
  * 與編輯器 schema 對應，套用 .prose-editor 樣式，與編輯畫面視覺一致。
  * 進階區塊（表格/callout/圖片…）隨 D-03~D-14 擴充對應 case。
+ * 標題加穩定 id（文字 slug + 去重）與 hover 複製錨點鈕（G-05）。
  */
+
+type Slugger = (text: string) => string;
 
 function renderMarks(text: string, marks: ProseMirrorNode["marks"], key: number): ReactNode {
   let node: ReactNode = text;
@@ -37,8 +42,8 @@ function renderMarks(text: string, marks: ProseMirrorNode["marks"], key: number)
   return <Fragment key={key}>{node}</Fragment>;
 }
 
-function renderChildren(nodes: ProseMirrorNode[] | undefined): ReactNode {
-  return (nodes ?? []).map((node, i) => renderNode(node, i));
+function renderChildren(nodes: ProseMirrorNode[] | undefined, slug: Slugger): ReactNode {
+  return (nodes ?? []).map((node, i) => renderNode(node, i, slug));
 }
 
 function renderInline(nodes: ProseMirrorNode[] | undefined): ReactNode {
@@ -49,25 +54,31 @@ function renderInline(nodes: ProseMirrorNode[] | undefined): ReactNode {
   });
 }
 
-function renderNode(node: ProseMirrorNode, key: number): ReactNode {
+function renderNode(node: ProseMirrorNode, key: number, slug: Slugger): ReactNode {
   switch (node.type) {
     case "paragraph":
       return <p key={key}>{renderInline(node.content)}</p>;
     case "heading": {
       const level = Math.min(Math.max(Number(node.attrs?.level ?? 1), 1), 3);
       const Tag = (`h${level}` as "h1" | "h2" | "h3");
-      return <Tag key={key}>{renderInline(node.content)}</Tag>;
+      const id = slug(headingNodeText(node));
+      return (
+        <Tag key={key} id={id} className="group relative scroll-mt-20">
+          {renderInline(node.content)}
+          <HeadingAnchor id={id} />
+        </Tag>
+      );
     }
     case "bulletList":
-      return <ul key={key}>{renderChildren(node.content)}</ul>;
+      return <ul key={key}>{renderChildren(node.content, slug)}</ul>;
     case "orderedList":
-      return <ol key={key}>{renderChildren(node.content)}</ol>;
+      return <ol key={key}>{renderChildren(node.content, slug)}</ol>;
     case "listItem":
-      return <li key={key}>{renderChildren(node.content)}</li>;
+      return <li key={key}>{renderChildren(node.content, slug)}</li>;
     case "taskList":
       return (
         <ul key={key} data-type="taskList">
-          {renderChildren(node.content)}
+          {renderChildren(node.content, slug)}
         </ul>
       );
     case "taskItem":
@@ -76,11 +87,11 @@ function renderNode(node: ProseMirrorNode, key: number): ReactNode {
           <label>
             <input type="checkbox" defaultChecked={Boolean(node.attrs?.checked)} disabled />
           </label>
-          <div>{renderChildren(node.content)}</div>
+          <div>{renderChildren(node.content, slug)}</div>
         </li>
       );
     case "blockquote":
-      return <blockquote key={key}>{renderChildren(node.content)}</blockquote>;
+      return <blockquote key={key}>{renderChildren(node.content, slug)}</blockquote>;
     case "codeBlock":
       return (
         <pre key={key}>
@@ -90,11 +101,12 @@ function renderNode(node: ProseMirrorNode, key: number): ReactNode {
     case "horizontalRule":
       return <hr key={key} />;
     default:
-      return <Fragment key={key}>{renderChildren(node.content)}</Fragment>;
+      return <Fragment key={key}>{renderChildren(node.content, slug)}</Fragment>;
   }
 }
 
 export function RenderContent({ doc }: { doc: ProseMirrorDoc | null }) {
   if (!doc?.content?.length) return null;
-  return <div className="prose-editor max-w-none">{renderChildren(doc.content)}</div>;
+  const slug = createHeadingSlugger();
+  return <div className="prose-editor max-w-none">{renderChildren(doc.content, slug)}</div>;
 }
