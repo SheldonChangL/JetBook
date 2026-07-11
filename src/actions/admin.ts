@@ -12,6 +12,11 @@ import {
 } from "@/lib/admin/users";
 import { isEmbeddingConfigured } from "@/lib/llm";
 import {
+  testEmbeddingConnection,
+  testLlmConnection,
+  type ConnectionTestOutcome,
+} from "@/lib/llm/settings";
+import {
   enqueueReindexAll,
   getReindexAllStatus,
   type ReindexAllProgress,
@@ -159,4 +164,25 @@ export async function reindexStatusAction(jobId: string): Promise<ReindexStatusR
   const status = await getReindexAllStatus(parsed.data);
   if (!status) return { ok: false, error: "NOT_FOUND" };
   return { ok: true, state: status.state, progress: status.output };
+}
+
+// ── AI 連線測試（L-03，F-ADMIN-04） ─────────────────────────────────
+
+export type AiConnectionTestResult =
+  | { ok: true; outcome: ConnectionTestOutcome }
+  | { ok: false; error: "INVALID_TARGET" };
+
+const connectionTargetSchema = z.enum(["llm", "embedding"]);
+
+/**
+ * 測試 AI 連線（org admin only）：驗權限 → 對指定 provider 實打最小請求。
+ * 商業邏輯（實打與錯誤轉換）在 lib/llm/settings；action 僅薄殼。
+ */
+export async function testAiConnectionAction(target: string): Promise<AiConnectionTestResult> {
+  await requireOrgAdmin();
+  const parsed = connectionTargetSchema.safeParse(target);
+  if (!parsed.success) return { ok: false, error: "INVALID_TARGET" };
+  const outcome =
+    parsed.data === "llm" ? await testLlmConnection() : await testEmbeddingConnection();
+  return { ok: true, outcome };
 }

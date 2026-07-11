@@ -41,3 +41,18 @@ export function roleAtLeast(role: SpaceRole | null, required: SpaceRole): boolea
 export function actionAllowedForRole(action: Action, role: SpaceRole | null): boolean {
   return roleAtLeast(role, REQUIRED_ROLE[action]);
 }
+
+/**
+ * 封存 space 唯讀（F-ORG-04）：封存後內容唯讀，僅允許讀取與管理動作
+ * （space.manage 供管理者解除封存／刪除）。其餘寫入動作（編輯、評論、刪頁）一律拒絕。
+ */
+const ARCHIVED_ALLOWED_ACTIONS: ReadonlySet<Action> = new Set<Action>([
+  "space.read",
+  "space.manage",
+  "page.read",
+]);
+
+/** 動作在「封存 space」下是否仍被允許（唯讀＋管理）。 */
+export function actionAllowedWhenArchived(action: Action): boolean {
+  return ARCHIVED_ALLOWED_ACTIONS.has(action);
+}

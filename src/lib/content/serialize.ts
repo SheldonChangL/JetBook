@@ -87,6 +87,11 @@ function serializeBlock(node: ProseMirrorNode): string {
       const code = (node.content ?? []).map((c) => c.text ?? "").join("");
       return `\`\`\`${lang}\n${code}\n\`\`\``;
     }
+    case "mermaid": {
+      // D-13：圖表原始碼序列化為 ```mermaid fenced 區塊，保留於匯出並進 RAG/全文索引。
+      const source = (node.attrs?.source as string) ?? "";
+      return `\`\`\`mermaid\n${source}\n\`\`\``;
+    }
     case "blockquote":
       return serializeChildren(node.content)
         .split("\n")
@@ -173,6 +178,10 @@ export function docToPlainText(node: ProseMirrorDoc | ProseMirrorNode): string {
   // 附件為 atom 無內文，以檔名代表（讓全文索引可依檔名命中）
   if ((node as ProseMirrorNode).type === "attachment") {
     return String((node as ProseMirrorNode).attrs?.fileName ?? "");
+  }
+  // D-13：Mermaid 為 atom，原始碼存於 attrs.source；併入純文字供全文索引/RAG。
+  if ((node as ProseMirrorNode).type === "mermaid") {
+    return String((node as ProseMirrorNode).attrs?.source ?? "");
   }
   // D-12：分頁標題（label）與摺疊摘要（summary）存於 attrs，須併入純文字供全文索引/RAG（F-EDIT-13）。
   const pmNode = node as ProseMirrorNode;

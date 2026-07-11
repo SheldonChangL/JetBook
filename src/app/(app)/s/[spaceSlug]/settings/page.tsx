@@ -14,6 +14,7 @@ import { VisibilitySection } from "./visibility-section";
 import { MemberSection } from "./member-section";
 import { ImportSection } from "./import-section";
 import { ArchiveSection } from "./archive-section";
+import { DeleteSection } from "./delete-section";
 
 export async function generateMetadata(): Promise<Metadata> {
   const t = await getTranslations("spaceSettings");
@@ -86,6 +87,8 @@ export default async function SpaceSettingsPage({
         spaceName={space.name}
         archived={space.archivedAt !== null}
       />
+
+      <DeleteSection spaceId={space.id} spaceName={space.name} />
     </main>
   );
 }

@@ -208,8 +208,20 @@
     "title": "管理後台",
     "navUsers": "使用者",
     "navSystem": "系統狀態",
+    "navSpaces": "已刪除空間",
+    "navAi": "AI 設定",
     "backToApp": "返回 JetBook",
     "usersTitle": "使用者管理",
+    "spacesTitle": "已刪除空間",
+    "spacesDesc": "軟刪除的空間保留 30 天可還原，逾期由排程永久清除。",
+    "spacesEmpty": "目前沒有可還原的已刪除空間。",
+    "spacesColSpace": "空間",
+    "spacesColDeletedAt": "刪除時間",
+    "spacesColDaysLeft": "剩餘天數",
+    "spacesDaysLeft": "{days} 天",
+    "spacesRestore": "還原",
+    "spacesRestored": "空間已還原",
+    "spacesRestoreExpired": "此空間已逾還原期限，無法還原",
     "colName": "使用者",
     "colEmail": "Email",
     "colOrgRole": "系統角色",
@@ -287,7 +299,45 @@
       "indexing": "重嵌進行中…",
       "completed": "重嵌完成",
       "failed": "重嵌失敗"
-    }
+    },
+    "reindexFailedListTitle": "失敗頁面（{count}）",
+    "reindexFailedListMore": "另有 {count} 筆未列出",
+    "reindexFailedRetryHint": "修正問題後可再次點擊「開始全庫重嵌」重試（依內容雜湊增量、冪等，不會重複既有向量）。",
+    "aiTitle": "AI 設定與用量",
+    "aiDesc": "LLM／Embedding 連線設定唯讀顯示（由環境變數注入，12-factor）；營運操作（重嵌）與用量統計於此檢視。",
+    "aiConfigured": "已設定",
+    "aiNotConfigured": "未設定",
+    "aiMasked": "已遮罩",
+    "aiReadonlyCaption": "由環境變數注入，如需變更請調整部署設定（12-factor）；本頁不提供 temperature／max tokens 等 sampling 參數。",
+    "aiProvider": {
+      "anthropic": "Anthropic",
+      "openai-compat": "OpenAI-compatible"
+    },
+    "aiLlmCardTitle": "LLM Provider（唯讀）",
+    "aiLlmNotConfiguredHint": "尚未設定 LLM_PROVIDER，AI 問答功能停用。設定環境變數後重新部署即可啟用。",
+    "aiEmbeddingCardTitle": "Embedding Provider（唯讀）",
+    "aiEmbeddingNotConfiguredHint": "尚未設定 EMBEDDING_BASE_URL，語意索引與語意搜尋停用。設定環境變數後重新部署即可啟用。",
+    "aiFieldProvider": "Provider",
+    "aiFieldModelPrimary": "主力模型（primary）",
+    "aiFieldModelLight": "輕量模型（light）",
+    "aiFieldModel": "模型",
+    "aiFieldBaseUrl": "Base URL",
+    "aiFieldApiKey": "API Key",
+    "aiFieldDimensions": "維度",
+    "aiTestConnection": "測試連線",
+    "aiTestOk": "連線成功",
+    "aiTestFailed": "連線失敗",
+    "aiTestUnconfigured": "尚未設定，無法測試",
+    "aiUsageCardTitle": "用量統計（近 30 日）",
+    "aiUsageTotalQueries": "問答次數",
+    "aiUsageTotalTokens": "Token 總量",
+    "aiUsageMetricLabel": "統計指標",
+    "aiUsageMetricCount": "次數",
+    "aiUsageMetricTokens": "Tokens",
+    "aiUsageChartAria": "近 {days} 日每日 AI 用量長條圖",
+    "aiUsageBarTitle": "{date}：{count} 次、{tokens} tokens",
+    "aiUsageEmptyTitle": "近期尚無 AI 用量",
+    "aiUsageEmptyDesc": "近 {days} 日沒有 AI 問答記錄。"
   },
   "trash": {
     "title": "垃圾桶",
@@ -463,6 +513,10 @@
           "label": "步驟",
           "desc": "編號的操作步驟"
         },
+        "mermaid": {
+          "label": "Mermaid 圖表",
+          "desc": "以 Mermaid 語法繪製流程圖"
+        },
         "attachment": {
           "label": "檔案",
           "desc": "上傳並插入附件卡片"
@@ -491,6 +545,13 @@
     "stepper": {
       "addStep": "新增步驟",
       "removeStep": "刪除此步驟"
+    },
+    "mermaid": {
+      "sourceLabel": "Mermaid 原始碼",
+      "sourcePlaceholder": "輸入 Mermaid 語法（例：graph TD; A-->B）…",
+      "diagramLabel": "Mermaid 圖表",
+      "rendering": "圖表渲染中…",
+      "errorTitle": "圖表語法錯誤"
     },
     "table": {
       "addColumnBefore": "在左方插入欄",
@@ -711,6 +772,13 @@
     "unarchiveConfirmBody": "取消封存「{name}」後，它將重新出現在列表與搜尋中。確定要繼續嗎？",
     "unarchiveConfirm": "取消封存",
     "unarchived": "已取消封存",
+    "deleteHeading": "刪除空間",
+    "deleteDesc": "刪除後，這個空間與其所有頁面會從列表、搜尋與 AI 中隱藏。內容保留 30 天，期間可由系統管理員於後台還原，逾期將永久清除。",
+    "deleteButton": "刪除空間",
+    "deleteConfirmTitle": "刪除空間",
+    "deleteConfirmBody": "刪除「{name}」後，它與其所有頁面將被隱藏，30 天內可由系統管理員還原，逾期永久清除。確定要繼續嗎？",
+    "deleteConfirm": "刪除",
+    "deleted": "空間已刪除",
     "importHeading": "批次匯入",
     "importDesc": "上傳 zip 壓縮檔，依資料夾結構匯入為頁面樹：資料夾成為父頁、.md 轉為頁面，圖片自動上傳並改寫引用連結。",
     "importSelectButton": "選擇 zip 檔",
