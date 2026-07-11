@@ -2,6 +2,7 @@ import StarterKit from "@tiptap/starter-kit";
 import TaskItem from "@tiptap/extension-task-item";
 import TaskList from "@tiptap/extension-task-list";
 import CodeBlockLowlight from "@tiptap/extension-code-block-lowlight";
+import { Table, TableRow, TableHeader, TableCell } from "@tiptap/extension-table";
 import { ReactNodeViewRenderer, type Extensions } from "@tiptap/react";
 import { lowlight } from "@/lib/content/lowlight";
 import { CodeBlockView } from "./code-block-view";
@@ -43,9 +44,10 @@ const CodeBlock = CodeBlockLowlight.extend({
  * 粗斜刪除線/行內碼/hr 與 Markdown input rules。
  * D-03 加入：任務清單（TaskList/TaskItem，巢狀）與 slash 指令選單。
  * D-04 加入：程式碼區塊語法高亮（lowlight）+ 語言下拉 NodeView。
+ * D-05 加入：表格區塊（Table/Row/Header/Cell，欄寬可拖曳）。
  * D-07 加入：圖片區塊（drop/貼上上傳 + 可編輯圖說）。
  * D-08 加入：附件區塊（slash「檔案」→ 上傳 → 卡片，編輯與閱讀一致）。
- * 其餘進階區塊（表格、callout、mention…）於後續 issue 各自加入。
+ * 其餘進階區塊（callout、mention…）於後續 issue 各自加入。
  *
  * R1 降險：一律採用現成 TipTap extension，不自研核心編輯行為。
  */
@@ -58,6 +60,11 @@ export function buildExtensions(): Extensions {
     CodeBlock.configure({ lowlight }),
     TaskList,
     TaskItem.configure({ nested: true }), // F-EDIT-04：任務清單支援巢狀縮排
+    // D-05（F-EDIT-07）：表格。resizable 開啟欄寬拖曳（columnResizing plugin）。
+    Table.configure({ resizable: true }),
+    TableRow,
+    TableHeader,
+    TableCell,
     createImageExtension(), // D-07：圖片區塊與上傳整合
     createAttachmentExtension(), // D-08：附件卡片區塊
     SlashCommand,

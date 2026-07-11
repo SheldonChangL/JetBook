@@ -1,38 +1,21 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
-import { and, eq, isNull } from "drizzle-orm";
+import { eq } from "drizzle-orm";
 import { getTranslations } from "next-intl/server";
 import { History, Pencil } from "lucide-react";
 import { db } from "@/lib/db";
-import { pages, pageSlugHistory, spaces } from "@/lib/db/schema";
+import { spaces } from "@/lib/db/schema";
 import { getCurrentSession, requireSession } from "@/lib/auth/current";
 import { can } from "@/lib/authz/permission";
 import { denyPageRead } from "@/lib/authz/deny";
 import { recordVisit } from "@/lib/pages/visits";
+import { resolvePageBySlug } from "@/lib/pages/slug";
 import { RenderContent } from "@/components/content/render-content";
 import { CopyLinkButton } from "@/components/content/copy-link-button";
 import { AnchorHighlight } from "@/components/content/anchor-highlight";
 import { Button } from "@/components/ui/button";
 import type { ProseMirrorDoc } from "@/lib/content/types";
-
-async function resolvePage(spaceId: string, spaceSlug: string, pageSlug: string) {
-  const page = await db.query.pages.findFirst({
-    where: and(eq(pages.spaceId, spaceId), eq(pages.slug, pageSlug), isNull(pages.deletedAt)),
-  });
-  if (page) return { page, redirectTo: null as string | null };
-  // 舊 slug → 301 導向現行 slug（G1/F-PAGE-03）
-  const history = await db.query.pageSlugHistory.findFirst({
-    where: and(eq(pageSlugHistory.spaceId, spaceId), eq(pageSlugHistory.oldSlug, pageSlug)),
-  });
-  if (history) {
-    const current = await db.query.pages.findFirst({
-      where: and(eq(pages.id, history.pageId), isNull(pages.deletedAt)),
-    });
-    if (current) return { page: null, redirectTo: `/s/${spaceSlug}/${current.slug}` };
-  }
-  return { page: null, redirectTo: null };
-}
 
 export async function generateMetadata({
   params,
@@ -46,7 +29,7 @@ export async function generateMetadata({
   const space = await db.query.spaces.findFirst({ where: eq(spaces.slug, spaceSlug) });
   if (!space) return {};
   if (!(await can(session.user, "page.read", { type: "page", spaceId: space.id }))) return {};
-  const { page } = await resolvePage(space.id, spaceSlug, pageSlug);
+  const { page } = await resolvePageBySlug(space.id, pageSlug);
   return { title: page?.title };
 }
 
@@ -63,8 +46,8 @@ export default async function PageReadPage({
   const space = await db.query.spaces.findFirst({ where: eq(spaces.slug, spaceSlug) });
   if (!space) notFound();
 
-  const { page, redirectTo } = await resolvePage(space.id, spaceSlug, pageSlug);
-  if (redirectTo) redirect(redirectTo);
+  const { page, redirectToSlug } = await resolvePageBySlug(space.id, pageSlug);
+  if (redirectToSlug) redirect(`/s/${spaceSlug}/${redirectToSlug}`);
   if (!page) notFound();
 
   // 無權限但頁面存在：private Space 一律 404（不洩漏存在性）；org 可見 Space 導 403（§3.12）。

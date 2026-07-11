@@ -8,6 +8,7 @@ import { ArrowLeft } from "lucide-react";
 import { renamePage, savePage } from "@/actions/page";
 import { heartbeatLockAction, releaseLockAction } from "@/actions/lock";
 import { buildExtensions } from "./extensions";
+import { TableMenu } from "./table-menu";
 import { startImageUpload } from "./image/image-upload";
 import {
   isRetryableUploadError,
@@ -304,6 +305,7 @@ export function PageEditor({
       ) : null}
 
       <EditorContent editor={editor} />
+      <TableMenu editor={editor} />
     </div>
   );
 }
