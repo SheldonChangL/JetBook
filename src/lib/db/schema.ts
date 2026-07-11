@@ -38,6 +38,8 @@ export const users = pgTable(
     authProvider: authProviderEnum("auth_provider").notNull().default("local"),
     oidcSubject: text("oidc_subject").unique(),
     isActive: boolean("is_active").notNull().default(true),
+    /** 外觀偏好（B-08）：light/dark/system；null＝未設定（視同跟隨系統），跨裝置同步。 */
+    themePreference: text("theme_preference"),
     createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
     updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
   },
