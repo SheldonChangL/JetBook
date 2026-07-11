@@ -4,6 +4,7 @@ import { logger } from "@/lib/logger";
 import { deleteExpiredSessions } from "@/lib/auth/session";
 import { purgeExpiredTrash } from "@/lib/pages/trash";
 import { purgeExpiredSpaces } from "@/lib/spaces/manage";
+import { collectOrphanAttachments } from "@/lib/storage/gc";
 import {
   ensureEmbedQueues,
   ensureImportZipQueue,
@@ -48,6 +49,15 @@ async function main() {
     const purgedPages = await purgeExpiredTrash();
     const purgedSpaces = await purgeExpiredSpaces();
     logger.info({ purgedPages, purgedSpaces }, "expired trash purged");
+  });
+
+  // 孤兒附件回收（M-03，F-ADMIN-07）：每日回收未被任何未刪除頁面 content 引用、
+  // 且建立逾寬限期（30 天）的附件——清除 storage 檔與 metadata 列並寫稽核。
+  await boss.createQueue(JOBS.gcOrphanAttachments);
+  await boss.schedule(JOBS.gcOrphanAttachments, "45 3 * * *", {}, {});
+  await boss.work(JOBS.gcOrphanAttachments, async () => {
+    const result = await collectOrphanAttachments();
+    logger.info(result, "orphan attachments gc done");
   });
 
   // ── 任務型 job：頁面嵌入索引（H-06） ──

@@ -5,7 +5,9 @@ import { getTranslations } from "next-intl/server";
 import { requireSession } from "@/lib/auth/current";
 import { isOrgAdmin } from "@/lib/authz/permission";
 import { checkDatabase, checkLlm, checkStorage, getEnvSummary } from "@/lib/health";
+import { getStorageUsage } from "@/lib/storage/usage";
 import { isEmbeddingConfigured } from "@/lib/llm";
+import { formatFileSize } from "@/components/editor/attachment/attachment-utils";
 import { Badge } from "@/components/ui/badge";
 import { ReindexButton } from "./reindex-button";
 
@@ -24,7 +26,11 @@ export default async function AdminSystemPage() {
   if (!isOrgAdmin(user)) notFound();
   const t = await getTranslations("admin");
 
-  const [database, storage] = await Promise.all([checkDatabase(), checkStorage()]);
+  const [database, storage, usage] = await Promise.all([
+    checkDatabase(),
+    checkStorage(),
+    getStorageUsage(),
+  ]);
   const llm = checkLlm();
   const summary = getEnvSummary();
   const embeddingConfigured = isEmbeddingConfigured();
@@ -109,6 +115,58 @@ export default async function AdminSystemPage() {
         </dl>
       </section>
 
+      {/* 附件儲存用量（M-03，F-ADMIN-07）：全站與各空間附件數／大小＋孤兒待回收 */}
+      <section className="rounded-md border border-edge">
+        <div className="border-b border-edge bg-sidebar px-4 py-2.5">
+          <h2 className="text-body-ui font-semibold text-fg">{t("storageUsageTitle")}</h2>
+        </div>
+        <div className="flex flex-col gap-4 px-4 py-4">
+          <p className="text-body-ui text-fg-secondary">{t("storageUsageDesc")}</p>
+
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
+            <UsageStat label={t("storageUsageTotalCount")} value={t("storageUsageCountUnit", { count: usage.totalCount })} />
+            <UsageStat label={t("storageUsageTotalSize")} value={formatFileSize(usage.totalBytes) || "0 B"} />
+            <UsageStat
+              label={t("storageUsageOrphanCount")}
+              value={t("storageUsageCountUnit", { count: usage.orphanCount })}
+              hint={t("storageUsageOrphanHint")}
+            />
+          </div>
+
+          <div className="flex flex-col gap-2">
+            <h3 className="text-body-ui font-semibold text-fg">{t("storageUsagePerSpaceTitle")}</h3>
+            {usage.perSpace.length === 0 ? (
+              <p className="text-body-ui text-fg-tertiary">{t("storageUsageEmpty")}</p>
+            ) : (
+              <div className="overflow-x-auto rounded-md border border-edge">
+                <table className="w-full border-collapse text-body-ui">
+                  <thead>
+                    <tr className="border-b border-edge bg-sidebar text-left text-fg-secondary">
+                      <th className="px-3 py-2 font-medium">{t("storageUsageColSpace")}</th>
+                      <th className="px-3 py-2 text-right font-medium">{t("storageUsageColCount")}</th>
+                      <th className="px-3 py-2 text-right font-medium">{t("storageUsageColSize")}</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-edge">
+                    {usage.perSpace.map((row) => (
+                      <tr key={row.spaceId}>
+                        <td className="px-3 py-2 text-fg">{row.spaceName}</td>
+                        <td className="px-3 py-2 text-right tabular-nums text-fg-secondary">
+                          {row.count}
+                        </td>
+                        <td className="px-3 py-2 text-right tabular-nums text-fg-secondary">
+                          {formatFileSize(row.bytes) || "0 B"}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
+          </div>
+        </div>
+      </section>
+
       {/* AI 全庫重嵌（H-07，F-AI-02）：換模型／維度變更後重建索引；關閉索引空間一併清除 */}
       <section className="rounded-md border border-edge">
         <div className="border-b border-edge bg-sidebar px-4 py-2.5">
@@ -140,6 +198,16 @@ function StatusCard({
       </div>
       {children}
     </section>
+  );
+}
+
+function UsageStat({ label, value, hint }: { label: string; value: string; hint?: string }) {
+  return (
+    <div className="flex flex-col gap-1 rounded-md border border-edge p-4">
+      <span className="text-caption text-fg-secondary">{label}</span>
+      <span className="text-h2 tabular-nums text-fg">{value}</span>
+      {hint && <span className="text-caption text-fg-tertiary">{hint}</span>}
+    </div>
   );
 }
 
