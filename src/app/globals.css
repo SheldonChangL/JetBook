@@ -1131,6 +1131,149 @@ html.dark {
     overflow-x: auto;
   }
 
+  /* Embed 嵌入區塊（D-14，F-EDIT-15） */
+  .prose-editor .jb-embed {
+    margin: 1rem 0;
+  }
+  .prose-editor .jb-embed--edit .jb-embed__editor {
+    border: 1px solid var(--border-default);
+    border-radius: var(--radius-md);
+    background: var(--bg-raised);
+    padding: 10px 12px;
+  }
+  .prose-editor .jb-embed--edit.is-selected .jb-embed__editor {
+    border-color: var(--primary);
+  }
+  .prose-editor .jb-embed__header {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    margin-bottom: 8px;
+  }
+  .prose-editor .jb-embed__drag {
+    display: inline-flex;
+    flex: none;
+    align-items: center;
+    justify-content: center;
+    width: 1.25rem;
+    height: 1.25rem;
+    color: var(--text-tertiary);
+    cursor: grab;
+  }
+  .prose-editor .jb-embed__label {
+    font-size: var(--text-caption);
+    font-weight: 600;
+    color: var(--text-tertiary);
+  }
+  .prose-editor .jb-embed__status {
+    margin-left: auto;
+    font-size: var(--text-caption);
+    color: var(--text-tertiary);
+  }
+  .prose-editor .jb-embed__status[data-allowed="true"] {
+    color: var(--success);
+  }
+  .prose-editor .jb-embed__input {
+    width: 100%;
+    display: block;
+    border: 1px solid var(--border-default);
+    border-radius: var(--radius-sm);
+    background: var(--bg-base);
+    color: var(--text-primary);
+    padding: 8px 10px;
+    font-size: var(--text-body-ui);
+    line-height: 1.6;
+  }
+  .prose-editor .jb-embed__input:focus {
+    outline: none;
+    border-color: var(--primary);
+  }
+  .prose-editor .jb-embed__hint {
+    margin: 8px 0 0;
+    font-size: var(--text-caption);
+    color: var(--text-tertiary);
+  }
+  .prose-editor .jb-embed__preview-pane {
+    margin-top: 10px;
+  }
+  /* 16:9 響應式 iframe 容器 */
+  .prose-editor .jb-embed__frame-box {
+    position: relative;
+    width: 100%;
+    aspect-ratio: 16 / 9;
+    border-radius: var(--radius-md);
+    overflow: hidden;
+    background: var(--bg-raised);
+    border: 1px solid var(--border-default);
+  }
+  .prose-editor .jb-embed__iframe {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    border: 0;
+  }
+  /* 名單外退化連結卡片 */
+  .prose-editor a.jb-embed--card {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 12px 14px;
+    border: 1px solid var(--border-default);
+    border-radius: var(--radius-md);
+    background: var(--bg-raised);
+    text-decoration: none;
+    color: var(--text-primary);
+  }
+  .prose-editor a.jb-embed--card:hover {
+    border-color: var(--primary);
+  }
+  .prose-editor .jb-embed__card-icon {
+    flex: none;
+    width: 1.25rem;
+    height: 1.25rem;
+    color: var(--text-tertiary);
+  }
+  .prose-editor .jb-embed__card-body {
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
+    gap: 2px;
+  }
+  .prose-editor .jb-embed__card-host {
+    font-weight: 600;
+    font-size: var(--text-body-ui);
+  }
+  .prose-editor .jb-embed__card-url {
+    font-size: var(--text-caption);
+    color: var(--text-tertiary);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  .prose-editor .jb-embed__card-open {
+    flex: none;
+    margin-left: auto;
+    width: 1rem;
+    height: 1rem;
+    color: var(--text-tertiary);
+  }
+  .prose-editor .jb-embed--invalid {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 12px 14px;
+    border: 1px dashed var(--border-default);
+    border-radius: var(--radius-md);
+    color: var(--text-tertiary);
+  }
+  .prose-editor .jb-embed__card-text {
+    font-size: var(--text-body-ui);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
   /* 動態偏好（§5.2） */
   @media (prefers-reduced-motion: reduce) {
     *,

@@ -557,6 +557,10 @@
           "label": "Mermaid 圖表",
           "desc": "以 Mermaid 語法繪製流程圖"
         },
+        "embed": {
+          "label": "嵌入內容",
+          "desc": "貼上 URL 嵌入影片或設計稿"
+        },
         "attachment": {
           "label": "檔案",
           "desc": "上傳並插入附件卡片"
@@ -592,6 +596,13 @@
       "diagramLabel": "Mermaid 圖表",
       "rendering": "圖表渲染中…",
       "errorTitle": "圖表語法錯誤"
+    },
+    "embed": {
+      "urlLabel": "嵌入網址",
+      "urlPlaceholder": "貼上網址（例：https://www.youtube.com/watch?v=…）",
+      "emptyHint": "貼上網址即可嵌入；白名單外的網址會顯示為連結卡片。",
+      "statusEmbedded": "已嵌入",
+      "statusFallbackCard": "白名單外，顯示為連結卡片"
     },
     "table": {
       "addColumnBefore": "在左方插入欄",
@@ -703,7 +714,23 @@
     "importSuccess": "已匯入 Markdown 頁面",
     "importError": "匯入失敗，請確認檔案格式後再試",
     "importTooLarge": "檔案過大，無法匯入（上限 2 MB）",
-    "importEmpty": "檔案是空的，無內容可匯入"
+    "importEmpty": "檔案是空的，無內容可匯入",
+    "moveToSpace": "移動到其他空間…",
+    "copyToSpace": "複製到其他空間…",
+    "moveTitle": "移動到其他空間",
+    "copyTitle": "複製到其他空間",
+    "moveDesc": "將「{title}」與其所有子頁面移動到所選空間。附件歸屬與版本歷史一併轉移。",
+    "copyDesc": "將「{title}」與其所有子頁面複製到所選空間，原頁面保留不變。",
+    "targetSpaceLabel": "目標空間",
+    "targetSpacePlaceholder": "選擇空間…",
+    "targetSpaceLoading": "載入空間中…",
+    "targetSpaceSearch": "搜尋空間…",
+    "targetSpaceEmpty": "找不到符合的空間",
+    "noTargetSpaces": "沒有可移動或複製的目標空間（需要目標空間的編輯權限）。",
+    "moveConfirm": "移動",
+    "copyConfirm": "複製",
+    "moveSuccess": "已移動到「{space}」",
+    "copySuccess": "已複製到「{space}」"
   },
   "spaceHome": {
     "pagesHeading": "頁面",
@@ -919,6 +946,10 @@
       "download": "下載",
       "downloadAria": "下載附件 {fileName}",
       "unnamed": "未命名檔案"
+    },
+    "embed": {
+      "frameTitle": "{host} 的嵌入內容",
+      "invalid": "無效的嵌入網址"
     }
   },
   "settings": {

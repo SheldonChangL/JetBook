@@ -5,6 +5,7 @@ import { pages, spaces } from "@/lib/db/schema";
 import { requireSession } from "@/lib/auth/current";
 import { can } from "@/lib/authz/permission";
 import { isLlmConfigured } from "@/lib/llm";
+import { env } from "@/lib/env";
 import { acquireLock, getLockState } from "@/lib/pages/lock";
 import { PageEditor } from "@/components/editor/page-editor";
 import { EditLockNotice } from "./edit-lock-notice";
@@ -53,6 +54,7 @@ export default async function EditPage({
       initialContent={(page.content as ProseMirrorDoc | null) ?? null}
       initialVersionNo={page.currentVersionNo}
       aiEnabled={isLlmConfigured()}
+      embedAllowedDomains={env.EMBED_ALLOWED_DOMAINS}
     />
   );
 }

@@ -14,6 +14,7 @@ import { Tabs, TabItem } from "./tabs/tabs-extension";
 import { Details } from "./details/details-extension";
 import { Stepper, Step } from "./stepper/stepper-extension";
 import { Mermaid } from "./mermaid/mermaid-extension";
+import { Embed } from "./embed/embed-extension";
 import { MarkdownPaste } from "./markdown-paste";
 import { createMemberMention, createPageLink } from "./mention/mention-extension";
 
@@ -59,6 +60,7 @@ const CodeBlock = CodeBlockLowlight.extend({
  * D-12 加入：分頁（tabs/tabItem）、摺疊（details）、步驟（stepper/step）容器區塊。
  * D-13 加入：Mermaid 圖表區塊（atom 節點，即時預覽、client 端渲染、語法錯誤不崩頁）。
  * D-11 加入：@mention（成員，char `@`）與頁面連結（char `[[`）兩個 inline atom 節點。
+ * D-14 加入：Embed 嵌入區塊（atom 節點，白名單內 iframe 嵌入、名單外退化連結卡片）。
  *
  * R1 降險：一律採用現成 TipTap extension，不自研核心編輯行為。
  *
@@ -88,6 +90,7 @@ export function buildExtensions({ spaceId }: { spaceId: string }): Extensions {
     Stepper,
     Step,
     Mermaid, // D-13：Mermaid 圖表區塊（即時預覽 + 錯誤容錯）
+    Embed, // D-14：Embed 嵌入區塊（白名單 iframe / 名單外連結卡片）
     createMemberMention(spaceId), // D-11：@成員提及（char `@`）
     createPageLink(spaceId), // D-11：頁面連結（char `[[`，改名不失效）
     MarkdownPaste, // D-10：Markdown 貼上轉區塊

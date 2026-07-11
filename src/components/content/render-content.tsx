@@ -5,11 +5,13 @@ import { HeadingAnchor } from "@/components/content/heading-anchor";
 import { codeLanguageLabel } from "@/lib/content/lowlight";
 import { highlightToReact } from "@/lib/content/highlight-to-react";
 import { normalizeCalloutKind } from "@/lib/content/callout";
+import { isEmbedUrlAllowed, normalizeEmbedUrl, parseHttpUrl } from "@/lib/content/embed";
 import { CALLOUT_ICONS } from "@/components/content/callout-icons";
 import { CodeBlockReader } from "./code-block-reader";
 import { ContentImage } from "./content-image";
 import { ContentAttachment } from "./content-attachment";
 import { ContentTabs } from "./content-tabs";
+import { ContentEmbed } from "./content-embed";
 import { MermaidDiagram } from "./mermaid-diagram";
 
 /**
@@ -28,9 +30,15 @@ type Slugger = (text: string) => string;
 /** 頁面連結解析結果：pageId → 現行連結目標（改名自動更新，F-EDIT-12）。 */
 export type PageLinkMap = ReadonlyMap<string, { href: string; title: string }>;
 
+/**
+ * 渲染上下文：slug 產生器 + 頁面連結解析 Map（D-11）+ Embed 白名單（D-14）。
+ * embed 的「iframe/連結卡片」判斷須於渲染當下依白名單推導，故白名單須隨遞迴傳遞
+ * （含巢狀於 details/tabs/stepper 內的 embed），避免巢狀嵌入誤退化為卡片。
+ */
 interface RenderCtx {
   slug: Slugger;
   links: PageLinkMap | undefined;
+  embedAllowedDomains: readonly string[];
 }
 
 /**
@@ -267,6 +275,17 @@ function renderNode(node: ProseMirrorNode, key: number, ctx: RenderCtx): ReactNo
         </div>
       );
     }
+    case "embed": {
+      // D-14：閱讀端依白名單決定 iframe 嵌入或退化連結卡片（判斷於此當下推導，不信任文件內舊狀態）。
+      const url = normalizeEmbedUrl(node.attrs?.url);
+      if (!url) return <Fragment key={key} />;
+      // 縱深防禦：先在伺服端過濾為合法 http(s) URL，才傳入 client 元件——非法 scheme
+      // （javascript:/data: 等）於閱讀端一律不輸出，且不會被序列化進 client props/flight。
+      const parsed = parseHttpUrl(url);
+      if (!parsed) return <Fragment key={key} />;
+      const allowed = isEmbedUrlAllowed(parsed.href, ctx.embedAllowedDomains);
+      return <ContentEmbed key={key} url={parsed.href} allowed={allowed} />;
+    }
     case "horizontalRule":
       return <hr key={key} />;
     case "tabs": {
@@ -319,12 +338,15 @@ function renderNode(node: ProseMirrorNode, key: number, ctx: RenderCtx): ReactNo
 export function RenderContent({
   doc,
   links,
+  embedAllowedDomains = [],
 }: {
   doc: ProseMirrorDoc | null;
   /** D-11：頁面連結解析 Map（pageId → 現行 href/title）。未提供時連結退回 label 快照。 */
   links?: PageLinkMap;
+  /** Embed 白名單網域（env EMBED_ALLOWED_DOMAINS）；未提供＝空白名單，嵌入一律退化為連結卡片（D-14）。 */
+  embedAllowedDomains?: readonly string[];
 }) {
   if (!doc?.content?.length) return null;
-  const ctx: RenderCtx = { slug: createHeadingSlugger(), links };
+  const ctx: RenderCtx = { slug: createHeadingSlugger(), links, embedAllowedDomains };
   return <div className="prose-editor max-w-none">{renderChildren(doc.content, ctx)}</div>;
 }

@@ -9,8 +9,9 @@ import { pageEmbeddings, pages, pageVersions, spaces, users } from "@/lib/db/sch
 import { requireSession } from "@/lib/auth/current";
 import { enqueueEmbedPage } from "@/lib/jobs/queue";
 import { isEmbeddingConfigured } from "@/lib/llm";
-import { assertCan } from "@/lib/authz/permission";
+import { assertCan, getEditableSpaceIds } from "@/lib/authz/permission";
 import { movePageNode } from "@/lib/pages/move";
+import { copyPageSubtreeToSpace, movePageSubtreeToSpace } from "@/lib/pages/cross-space";
 import { listSpaceTreeNodes } from "@/lib/pages/tree";
 import { recordSlugHistory, reclaimSlug, uniquePageSlug } from "@/lib/pages/slug";
 import { createPageInTx } from "@/lib/pages/create";
@@ -42,6 +43,25 @@ async function triggerEmbedPage(pageId: string): Promise<void> {
     await enqueueEmbedPage(pageId);
   } catch (error) {
     logger.error({ err: error, pageId }, "enqueue embed-page 失敗（不阻塞編輯）");
+  }
+}
+
+/**
+ * 對「確實有向量」的頁面批次 enqueue 重嵌（跨 space 搬移後重評目的地 space 的 AI 索引政策，
+ * NFR-COMP-03；handler 依現行 space 決定重建或清除）。整段 best-effort：任何失敗都不得
+ * 阻塞搬移主流程（RAG 檢索本以現行 space join 過濾，向量新鮮度非安全條件）。
+ */
+async function reembedIndexedPages(pageIds: string[]): Promise<void> {
+  if (!isEmbeddingConfigured() || pageIds.length === 0) return;
+  try {
+    const indexed = await db
+      .select({ pageId: pageEmbeddings.pageId })
+      .from(pageEmbeddings)
+      .where(inArray(pageEmbeddings.pageId, pageIds))
+      .groupBy(pageEmbeddings.pageId);
+    for (const { pageId } of indexed) await triggerEmbedPage(pageId);
+  } catch (error) {
+    logger.error({ err: error }, "跨 space 搬移後重嵌 enqueue 失敗（不阻塞搬移）");
   }
 }
 
@@ -135,6 +155,119 @@ export async function movePage(input: z.infer<typeof moveSchema>) {
   );
   const space = await db.query.spaces.findFirst({ where: eq(spaces.id, page.spaceId) });
   if (space) revalidatePath(`/s/${space.slug}`);
+}
+
+const crossSpaceSchema = z.object({
+  pageId: z.uuid(),
+  /** 目的地 space */
+  targetSpaceId: z.uuid(),
+});
+
+/**
+ * 列出可作為移動／複製目的地的 Space（C-10）：使用者具 editor+ 的未封存未刪除 space，
+ * 排除來源 space。權限在 lib/authz（getEditableSpaceIds，SQL 層過濾）判定，非事後過濾。
+ */
+export async function listMoveTargetSpaces(
+  input?: string,
+): Promise<{ id: string; slug: string; name: string }[]> {
+  const { user } = await requireSession();
+  const excludeSpaceId = input ? z.uuid().parse(input) : null;
+  const editableIds = await getEditableSpaceIds(user);
+  const targetIds = editableIds.filter((id) => id !== excludeSpaceId);
+  if (targetIds.length === 0) return [];
+  return db
+    .select({ id: spaces.id, slug: spaces.slug, name: spaces.name })
+    .from(spaces)
+    .where(inArray(spaces.id, targetIds))
+    .orderBy(spaces.name);
+}
+
+/**
+ * 跨 Space 搬移整支子樹（C-10，F-PAGE-05）。薄殼：驗 session → 驗來源 page.edit 與
+ * 目標 page.edit（editor）→ 呼叫 lib（space_id/slug/附件歸屬同交易轉移）。回傳新根 slug 與
+ * 目標 space slug 供前端導向。搬移後重嵌受影響頁（best-effort）並改寫兩側 space 快取。
+ */
+export async function movePageToSpace(input: z.infer<typeof crossSpaceSchema>) {
+  const data = crossSpaceSchema.parse(input);
+  const page = await db.query.pages.findFirst({ where: eq(pages.id, data.pageId) });
+  if (!page || page.deletedAt) throw new Error("NOT_FOUND");
+  if (data.targetSpaceId === page.spaceId) throw new Error("SAME_SPACE");
+
+  const { user } = await requireSession();
+  // 來源需可編輯（移出）＋目標需 editor（移入）——兩側皆走 lib/authz 唯一入口。
+  await assertCan(user, "page.edit", { type: "page", spaceId: page.spaceId });
+  await assertCan(user, "page.edit", { type: "page", spaceId: data.targetSpaceId });
+
+  const sourceSpace = await db.query.spaces.findFirst({ where: eq(spaces.id, page.spaceId) });
+  const targetSpace = await db.query.spaces.findFirst({ where: eq(spaces.id, data.targetSpaceId) });
+  if (!targetSpace || targetSpace.deletedAt) throw new Error("NOT_FOUND");
+
+  const { rootSlug, movedPageIds } = await movePageSubtreeToSpace({
+    pageId: data.pageId,
+    targetSpaceId: data.targetSpaceId,
+    movedBy: user.id,
+  });
+
+  await reembedIndexedPages(movedPageIds);
+
+  logger.info(
+    { userId: user.id, pageId: data.pageId, fromSpace: page.spaceId, toSpace: data.targetSpaceId },
+    "page moved across spaces",
+  );
+  await writeAudit({
+    actorId: user.id,
+    action: "page.move_space",
+    targetType: "page",
+    targetId: data.pageId,
+    metadata: { fromSpaceId: page.spaceId, toSpaceId: data.targetSpaceId, movedCount: movedPageIds.length },
+    ip: ipFromHeaders(await headers()),
+  });
+  if (sourceSpace) revalidatePath(`/s/${sourceSpace.slug}`);
+  revalidatePath(`/s/${targetSpace.slug}`);
+  return { rootSlug, targetSpaceSlug: targetSpace.slug };
+}
+
+/**
+ * 跨 Space 深拷貝整支子樹（C-10，F-PAGE-05）。薄殼：驗 session → 驗來源 page.read 與
+ * 目標 page.edit（editor）→ 呼叫 lib（重用 createPage/savePage 管線建頁與寫內容）。
+ * 交易提交後才 enqueue 嵌入索引（架構鐵律 #5：儲存管線之後）。回傳新根 slug 與目標 space slug。
+ */
+export async function copyPageToSpace(input: z.infer<typeof crossSpaceSchema>) {
+  const data = crossSpaceSchema.parse(input);
+  const page = await db.query.pages.findFirst({ where: eq(pages.id, data.pageId) });
+  if (!page || page.deletedAt) throw new Error("NOT_FOUND");
+
+  const { user } = await requireSession();
+  // 複製只需能讀來源、能編輯目標（新增頁面）。
+  await assertCan(user, "page.read", { type: "page", spaceId: page.spaceId });
+  await assertCan(user, "page.edit", { type: "page", spaceId: data.targetSpaceId });
+
+  const targetSpace = await db.query.spaces.findFirst({ where: eq(spaces.id, data.targetSpaceId) });
+  if (!targetSpace || targetSpace.deletedAt) throw new Error("NOT_FOUND");
+
+  const { newRootSlug, copiedPageIds } = await copyPageSubtreeToSpace({
+    pageId: data.pageId,
+    targetSpaceId: data.targetSpaceId,
+    userId: user.id,
+  });
+
+  // 交易提交後為每個新頁 enqueue 嵌入索引（fire-and-forget，不阻塞複製）。
+  for (const id of copiedPageIds) await triggerEmbedPage(id);
+
+  logger.info(
+    { userId: user.id, pageId: data.pageId, toSpace: data.targetSpaceId, copiedCount: copiedPageIds.length },
+    "page copied across spaces",
+  );
+  await writeAudit({
+    actorId: user.id,
+    action: "page.copy_space",
+    targetType: "page",
+    targetId: data.pageId,
+    metadata: { toSpaceId: data.targetSpaceId, copiedCount: copiedPageIds.length },
+    ip: ipFromHeaders(await headers()),
+  });
+  revalidatePath(`/s/${targetSpace.slug}`);
+  return { rootSlug: newRootSlug, targetSpaceSlug: targetSpace.slug };
 }
 
 const deleteSchema = z.object({ pageId: z.uuid() });
