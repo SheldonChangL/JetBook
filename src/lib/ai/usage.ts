@@ -15,7 +15,7 @@ import { writeAudit } from "@/lib/audit";
  */
 
 /** AI 查詢功能別（對應 audit metadata.mode，供用量分項統計）。 */
-export type AiQueryMode = "chat" | "semantic" | "hybrid";
+export type AiQueryMode = "chat" | "assist" | "semantic" | "hybrid";
 
 export interface AiUsageRecord {
   /** 發起查詢的使用者 id。 */

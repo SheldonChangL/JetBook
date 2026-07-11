@@ -280,8 +280,24 @@
   },
   "trash": {
     "title": "垃圾桶",
+    "subtitleGlobal": "跨空間彙整，僅顯示你有還原權限的項目。刪除的頁面保留 30 天後自動清除。",
+    "subtitleSpace": "「{space}」已刪除的頁面，保留 30 天後自動清除。",
     "emptyTitle": "垃圾桶是空的",
-    "emptyDesc": "刪除的頁面會在此保留 30 天。"
+    "emptyDesc": "刪除的頁面會在此保留 30 天。",
+    "colPage": "頁面",
+    "colSpace": "空間",
+    "colDeletedBy": "刪除者",
+    "colDeletedAt": "刪除時間",
+    "colActions": "操作",
+    "unknownUser": "未知使用者",
+    "childrenCount": "含 {count} 個子頁",
+    "daysLeft": "{days} 天後清除",
+    "purgeSoon": "即將清除",
+    "restore": "還原",
+    "restoring": "還原中…",
+    "restored": "已還原「{title}」",
+    "restoredToRoot": "已還原「{title}」至最上層（原父頁面已不存在）",
+    "restoreError": "還原失敗，請重試"
   },
   "search": {
     "title": "搜尋",
@@ -411,6 +427,18 @@
           "label": "提示：危險",
           "desc": "紅色危險提示區塊"
         },
+        "tabs": {
+          "label": "分頁",
+          "desc": "多個可切換的分頁區塊"
+        },
+        "details": {
+          "label": "摺疊區塊",
+          "desc": "可展開收合的段落"
+        },
+        "stepper": {
+          "label": "步驟",
+          "desc": "編號的操作步驟"
+        },
         "attachment": {
           "label": "檔案",
           "desc": "上傳並插入附件卡片"
@@ -425,6 +453,20 @@
         "warning": "警告",
         "danger": "危險"
       }
+    },
+    "tabs": {
+      "tabListLabel": "分頁標籤",
+      "defaultLabel": "分頁 {n}",
+      "addTab": "新增分頁",
+      "removeTab": "刪除此分頁"
+    },
+    "details": {
+      "summaryPlaceholder": "摘要標題",
+      "toggle": "展開或收合"
+    },
+    "stepper": {
+      "addStep": "新增步驟",
+      "removeStep": "刪除此步驟"
     },
     "table": {
       "addColumnBefore": "在左方插入欄",
@@ -442,6 +484,26 @@
       "errorType": "不支援的檔案類型",
       "errorForbidden": "沒有上傳附件的權限",
       "retry": "重試"
+    },
+    "ai": {
+      "trigger": "AI",
+      "menuLabel": "AI 寫作輔助",
+      "panelLabel": "AI 寫作輔助結果",
+      "title": "AI 寫作輔助",
+      "generating": "生成中…",
+      "ready": "完成",
+      "stop": "停止",
+      "replace": "取代選取",
+      "insertBelow": "插入下方",
+      "discard": "捨棄",
+      "error": "AI 產生失敗，請稍後再試",
+      "modes": {
+        "rewrite": "改寫",
+        "concise": "更精簡",
+        "formal": "更正式",
+        "fix": "修正文法",
+        "translate_en": "翻譯成英文"
+      }
     }
   },
   "reading": {
@@ -457,6 +519,37 @@
       "close": "關閉",
       "preview": "圖片預覽"
     }
+  },
+  "comments": {
+    "heading": "評論",
+    "headingWithCount": "評論（{count}）",
+    "empty": "尚無評論，成為第一個留言的人。",
+    "placeholder": "留下評論…",
+    "replyPlaceholder": "回覆…",
+    "submit": "送出",
+    "posting": "送出中…",
+    "reply": "回覆",
+    "edit": "編輯",
+    "save": "儲存",
+    "cancel": "取消",
+    "delete": "刪除",
+    "resolve": "標記解決",
+    "reopen": "重新開啟",
+    "resolvedBadge": "已解決",
+    "resolvedSection": "已解決（{count}）",
+    "deleted": "（此留言已刪除）",
+    "unknownAuthor": "未知使用者",
+    "readOnlyHint": "你只有唯讀權限，無法留言。",
+    "showReplies": "顯示 {count} 則回覆",
+    "hideReplies": "收合回覆",
+    "deleteConfirmTitle": "刪除評論",
+    "deleteConfirmBody": "確定刪除這則評論嗎？此動作無法復原。",
+    "editedAt": "已編輯",
+    "error": "操作失敗，請稍後再試。",
+    "commentAdded": "評論已送出",
+    "commentDeleted": "評論已刪除",
+    "commentResolved": "已標記解決",
+    "commentReopened": "已重新開啟"
   },
   "tree": {
     "label": "頁面",
@@ -509,7 +602,20 @@
     "restoreConfirm": "確認還原",
     "restoreCancel": "取消",
     "restoreSuccess": "已還原為版本 {n}，並建立新版本 {newN}",
-    "restoreError": "還原失敗，請重新整理後再試"
+    "restoreError": "還原失敗，請重新整理後再試",
+    "tabSnapshot": "快照",
+    "tabDiff": "差異",
+    "compareHint": "勾選任意兩個版本進行比較",
+    "compareSelected": "比較所選版本",
+    "compareCheckboxLabel": "勾選版本 {n} 以比較",
+    "clearSelection": "清除勾選",
+    "diffHeader": "比較：版本 {from} → 版本 {to}",
+    "diffNoPrevious": "這是最初版本，沒有前一版可供比較。",
+    "diffUnchanged": "兩個版本內容相同，沒有差異。",
+    "diffPickTwo": "請勾選兩個不同的版本進行比較。",
+    "diffLegendAdded": "新增",
+    "diffLegendRemoved": "刪除",
+    "diffLegendModified": "修改"
   },
   "spaceSettings": {
     "title": "空間設定",
@@ -651,6 +757,8 @@
     "disabled": "AI 功能未啟用",
     "unauthorized": "需登入",
     "invalidRequest": "問題內容不正確",
+    "forbidden": "沒有編輯此頁面的權限",
+    "rateLimited": "AI 請求過於頻繁，請稍後再試",
     "failed": "AI 回答產生失敗，請稍後再試",
     "title": "JetBook AI",
     "closeLabel": "關閉 AI 抽屜",
