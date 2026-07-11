@@ -334,6 +334,10 @@
     "edit": "編輯",
     "lastUpdated": "最後更新：{time}",
     "history": "版本歷史",
+    "copyLink": "複製連結",
+    "copyAnchor": "複製此段落連結",
+    "linkCopied": "連結已複製到剪貼簿",
+    "copyFailed": "複製失敗，請手動複製網址列連結",
     "image": {
       "zoom": "點擊放大圖片",
       "close": "關閉",
