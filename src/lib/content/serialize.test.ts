@@ -131,6 +131,31 @@ describe("docToMarkdown 附件節點（D-08）", () => {
   });
 });
 
+describe("docToMarkdown callout 節點（D-06）", () => {
+  const calloutDoc: ProseMirrorDoc = {
+    type: "doc",
+    content: [
+      {
+        type: "callout",
+        attrs: { kind: "warning" },
+        content: [
+          { type: "paragraph", content: [{ type: "text", text: "雷射電源須維持關閉" }] },
+        ],
+      },
+    ],
+  };
+
+  it("序列化為 GFM alert（> [!KIND] + 引用行）", () => {
+    const md = docToMarkdown(calloutDoc);
+    expect(md).toContain("> [!WARNING]");
+    expect(md).toContain("> 雷射電源須維持關閉");
+  });
+
+  it("純文字抽取涵蓋 callout 內文（供全文索引）", () => {
+    expect(docToPlainText(calloutDoc)).toContain("雷射電源須維持關閉");
+  });
+});
+
 describe("docToPlainText", () => {
   it("抽出全部文字供全文索引（去除 markdown 標記）", () => {
     const text = docToPlainText(doc);

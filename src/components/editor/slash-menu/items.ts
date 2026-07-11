@@ -1,19 +1,24 @@
 import type { Editor, Range } from "@tiptap/react";
 import {
+  CircleCheck,
   Code,
   Heading1,
   Heading2,
   Heading3,
+  Info,
   List,
   ListOrdered,
   ListTodo,
   Minus,
+  OctagonAlert,
   Paperclip,
   Quote,
   Table,
+  TriangleAlert,
   Type,
   type LucideIcon,
 } from "lucide-react";
+import type { CalloutKind } from "@/lib/content/callout";
 
 /**
  * Slash 選單項目定義（D-03，F-EDIT-02）。
@@ -139,6 +144,25 @@ export const SLASH_MENU_ITEMS: readonly SlashMenuItem[] = [
         .insertTable({ rows: 3, cols: 3, withHeaderRow: true })
         .run(),
   },
+  // D-06（F-EDIT-08）：四語意提示區塊。每項插入對應 kind 的 callout（含空段落待輸入）；
+  // 插入後仍可於 NodeView 右上角切換 kind 而不失內容。「提示」/「callout」可命中全部四項。
+  ...(
+    [
+      { id: "calloutInfo", kind: "info", icon: Info, keywords: ["提示", "資訊", "訊息", "callout", "info", "hint", "note"] },
+      { id: "calloutSuccess", kind: "success", icon: CircleCheck, keywords: ["提示", "成功", "完成", "callout", "success", "hint", "tip"] },
+      { id: "calloutWarning", kind: "warning", icon: TriangleAlert, keywords: ["提示", "警告", "注意", "callout", "warning", "warn", "caution", "hint"] },
+      { id: "calloutDanger", kind: "danger", icon: OctagonAlert, keywords: ["提示", "危險", "錯誤", "禁止", "callout", "danger", "error", "hint"] },
+    ] satisfies { id: string; kind: CalloutKind; icon: LucideIcon; keywords: string[] }[]
+  ).map(
+    (c): SlashMenuItem => ({
+      id: c.id,
+      group: "advanced",
+      icon: c.icon,
+      keywords: c.keywords,
+      command: ({ editor, range }) =>
+        editor.chain().focus().deleteRange(range).setCallout({ kind: c.kind }).run(),
+    }),
+  ),
   {
     id: "attachment",
     group: "advanced",

@@ -9,6 +9,7 @@ import { CodeBlockView } from "./code-block-view";
 import { SlashCommand } from "./slash-menu/slash-command";
 import { createImageExtension } from "./image/image-extension";
 import { createAttachmentExtension } from "./attachment/attachment-extension";
+import { Callout } from "./callout/callout-extension";
 
 /**
  * 程式碼區塊（D-04，F-EDIT-06）：以 CodeBlockLowlight 取代 StarterKit 內建 codeBlock，
@@ -47,7 +48,8 @@ const CodeBlock = CodeBlockLowlight.extend({
  * D-05 加入：表格區塊（Table/Row/Header/Cell，欄寬可拖曳）。
  * D-07 加入：圖片區塊（drop/貼上上傳 + 可編輯圖說）。
  * D-08 加入：附件區塊（slash「檔案」→ 上傳 → 卡片，編輯與閱讀一致）。
- * 其餘進階區塊（callout、mention…）於後續 issue 各自加入。
+ * D-06 加入：callout 提示區塊（四語意 kind、左緣色條 + 淡底、kind 切換）。
+ * 其餘進階區塊（mention…）於後續 issue 各自加入。
  *
  * R1 降險：一律採用現成 TipTap extension，不自研核心編輯行為。
  */
@@ -67,6 +69,7 @@ export function buildExtensions(): Extensions {
     TableCell,
     createImageExtension(), // D-07：圖片區塊與上傳整合
     createAttachmentExtension(), // D-08：附件卡片區塊
+    Callout, // D-06：四語意提示區塊（kind 可切換）
     SlashCommand,
   ];
 }

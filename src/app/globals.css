@@ -324,6 +324,92 @@ html.dark {
     text-decoration: underline;
   }
 
+  /* Callout 提示區塊（D-06，F-EDIT-08）：四語意色，左緣 3px 色條 + 淡底（token）。
+     編輯與閱讀共用；kind 由 data-kind 決定 --callout-accent / --callout-tint。 */
+  .prose-editor .jb-callout {
+    position: relative;
+    display: flex;
+    gap: 10px;
+    margin: 1rem 0;
+    padding: 12px 16px 12px 13px;
+    border-radius: var(--radius-lg);
+    border-left: 3px solid var(--callout-accent, var(--info));
+    background: var(--callout-tint, var(--info-tint));
+  }
+  .prose-editor .jb-callout[data-kind="info"] {
+    --callout-accent: var(--info);
+    --callout-tint: var(--info-tint);
+  }
+  .prose-editor .jb-callout[data-kind="success"] {
+    --callout-accent: var(--success);
+    --callout-tint: var(--success-tint);
+  }
+  .prose-editor .jb-callout[data-kind="warning"] {
+    --callout-accent: var(--warning);
+    --callout-tint: var(--warning-tint);
+  }
+  .prose-editor .jb-callout[data-kind="danger"] {
+    --callout-accent: var(--danger);
+    --callout-tint: var(--danger-tint);
+  }
+  .prose-editor .jb-callout__icon {
+    flex: none;
+    margin-top: 0.15rem;
+    line-height: 0;
+  }
+  .prose-editor .jb-callout__icon svg {
+    width: 1.15rem;
+    height: 1.15rem;
+    color: var(--callout-accent);
+  }
+  .prose-editor .jb-callout__body {
+    flex: 1 1 auto;
+    min-width: 0;
+  }
+  .prose-editor .jb-callout__body > :first-child {
+    margin-top: 0;
+  }
+  .prose-editor .jb-callout__body > :last-child {
+    margin-bottom: 0;
+  }
+  /* kind 切換工具列（僅編輯端）：右上角浮出，hover / focus-within 顯示。 */
+  .prose-editor .jb-callout__switch {
+    position: absolute;
+    top: 6px;
+    right: 6px;
+    display: inline-flex;
+    gap: 2px;
+    padding: 2px;
+    border-radius: var(--radius-sm);
+    border: 1px solid var(--border-default);
+    background: var(--bg-raised);
+    box-shadow: var(--shadow-sm);
+    opacity: 0;
+    transition: opacity 0.12s ease;
+  }
+  .prose-editor .jb-callout:hover .jb-callout__switch,
+  .prose-editor .jb-callout:focus-within .jb-callout__switch {
+    opacity: 1;
+  }
+  .prose-editor .jb-callout__switch-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 1.5rem;
+    height: 1.5rem;
+    border-radius: var(--radius-xs);
+    color: var(--text-tertiary);
+    cursor: pointer;
+  }
+  .prose-editor .jb-callout__switch-btn:hover {
+    background: var(--bg-hover);
+    color: var(--text-secondary);
+  }
+  .prose-editor .jb-callout__switch-btn.is-active {
+    color: var(--callout-accent);
+    background: var(--callout-tint);
+  }
+
   /* 錨點目標高亮（G-05）：分享連結載入含 hash 時短暫閃現，2s 後由 JS 移除 class 淡出。 */
   .anchor-target-highlight {
     background-color: var(--warning-tint);
