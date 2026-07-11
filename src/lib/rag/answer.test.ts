@@ -22,6 +22,7 @@ function chunk(overrides: Partial<RetrievedChunk> = {}): RetrievedChunk {
     score: 0.5,
     title: "雷射操作手冊",
     spaceSlug: "ops",
+    spaceName: "維運空間",
     pageSlug: "laser-manual",
     ...overrides,
   };
