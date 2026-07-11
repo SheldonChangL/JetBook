@@ -10,6 +10,9 @@ import { SlashCommand } from "./slash-menu/slash-command";
 import { createImageExtension } from "./image/image-extension";
 import { createAttachmentExtension } from "./attachment/attachment-extension";
 import { Callout } from "./callout/callout-extension";
+import { Tabs, TabItem } from "./tabs/tabs-extension";
+import { Details } from "./details/details-extension";
+import { Stepper, Step } from "./stepper/stepper-extension";
 import { MarkdownPaste } from "./markdown-paste";
 
 /**
@@ -51,6 +54,7 @@ const CodeBlock = CodeBlockLowlight.extend({
  * D-08 加入：附件區塊（slash「檔案」→ 上傳 → 卡片，編輯與閱讀一致）。
  * D-06 加入：callout 提示區塊（四語意 kind、左緣色條 + 淡底、kind 切換）。
  * D-10 加入：Markdown 貼上（多行含 md 特徵 → 轉區塊插入，否則預設）。
+ * D-12 加入：分頁（tabs/tabItem）、摺疊（details）、步驟（stepper/step）容器區塊。
  * 其餘進階區塊（mention…）於後續 issue 各自加入。
  *
  * R1 降險：一律採用現成 TipTap extension，不自研核心編輯行為。
@@ -72,6 +76,12 @@ export function buildExtensions(): Extensions {
     createImageExtension(), // D-07：圖片區塊與上傳整合
     createAttachmentExtension(), // D-08：附件卡片區塊
     Callout, // D-06：四語意提示區塊（kind 可切換）
+    // D-12：三種容器區塊（分頁 / 摺疊 / 步驟）。子節點（tabItem/step）不屬 block group，只在容器內出現。
+    Tabs,
+    TabItem,
+    Details,
+    Stepper,
+    Step,
     MarkdownPaste, // D-10：Markdown 貼上轉區塊
     SlashCommand,
   ];
