@@ -365,8 +365,33 @@
         "codeBlock": {
           "label": "程式碼區塊",
           "desc": "等寬字型的程式碼片段"
+        },
+        "table": {
+          "label": "表格",
+          "desc": "插入 3x3 表格（含表頭）"
+        },
+        "attachment": {
+          "label": "檔案",
+          "desc": "上傳並插入附件卡片"
         }
       }
+    },
+    "table": {
+      "addColumnBefore": "在左方插入欄",
+      "addColumnAfter": "在右方插入欄",
+      "deleteColumn": "刪除此欄",
+      "addRowBefore": "在上方插入列",
+      "addRowAfter": "在下方插入列",
+      "deleteRow": "刪除此列",
+      "toggleHeaderRow": "切換表頭列",
+      "deleteTable": "刪除表格"
+    },
+    "attachment": {
+      "uploadError": "附件上傳失敗，請再試一次",
+      "errorTooLarge": "附件超過大小上限",
+      "errorType": "不支援的檔案類型",
+      "errorForbidden": "沒有上傳附件的權限",
+      "retry": "重試"
     }
   },
   "reading": {
@@ -500,5 +525,12 @@
     "unarchiveConfirmBody": "取消封存「{name}」後，它將重新出現在列表與搜尋中。確定要繼續嗎？",
     "unarchiveConfirm": "取消封存",
     "unarchived": "已取消封存"
+  },
+  "content": {
+    "attachment": {
+      "download": "下載",
+      "downloadAria": "下載附件 {fileName}",
+      "unnamed": "未命名檔案"
+    }
   }
 }

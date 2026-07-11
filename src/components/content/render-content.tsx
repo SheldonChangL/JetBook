@@ -6,6 +6,7 @@ import { codeLanguageLabel } from "@/lib/content/lowlight";
 import { highlightToReact } from "@/lib/content/highlight-to-react";
 import { CodeBlockReader } from "./code-block-reader";
 import { ContentImage } from "./content-image";
+import { ContentAttachment } from "./content-attachment";
 
 /**
  * TipTap JSON → React 元素（閱讀模式渲染，G-02）。
@@ -15,6 +16,41 @@ import { ContentImage } from "./content-image";
  */
 
 type Slugger = (text: string) => string;
+
+/**
+ * 由首列儲存格的 colwidth 屬性推導 <colgroup>（D-05）：
+ * 保留編輯端欄寬拖曳的結果；無任何寬度時回傳 null（交由自動版面）。
+ */
+function renderColgroup(table: ProseMirrorNode, key: number): ReactNode {
+  const firstRow = (table.content ?? [])[0];
+  if (!firstRow) return null;
+  const widths: (number | null)[] = [];
+  for (const cell of firstRow.content ?? []) {
+    const span = Number(cell.attrs?.colspan ?? 1) || 1;
+    const colwidth = cell.attrs?.colwidth;
+    for (let i = 0; i < span; i += 1) {
+      const w = Array.isArray(colwidth) ? colwidth[i] : null;
+      widths.push(typeof w === "number" && w > 0 ? w : null);
+    }
+  }
+  if (!widths.some((w) => w !== null)) return null;
+  return (
+    <colgroup key={key}>
+      {widths.map((w, i) => (
+        <col key={i} style={w !== null ? { width: `${w}px` } : undefined} />
+      ))}
+    </colgroup>
+  );
+}
+
+function cellSpanProps(node: ProseMirrorNode): { colSpan?: number; rowSpan?: number } {
+  const colspan = Number(node.attrs?.colspan ?? 1) || 1;
+  const rowspan = Number(node.attrs?.rowspan ?? 1) || 1;
+  return {
+    colSpan: colspan > 1 ? colspan : undefined,
+    rowSpan: rowspan > 1 ? rowspan : undefined,
+  };
+}
 
 function renderMarks(text: string, marks: ProseMirrorNode["marks"], key: number): ReactNode {
   let node: ReactNode = text;
@@ -115,6 +151,46 @@ function renderNode(node: ProseMirrorNode, key: number, slug: Slugger): ReactNod
       if (!src.startsWith("/api/files/")) return <Fragment key={key} />;
       const alt = typeof node.attrs?.alt === "string" ? node.attrs.alt : "";
       return <ContentImage key={key} src={src} alt={alt} />;
+    }
+    case "table":
+      // 閱讀端水平捲動（F-EDIT-07）：以 overflow-x-auto 包裹，寬表格不撐破版面。
+      return (
+        <div key={key} className="tableWrapper overflow-x-auto">
+          <table>
+            {renderColgroup(node, 0)}
+            <tbody>{renderChildren(node.content, slug)}</tbody>
+          </table>
+        </div>
+      );
+    case "tableRow":
+      return <tr key={key}>{renderChildren(node.content, slug)}</tr>;
+    case "tableHeader":
+      return (
+        <th key={key} {...cellSpanProps(node)}>
+          {renderChildren(node.content, slug)}
+        </th>
+      );
+    case "tableCell":
+      return (
+        <td key={key} {...cellSpanProps(node)}>
+          {renderChildren(node.content, slug)}
+        </td>
+      );
+    case "attachment": {
+      const attachmentId =
+        typeof node.attrs?.attachmentId === "string" ? node.attrs.attachmentId : "";
+      // attachmentId 缺失（資料異常）不輸出；有效者由 /api/files 下載 API 驗權限
+      if (!attachmentId) return <Fragment key={key} />;
+      const fileName = typeof node.attrs?.fileName === "string" ? node.attrs.fileName : "";
+      const sizeBytes = typeof node.attrs?.sizeBytes === "number" ? node.attrs.sizeBytes : 0;
+      return (
+        <ContentAttachment
+          key={key}
+          attachmentId={attachmentId}
+          fileName={fileName}
+          sizeBytes={sizeBytes}
+        />
+      );
     }
     case "horizontalRule":
       return <hr key={key} />;

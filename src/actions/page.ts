@@ -5,38 +5,18 @@ import { revalidatePath } from "next/cache";
 import { headers } from "next/headers";
 import { z } from "zod";
 import { db } from "@/lib/db";
-import { pages, pageSlugHistory, pageVersions, spaces, users } from "@/lib/db/schema";
+import { pages, pageVersions, spaces, users } from "@/lib/db/schema";
 import { requireSession } from "@/lib/auth/current";
 import { assertCan } from "@/lib/authz/permission";
 import { positionBetween } from "@/lib/pages/position";
 import { movePageNode } from "@/lib/pages/move";
 import { listSpaceTreeNodes } from "@/lib/pages/tree";
+import { reclaimSlug, recordSlugHistory, uniquePageSlug } from "@/lib/pages/slug";
 import { docToMarkdown, docToPlainText } from "@/lib/content/serialize";
 import { EMPTY_DOC, type ProseMirrorDoc } from "@/lib/content/types";
 import { VersionConflictError } from "@/lib/pages/errors";
 import { ipFromHeaders, writeAudit } from "@/lib/audit";
 import { logger } from "@/lib/logger";
-
-function slugifyTitle(title: string): string {
-  const base = title
-    .trim()
-    .toLowerCase()
-    .replace(/[^\p{L}\p{N}]+/gu, "-")
-    .replace(/^-+|-+$/g, "");
-  return base && /[a-z0-9]/.test(base) ? base.slice(0, 48) : `p-${crypto.randomUUID().slice(0, 8)}`;
-}
-
-async function uniquePageSlug(spaceId: string, title: string): Promise<string> {
-  const base = slugifyTitle(title);
-  let candidate = base;
-  for (let i = 2; ; i += 1) {
-    const existing = await db.query.pages.findFirst({
-      where: and(eq(pages.spaceId, spaceId), eq(pages.slug, candidate)),
-    });
-    if (!existing) return candidate;
-    candidate = `${base}-${i}`;
-  }
-}
 
 /** 取得某父節點下最後一個 position，供新節點接在末尾。 */
 async function lastPositionUnder(spaceId: string, parentId: string | null): Promise<string | null> {
@@ -76,19 +56,24 @@ export async function createPage(input: z.infer<typeof createSchema>) {
   const last = await lastPositionUnder(data.spaceId, data.parentId);
   const position = positionBetween(last, null);
 
-  const [page] = await db
-    .insert(pages)
-    .values({
-      spaceId: data.spaceId,
-      parentId: data.parentId,
-      title,
-      slug,
-      position,
-      createdBy: user.id,
-      updatedBy: user.id,
-    })
-    .returning();
-  if (!page) throw new Error("page 建立失敗");
+  const page = await db.transaction(async (tx) => {
+    const [created] = await tx
+      .insert(pages)
+      .values({
+        spaceId: data.spaceId,
+        parentId: data.parentId,
+        title,
+        slug,
+        position,
+        createdBy: user.id,
+        updatedBy: user.id,
+      })
+      .returning();
+    if (!created) throw new Error("page 建立失敗");
+    // 新頁佔用此 slug → 清掉指向他頁的同名舊 slug 歷史（避免陳舊 301）
+    await reclaimSlug(tx, data.spaceId, slug);
+    return created;
+  });
 
   logger.info({ userId: user.id, pageId: page.id, spaceId: data.spaceId }, "page created");
   const space = await db.query.spaces.findFirst({ where: eq(spaces.id, data.spaceId) });
@@ -107,14 +92,14 @@ export async function renamePage(input: z.infer<typeof renameSchema>) {
   if (!page || page.deletedAt) throw new Error("NOT_FOUND");
   const user = await requireEditor(page.spaceId);
 
-  const newSlug = await uniquePageSlug(page.spaceId, data.title);
+  // 排除頁面自身：改名為同義標題（slug 不變）時不因自撞而平白產生尾碼
+  const newSlug = await uniquePageSlug(page.spaceId, data.title, { excludePageId: page.id });
   await db.transaction(async (tx) => {
     if (newSlug !== page.slug) {
       // 舊 slug 進歷史表供 301（G1）
-      await tx
-        .insert(pageSlugHistory)
-        .values({ spaceId: page.spaceId, oldSlug: page.slug, pageId: page.id })
-        .onConflictDoNothing();
+      await recordSlugHistory(tx, page.spaceId, page.slug, page.id);
+      // 新 slug 若曾是他頁的舊 slug → 清除該歷史（本頁現行佔用，避免陳舊 301）
+      await reclaimSlug(tx, page.spaceId, newSlug);
     }
     await tx
       .update(pages)
