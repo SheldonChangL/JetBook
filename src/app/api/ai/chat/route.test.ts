@@ -14,6 +14,7 @@ const messages: Record<string, string> = {
   invalidRequest: "問題內容不正確",
   failed: "AI 回答產生失敗，請稍後再試",
   conversationNotFound: "找不到對話或無權存取",
+  quotaExceeded: "今日 AI 用量已達每日上限，請明天再試。",
 };
 
 vi.mock("next-intl/server", () => ({
@@ -60,6 +61,11 @@ vi.mock("@/lib/ai/usage", () => ({
 const aiRateCheck = vi.fn();
 vi.mock("@/lib/rate-limit", () => ({
   aiRateLimiter: { check: (...args: unknown[]) => aiRateCheck(...args) },
+}));
+
+const checkAiDailyQuota = vi.fn();
+vi.mock("@/lib/ai/quota", () => ({
+  checkAiDailyQuota: (...args: unknown[]) => checkAiDailyQuota(...args),
 }));
 
 import { POST } from "./route";
@@ -115,6 +121,7 @@ beforeEach(() => {
   getCurrentSession.mockResolvedValue({ user: { id: "user-1", orgRole: "member" } });
   isLlmConfigured.mockReturnValue(true);
   aiRateCheck.mockReturnValue({ allowed: true, retryAfterSeconds: 0 });
+  checkAiDailyQuota.mockResolvedValue({ exceeded: false, quota: null, used: 0 });
   getLlmProvider.mockReturnValue({ name: "fake" });
 });
 
@@ -141,6 +148,18 @@ describe("POST /api/ai/chat", () => {
     expect((await res.json()).error.code).toBe("RATE_LIMITED");
     // 限流以 user id 為 key。
     expect(aiRateCheck).toHaveBeenCalledWith("user-1");
+  });
+
+  it("達每日配額回 429 QUOTA_EXCEEDED（限流之後、無 Retry-After，I-09）", async () => {
+    checkAiDailyQuota.mockResolvedValue({ exceeded: true, quota: 2, used: 2 });
+    const res = await POST(post({ question: "hi" }));
+    expect(res.status).toBe(429);
+    expect((await res.json()).error.code).toBe("QUOTA_EXCEEDED");
+    // 配額 429 與限流 429 區分：配額不帶 Retry-After（非重試提示）。
+    expect(res.headers.get("retry-after")).toBeNull();
+    // 配額以 user id 查詢；達額不進入編排。
+    expect(checkAiDailyQuota).toHaveBeenCalledWith("user-1");
+    expect(runConversationChat).not.toHaveBeenCalled();
   });
 
   it("空問題回 400", async () => {

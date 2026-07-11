@@ -167,13 +167,26 @@ export interface ImportTreeNode {
   kind: "folder" | "page";
   /** 顯示標題（資料夾＝資料夾名；頁面＝檔名去副檔名的保底，實際建頁時可由 H1 覆寫） */
   title: string;
-  /** 正規化路徑（資料夾＝資料夾路徑；頁面＝檔案路徑） */
+  /** 正規化路徑（資料夾＝資料夾路徑；頁面＝檔案路徑；資料夾自身內容＝該 README/index 路徑） */
   path: string;
-  /** 頁面：原始檔名（末段），供標題保底 */
+  /** 原始檔名（末段）：頁面供標題保底；資料夾（帶 README/index 內容時）供圖片解析基準 */
   fileName?: string;
-  /** 頁面：Markdown 原文 */
+  /** Markdown 原文：頁面為其檔案內容；資料夾為其 README/index 自身內容（J-03 round-trip） */
   markdown?: string;
   children: ImportTreeNode[];
+}
+
+/** 資料夾自身內容檔名（不分大小寫）：其內容歸為該資料夾頁本身，而非另建子頁（J-03）。 */
+const FOLDER_CONTENT_BASENAMES = new Set(["readme.md", "readme.markdown", "index.md", "index.markdown"]);
+
+/**
+ * 判斷某正規化路徑是否為「資料夾自身內容檔」（README.md／index.md 等）。
+ * 僅在該檔位於某資料夾內（非 zip 根層）時才視為資料夾內容——根層無對應資料夾節點。
+ */
+export function isFolderContentFile(path: string): boolean {
+  const segments = path.split("/");
+  if (segments.length < 2) return false; // 根層：無資料夾可歸屬
+  return FOLDER_CONTENT_BASENAMES.has((segments[segments.length - 1] ?? "").toLowerCase());
 }
 
 export interface ImportImage {
@@ -206,6 +219,7 @@ function cap(title: string): string {
 /**
  * 依解壓檔案清單規劃頁面樹：
  * - Markdown 檔 → 頁面節點；其祖先資料夾 → 父頁節點（資料夾＝父頁）。
+ * - 資料夾內的 README.md／index.md → 該資料夾頁的**自身內容**（非另建子頁；J-03 round-trip）。
  * - 圖片檔 → 收集待上傳（不建資料夾——只含圖片的資料夾不會變成空頁）。
  * - 其他類型 → skipped。
  * 節點依路徑字典序建立，順序穩定（建頁 position 依建立順序接於末尾）。
@@ -234,28 +248,45 @@ export function buildImportPlan(files: ParsedZipFile[]): ImportPlan {
   const folderByPath = new Map<string, ImportTreeNode>();
   let pageCount = 0;
 
-  /** 確保某資料夾路徑（可含多段）之節點鏈存在，回傳其 children 陣列。 */
-  function ensureFolder(dirPath: string): ImportTreeNode[] {
-    if (dirPath === "") return roots;
+  /** 確保某資料夾路徑（可含多段）之節點鏈存在，回傳該資料夾節點（根層回 null）。 */
+  function ensureFolderNode(dirPath: string): ImportTreeNode | null {
+    if (dirPath === "") return null;
     const cached = folderByPath.get(dirPath);
-    if (cached) return cached.children;
+    if (cached) return cached;
     const segments = dirPath.split("/");
     const name = segments[segments.length - 1]!;
     const parentPath = segments.slice(0, -1).join("/");
-    const siblings = ensureFolder(parentPath);
+    const parent = ensureFolderNode(parentPath);
+    const siblings = parent ? parent.children : roots;
     const node: ImportTreeNode = { kind: "folder", title: cap(name) || name, path: dirPath, children: [] };
     siblings.push(node);
     folderByPath.set(dirPath, node);
     pageCount += 1;
-    return node.children;
+    return node;
+  }
+
+  /** 某資料夾路徑下的子節點陣列（根層回 roots）。 */
+  function childrenOf(dirPath: string): ImportTreeNode[] {
+    const node = ensureFolderNode(dirPath);
+    return node ? node.children : roots;
   }
 
   for (const file of markdownFiles) {
     const segments = file.path.split("/");
     const fileName = segments[segments.length - 1]!;
     const dirPath = segments.slice(0, -1).join("/");
-    const siblings = ensureFolder(dirPath);
-    siblings.push({
+
+    // 資料夾內的 README/index：歸為該資料夾頁自身內容，不另建子頁（首個為準，忽略後續）。
+    if (isFolderContentFile(file.path)) {
+      const folder = ensureFolderNode(dirPath);
+      if (folder && folder.markdown === undefined) {
+        folder.markdown = strFromU8(file.bytes);
+        folder.fileName = fileName;
+      }
+      continue;
+    }
+
+    childrenOf(dirPath).push({
       kind: "page",
       title: cap(titleFromFileName(fileName)) || fileName,
       path: file.path,

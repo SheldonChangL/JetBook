@@ -2,6 +2,7 @@ import "server-only";
 import { and, eq, gte, sql } from "drizzle-orm";
 import { db } from "@/lib/db";
 import { auditLogs } from "@/lib/db/schema";
+import { AI_QUERY_AUDIT_ACTION } from "@/lib/ai/usage";
 
 /**
  * AI 用量統計聚合（L-03，F-ADMIN-04；NFR-OBS-04）。
@@ -11,8 +12,8 @@ import { auditLogs } from "@/lib/db/schema";
  * 分日以 Asia/Taipei 曆日切桶（內部工具、使用者皆在台灣）。
  */
 
-/** AI 問答用量稽核事件動作（I-06 寫入端與本聚合端共用，避免字串漂移）。 */
-export const AI_QUERY_AUDIT_ACTION = "ai.query";
+/** AI 問答用量稽核事件動作（產生端在 lib/ai/usage；再匯出供既有匯入點沿用）。 */
+export { AI_QUERY_AUDIT_ACTION };
 
 const TIMEZONE = "Asia/Taipei";
 const MS_PER_DAY = 86_400_000;

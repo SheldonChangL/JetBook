@@ -20,6 +20,7 @@ import { VisibilitySection } from "./visibility-section";
 import { MemberSection } from "./member-section";
 import { GroupSection } from "./group-section";
 import { ImportSection } from "./import-section";
+import { ExportSection } from "./export-section";
 import { ArchiveSection } from "./archive-section";
 import { DeleteSection } from "./delete-section";
 
@@ -95,6 +96,8 @@ export default async function SpaceSettingsPage({
       <GroupSection spaceId={space.id} groups={spaceGroups} candidates={groupCandidates} />
 
       <ImportSection spaceId={space.id} spaceSlug={space.slug} />
+
+      <ExportSection spaceId={space.id} />
 
       <ArchiveSection
         spaceId={space.id}

@@ -3,6 +3,7 @@ import { getTranslations } from "next-intl/server";
 import { z } from "zod";
 import { ipFromHeaders } from "@/lib/audit";
 import { recordAiUsage } from "@/lib/ai/usage";
+import { checkAiDailyQuota } from "@/lib/ai/quota";
 import { getConversation } from "@/lib/ai/conversations";
 import {
   runConversationChat,
@@ -61,6 +62,17 @@ export async function POST(request: Request) {
     return NextResponse.json(
       { error: { code: "RATE_LIMITED", message: t("rateLimited") } },
       { status: 429, headers: { "retry-after": String(rate.retryAfterSeconds) } },
+    );
+  }
+
+  // AI 每人每日配額（I-09，F-AI-11）：限流之後，以當日已用 ai.query 計數對照
+  // org_settings 配額（null＝不限）。達額回 429 QUOTA_EXCEEDED（與限流分開的錯誤碼，
+  // 前端顯示配額用罄訊息，非重試提示）。
+  const quota = await checkAiDailyQuota(session.user.id);
+  if (quota.exceeded) {
+    return NextResponse.json(
+      { error: { code: "QUOTA_EXCEEDED", message: t("quotaExceeded") } },
+      { status: 429 },
     );
   }
 
