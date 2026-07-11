@@ -2,7 +2,7 @@ import "server-only";
 import { and, eq, isNull, sql } from "drizzle-orm";
 import { db } from "@/lib/db";
 import { pages, spaceMembers, spaces, type SpaceRole, type User } from "@/lib/db/schema";
-import { getSpaceRole, resolveSpaceAccess } from "./spaces";
+import { getSpaceRole, resolveSpaceAccess, userInSpaceViaGroup } from "./spaces";
 import {
   actionAllowedForRole,
   actionAllowedWhenArchived,
@@ -78,6 +78,7 @@ export async function getAccessiblePageIds(
             select 1 from ${spaceMembers} sm
             where sm.space_id = s.id and sm.user_id = ${user.id}
           )
+          or ${userInSpaceViaGroup(user.id, sql`s.id`)}
         `}
       )
   `;
@@ -113,6 +114,7 @@ export async function getEditableSpaceIds(user: Actor): Promise<string[]> {
             where sm.space_id = s.id and sm.user_id = ${user.id}
               and sm.role in ('editor', 'admin')
           )
+          or ${userInSpaceViaGroup(user.id, sql`s.id`, sql`and smg.role in ('editor', 'admin')`)}
         `}
       )
   `);

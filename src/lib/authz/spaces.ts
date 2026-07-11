@@ -1,18 +1,42 @@
 import "server-only";
-import { and, eq, isNull, or, sql } from "drizzle-orm";
+import { and, eq, isNull, or, sql, type SQL } from "drizzle-orm";
 import { db } from "@/lib/db";
-import { spaceMembers, spaces, type SpaceRole, type User } from "@/lib/db/schema";
-import { roleAtLeast } from "./policy";
+import {
+  groupMembers,
+  spaceMemberGroups,
+  spaceMembers,
+  spaces,
+  type SpaceRole,
+  type User,
+} from "@/lib/db/schema";
+import { highestRole, roleAtLeast } from "./policy";
 
 export { roleAtLeast };
 
 /**
  * Space 層級授權（B-03 permission.ts 的一部分；權限判斷集中在 lib/authz）。
- * 解析：org admin 全通 → 成員角色 → visibility（org_read/org_write 全員可讀）→ 預設拒絕。
- * 群組成員 join 於 K-03 併入（授權主體泛化 C5）。
+ * 解析：org admin 全通 → 顯式角色（直接成員或群組成員取最高，K-03 主體泛化 C5）
+ * → visibility（org_read/org_write 全員可讀）→ 預設拒絕。
  */
 
-/** 可讀 Space 的 SQL 條件（未封存、未刪除，且 org_read/org_write 或本人為成員）。 */
+/**
+ * 「使用者經群組掛載而為某 space 成員」的 SQL exists 片段（K-03）。
+ * `spaceIdExpr` 為外層 space id 欄位表達式；roleFilter 可選（限定 group 掛載角色）。
+ */
+export function userInSpaceViaGroup(
+  userId: string,
+  spaceIdExpr: SQL,
+  roleFilter?: SQL,
+): SQL {
+  return sql`exists (
+    select 1 from ${spaceMemberGroups} smg
+    join ${groupMembers} gm on gm.group_id = smg.group_id
+    where smg.space_id = ${spaceIdExpr} and gm.user_id = ${userId}
+      ${roleFilter ? roleFilter : sql``}
+  )`;
+}
+
+/** 可讀 Space 的 SQL 條件（未封存、未刪除，且 org_read/org_write 或本人為成員／群組成員）。 */
 export function accessibleSpaceCondition(user: Pick<User, "id" | "orgRole">) {
   const base = and(isNull(spaces.archivedAt), isNull(spaces.deletedAt));
   if (user.orgRole === "admin") return base;
@@ -21,8 +45,25 @@ export function accessibleSpaceCondition(user: Pick<User, "id" | "orgRole">) {
     or(
       sql`${spaces.visibility} in ('org_read', 'org_write')`,
       sql`exists (select 1 from ${spaceMembers} sm where sm.space_id = ${spaces.id} and sm.user_id = ${user.id})`,
+      userInSpaceViaGroup(user.id, sql`${spaces.id}`),
     ),
   );
+}
+
+/**
+ * 取得使用者對某 space 的所有「顯式」角色（直接成員 ＋ 各群組來源角色）。
+ * 供 resolveSpaceAccess 以 highestRole 取最高有效角色（K-03）。
+ */
+async function explicitSpaceRoles(userId: string, spaceId: string): Promise<SpaceRole[]> {
+  const rows = await db.execute<{ role: SpaceRole }>(sql`
+    select sm.role from ${spaceMembers} sm
+      where sm.space_id = ${spaceId} and sm.user_id = ${userId}
+    union all
+    select smg.role from ${spaceMemberGroups} smg
+      join ${groupMembers} gm on gm.group_id = smg.group_id
+      where smg.space_id = ${spaceId} and gm.user_id = ${userId}
+  `);
+  return rows.rows.map((r) => r.role);
 }
 
 export interface SpaceAccess {
@@ -47,12 +88,11 @@ export async function resolveSpaceAccess(
 
   if (user.orgRole === "admin") return { role: "admin", archived };
 
-  const membership = await db.query.spaceMembers.findFirst({
-    where: and(eq(spaceMembers.spaceId, spaceId), eq(spaceMembers.userId, user.id)),
-  });
-  if (membership) return { role: membership.role, archived };
+  // 顯式角色（直接成員 ＋ 群組來源）取最高（K-03 主體泛化 C5）。
+  const explicit = highestRole(await explicitSpaceRoles(user.id, spaceId));
+  if (explicit) return { role: explicit, archived };
 
-  // 非成員：依可見性給隱含角色
+  // 無任何顯式角色：依可見性給隱含角色
   if (space.visibility === "org_write") return { role: "editor", archived };
   if (space.visibility === "org_read") return { role: "viewer", archived };
   return { role: null, archived };

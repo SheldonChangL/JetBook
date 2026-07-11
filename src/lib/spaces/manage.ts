@@ -1,7 +1,16 @@
 import "server-only";
-import { and, asc, desc, eq, gte, isNotNull, isNull, lt } from "drizzle-orm";
+import { and, asc, count, desc, eq, gte, isNotNull, isNull, lt, sql } from "drizzle-orm";
 import { db } from "@/lib/db";
-import { spaceMembers, spaces, users, type SpaceRole } from "@/lib/db/schema";
+import {
+  groupMembers,
+  groups,
+  spaceMemberGroups,
+  spaceMembers,
+  spaces,
+  users,
+  type SpaceRole,
+} from "@/lib/db/schema";
+import { highestRole } from "@/lib/authz/policy";
 import { writeAudit } from "@/lib/audit";
 import { logger } from "@/lib/logger";
 
@@ -51,6 +60,106 @@ export async function listActiveUsers(): Promise<CandidateUser[]> {
     .from(users)
     .where(eq(users.isActive, true))
     .orderBy(asc(users.name));
+}
+
+// ── 群組掛載（K-03 主體泛化 C5） ─────────────────────────────────────
+
+export interface SpaceGroupRow {
+  groupId: string;
+  name: string;
+  role: SpaceRole;
+  memberCount: number;
+  createdAt: Date;
+}
+
+/** 列出掛在某 space 的群組（含群組成員數）供設定頁管理，依群組名稱排序。 */
+export async function listSpaceGroups(spaceId: string): Promise<SpaceGroupRow[]> {
+  const rows = await db
+    .select({
+      groupId: spaceMemberGroups.groupId,
+      name: groups.name,
+      role: spaceMemberGroups.role,
+      createdAt: spaceMemberGroups.createdAt,
+      memberCount: count(groupMembers.userId),
+    })
+    .from(spaceMemberGroups)
+    .innerJoin(groups, eq(groups.id, spaceMemberGroups.groupId))
+    .leftJoin(groupMembers, eq(groupMembers.groupId, spaceMemberGroups.groupId))
+    .where(eq(spaceMemberGroups.spaceId, spaceId))
+    .groupBy(spaceMemberGroups.groupId, groups.name, spaceMemberGroups.role, spaceMemberGroups.createdAt)
+    .orderBy(asc(groups.name));
+  return rows.map((r) => ({ ...r, memberCount: Number(r.memberCount) }));
+}
+
+export interface SpaceGroupMemberRow {
+  userId: string;
+  name: string;
+  email: string;
+  /** 經群組繼承的有效角色（多群組取最高） */
+  role: SpaceRole;
+  /** 來源群組名稱（可能多個） */
+  groupNames: string[];
+}
+
+/**
+ * 列出「僅經由群組」而成為 space 成員的使用者（排除同時為直接成員者，避免與直接成員列重複）。
+ * 有效角色＝各來源群組角色取最高（highestRole）。供成員表格「來源：經由群組」badge。
+ */
+export async function listSpaceGroupMembers(spaceId: string): Promise<SpaceGroupMemberRow[]> {
+  const rows = await db.execute<{
+    user_id: string;
+    name: string;
+    email: string;
+    group_names: string[];
+    roles: SpaceRole[];
+  }>(sql`
+    select gm.user_id, u.name, u.email,
+           array_agg(distinct g.name order by g.name) as group_names,
+           -- role 為自訂 enum 陣列，node-postgres 不會自動解析，明確轉 text[] 供 JS 端讀取
+           array_agg(distinct smg.role::text) as roles
+    from ${spaceMemberGroups} smg
+      join ${groups} g on g.id = smg.group_id
+      join ${groupMembers} gm on gm.group_id = smg.group_id
+      join ${users} u on u.id = gm.user_id
+    where smg.space_id = ${spaceId}
+      and not exists (
+        select 1 from ${spaceMembers} sm
+        where sm.space_id = smg.space_id and sm.user_id = gm.user_id
+      )
+    group by gm.user_id, u.name, u.email
+    order by u.name
+  `);
+  return rows.rows.map((r) => ({
+    userId: r.user_id,
+    name: r.name,
+    email: r.email,
+    groupNames: r.group_names,
+    role: highestRole(r.roles) ?? "viewer",
+  }));
+}
+
+/**
+ * 掛載／變更／移除群組於某 space。role=null 移除掛載。
+ * 冪等：同一 (space, group) 以最新角色覆寫。
+ */
+export async function setSpaceGroupRole(
+  spaceId: string,
+  groupId: string,
+  role: SpaceRole | null,
+): Promise<void> {
+  if (role === null) {
+    await db
+      .delete(spaceMemberGroups)
+      .where(and(eq(spaceMemberGroups.spaceId, spaceId), eq(spaceMemberGroups.groupId, groupId)));
+    return;
+  }
+  await db
+    .insert(spaceMemberGroups)
+    .values({ spaceId, groupId, role })
+    .onConflictDoUpdate({
+      target: [spaceMemberGroups.spaceId, spaceMemberGroups.groupId],
+      set: { role },
+    });
 }
 
 /**

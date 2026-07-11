@@ -102,6 +102,11 @@ function serializeBlock(node: ProseMirrorNode): string {
       const source = (node.attrs?.source as string) ?? "";
       return `\`\`\`mermaid\n${source}\n\`\`\``;
     }
+    case "embed": {
+      // D-14：嵌入區塊序列化為 Markdown 連結（URL 進匯出與 RAG/全文索引；不渲染 iframe）。
+      const url = (node.attrs?.url as string) ?? "";
+      return url ? `[${url}](${url})` : "";
+    }
     case "blockquote":
       return serializeChildren(node.content)
         .split("\n")
@@ -192,6 +197,10 @@ export function docToPlainText(node: ProseMirrorDoc | ProseMirrorNode): string {
   // D-13：Mermaid 為 atom，原始碼存於 attrs.source；併入純文字供全文索引/RAG。
   if ((node as ProseMirrorNode).type === "mermaid") {
     return String((node as ProseMirrorNode).attrs?.source ?? "");
+  }
+  // D-14：Embed 為 atom，URL 存於 attrs.url；併入純文字供全文索引/RAG。
+  if ((node as ProseMirrorNode).type === "embed") {
+    return String((node as ProseMirrorNode).attrs?.url ?? "");
   }
   // D-11：mention / pageLink 為 inline atom（無 content），label 快照併入純文字供全文索引/RAG。
   if ((node as ProseMirrorNode).type === "mention") {

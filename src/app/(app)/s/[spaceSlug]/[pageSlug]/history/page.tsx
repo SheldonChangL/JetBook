@@ -6,6 +6,7 @@ import { getTranslations } from "next-intl/server";
 import { ArrowLeft } from "lucide-react";
 import { db } from "@/lib/db";
 import { pages, pageVersions, spaces } from "@/lib/db/schema";
+import { env } from "@/lib/env";
 import { getCurrentSession, requireSession } from "@/lib/auth/current";
 import { can } from "@/lib/authz/permission";
 import { denyPageRead } from "@/lib/authz/deny";
@@ -207,7 +208,10 @@ export default async function PageHistoryPage({
                     ) : null}
                   </div>
                   <h2 className="mb-6 text-h1 text-fg">{selectedFull.title}</h2>
-                  <RenderContent doc={(selectedFull.content as ProseMirrorDoc | null) ?? null} />
+                  <RenderContent
+                    doc={(selectedFull.content as ProseMirrorDoc | null) ?? null}
+                    embedAllowedDomains={env.EMBED_ALLOWED_DOMAINS}
+                  />
                 </article>
               ) : (
                 <DiffEmpty>{t("empty")}</DiffEmpty>
