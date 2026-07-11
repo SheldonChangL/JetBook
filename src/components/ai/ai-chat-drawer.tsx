@@ -8,11 +8,13 @@ import {
 } from "react";
 import { useRouter } from "next/navigation";
 import { useTranslations } from "next-intl";
-import { AlertTriangle, ArrowUp, Sparkles, Square } from "lucide-react";
+import { AlertTriangle, ArrowUp, Plus, Sparkles, Square } from "lucide-react";
 import { Drawer, DrawerContent } from "@/components/ui/drawer";
 import { EmptyState } from "@/components/ui/empty-state";
+import { IconButton } from "@/components/ui/icon-button";
 import { useToast } from "@/components/ui/toast";
 import { AnswerContent } from "./answer-content";
+import { ConversationHistory } from "./conversation-history";
 import { SourceCards } from "./source-cards";
 import { useAiChat, type AiMessage } from "./use-ai-chat";
 
@@ -49,7 +51,18 @@ export function AiChatDrawer({ open, onOpenChange }: AiChatDrawerProps) {
     [t, toast],
   );
   const chat = useAiChat({ genericError: t("failed"), onRateLimited });
-  const { messages, status, error, isStreaming, send, stop, retry } = chat;
+  const {
+    messages,
+    status,
+    error,
+    conversationId,
+    isStreaming,
+    send,
+    stop,
+    retry,
+    newConversation,
+    loadConversation,
+  } = chat;
 
   const inputRef = useRef<HTMLTextAreaElement>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
@@ -111,9 +124,22 @@ export function AiChatDrawer({ open, onOpenChange }: AiChatDrawerProps) {
 
   const lastAssistantId = [...messages].reverse().find((m) => m.role === "assistant")?.id;
 
+  const headerActions = (
+    <>
+      <ConversationHistory currentConversationId={conversationId} onSelect={loadConversation} />
+      <IconButton
+        label={t("newConversation")}
+        onClick={newConversation}
+        disabled={messages.length === 0 && conversationId === null}
+      >
+        <Plus className="size-4" />
+      </IconButton>
+    </>
+  );
+
   return (
     <Drawer open={open} onOpenChange={onOpenChange}>
-      <DrawerContent title={t("title")} closeLabel={t("closeLabel")}>
+      <DrawerContent title={t("title")} closeLabel={t("closeLabel")} headerActions={headerActions}>
         <div className="flex h-full min-h-0 flex-col">
           {/* 訊息串（串流逐字更新以 aria-live 播報） */}
           <div ref={scrollRef} className="min-h-0 flex-1 overflow-y-auto px-4 py-4" aria-live="polite">

@@ -2,17 +2,18 @@
 
 import { useCallback, useRef, useState } from "react";
 import { parseSseStream } from "@/lib/ai/sse";
-import type { AiSource } from "@/lib/ai/types";
+import type { AiConversationMessage, AiSource } from "@/lib/ai/types";
 
 /**
- * AI 問答對話狀態機（I-03）。
+ * AI 問答對話狀態機（I-03／I-07）。
  *
  * 封裝：訊息串維護、fetch `/api/ai/chat` 的 SSE 串流消費、停止生成（AbortController）、
- * 錯誤與重試。UI 元件只讀狀態、呼叫 send/stop/retry，不碰傳輸細節。
+ * 錯誤與重試，以及多輪對話（conversationId 續談、新對話、載入歷史）。UI 元件只讀狀態、
+ * 呼叫 send/stop/retry/newConversation/loadConversation，不碰傳輸細節。
  *
  * 狀態流：idle → retrieving（送出後、收到 sources 前）→ generating（串流 delta 中）→ idle。
- * 停止：abort fetch，保留已生成的部分文字，回 idle（非錯誤）。
- * 錯誤：HTTP 非 2xx 或 SSE error 事件 → 記錄可重試錯誤，回 idle。
+ * 多輪：首問無 conversationId，伺服器新建對話並經 `conversation` 事件回傳 id；後續送出
+ * 帶上該 id 續談（伺服器載入歷史 + query rewrite）。切換歷史對話以 loadConversation 載入。
  */
 
 export type AiChatStatus = "idle" | "retrieving" | "generating";
@@ -38,11 +39,17 @@ export interface UseAiChat {
   messages: AiMessage[];
   status: AiChatStatus;
   error: string | null;
+  /** 目前對話 id（null＝尚未開始或全新對話）。 */
+  conversationId: string | null;
   /** 是否正在串流（retrieving 或 generating）。 */
   isStreaming: boolean;
   send: (question: string) => void;
   stop: () => void;
   retry: () => void;
+  /** 開新對話（清空訊息與 conversationId；串流中則先中止）。 */
+  newConversation: () => void;
+  /** 載入既有對話歷史（切換歷史對話；串流中則先中止）。 */
+  loadConversation: (detail: { id: string; messages: AiConversationMessage[] }) => void;
 }
 
 let idCounter = 0;
@@ -55,10 +62,13 @@ export function useAiChat({ genericError, onRateLimited }: UseAiChatOptions): Us
   const [messages, setMessages] = useState<AiMessage[]>([]);
   const [status, setStatus] = useState<AiChatStatus>("idle");
   const [error, setError] = useState<string | null>(null);
+  const [conversationId, setConversationId] = useState<string | null>(null);
 
   const abortRef = useRef<AbortController | null>(null);
   const lastQuestionRef = useRef<string | null>(null);
   const lastAssistantIdRef = useRef<string | null>(null);
+  // 續談用：send 於非同步流程中讀最新 conversationId（避免閉包過期）。
+  const conversationIdRef = useRef<string | null>(null);
 
   const patchAssistant = useCallback(
     (id: string, patch: (m: AiMessage) => AiMessage) => {
@@ -78,7 +88,11 @@ export function useAiChat({ genericError, onRateLimited }: UseAiChatOptions): Us
         const res = await fetch("/api/ai/chat", {
           method: "POST",
           headers: { "content-type": "application/json" },
-          body: JSON.stringify({ question }),
+          body: JSON.stringify({
+            question,
+            // 續談：帶上目前對話 id（首問為 null → 伺服器新建對話）。
+            conversationId: conversationIdRef.current ?? undefined,
+          }),
           signal: controller.signal,
         });
 
@@ -105,6 +119,11 @@ export function useAiChat({ genericError, onRateLimited }: UseAiChatOptions): Us
 
         for await (const evt of parseSseStream(res.body)) {
           switch (evt.event) {
+            case "conversation":
+              // 伺服器回傳（新建或續談）對話 id：記住供後續續談。
+              conversationIdRef.current = evt.data.id;
+              setConversationId(evt.data.id);
+              break;
             case "sources":
               patchAssistant(assistantId, (m) => ({ ...m, sources: evt.data }));
               setStatus("generating");
@@ -169,13 +188,49 @@ export function useAiChat({ genericError, onRateLimited }: UseAiChatOptions): Us
     void runStream(question, assistantId);
   }, [patchAssistant, runStream]);
 
+  const reset = useCallback(() => {
+    abortRef.current?.abort();
+    abortRef.current = null;
+    lastQuestionRef.current = null;
+    lastAssistantIdRef.current = null;
+    setError(null);
+    setStatus("idle");
+  }, []);
+
+  const newConversation = useCallback(() => {
+    reset();
+    conversationIdRef.current = null;
+    setConversationId(null);
+    setMessages([]);
+  }, [reset]);
+
+  const loadConversation = useCallback(
+    (detail: { id: string; messages: AiConversationMessage[] }) => {
+      reset();
+      conversationIdRef.current = detail.id;
+      setConversationId(detail.id);
+      setMessages(
+        detail.messages.map((m) => ({
+          id: m.id,
+          role: m.role,
+          text: m.text,
+          sources: m.sources,
+        })),
+      );
+    },
+    [reset],
+  );
+
   return {
     messages,
     status,
     error,
+    conversationId,
     isStreaming: status !== "idle",
     send,
     stop,
     retry,
+    newConversation,
+    loadConversation,
   };
 }

@@ -22,6 +22,7 @@ import {
   vector,
   type AnyPgColumn,
 } from "drizzle-orm/pg-core";
+import type { AiSource } from "@/lib/ai/types";
 
 /** 系統層級角色：admin 可管理使用者與全部空間；member 為一般成員。 */
 export const orgRoleEnum = pgEnum("org_role", ["admin", "member"]);
@@ -449,6 +450,56 @@ export const auditLogs = pgTable(
   ],
 );
 
+// ── AI 對話與歷史（I-07；F-AI-07 多輪對話、稽核與回饋分析 G3） ─────────────────
+
+/**
+ * AI 問答對話（I-07，F-AI-07）：一段多輪對話的容器。
+ * - user_id cascade：對話為使用者私有資源，帳號刪除時一併清除；讀取一律 `where user_id = 自己`
+ *   （對話與訊息僅本人可讀，權限以擁有者過濾，非 space/page RBAC）。
+ * - title：由首問經 light tier 生成的短標題（生成前先以截斷首問作為暫定值）。
+ * - space_id（可空、無 FK）：對話若限定單一 space 檢索則記錄之，供續談沿用同一檢索範圍；
+ *   為使用者側 scope 快照，不掛 FK（space 刪除後僅使檢索落空，不影響對話本體）。
+ */
+export const aiConversations = pgTable(
+  "ai_conversations",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    userId: uuid("user_id")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    title: text("title").notNull().default(""),
+    /** 限定檢索的 space（可空）；為擁有者側 scope 快照，不掛 FK */
+    spaceId: uuid("space_id"),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+    updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (table) => [index("ix_ai_conversations_user").on(table.userId)],
+);
+
+/**
+ * AI 對話訊息（I-07，F-AI-07）：對話內每一則使用者提問或 AI 回答。
+ * - conversation_id cascade：對話刪除時訊息一併清除；查詢一律經對話擁有者驗證後才回傳。
+ * - role：`user`（提問）或 `assistant`（回答）。
+ * - sources（jsonb 可空）：assistant 訊息附「檢索到的 chunk 引用快照」（AnswerSource[]），
+ *   供稽核與回饋分析（G3）與歷史重載時還原來源卡片；user 訊息為 null。
+ * - created_at 排序 + `(conversation_id, created_at)` 索引：載入歷史依時間序（成對 user/assistant）。
+ */
+export const aiMessages = pgTable(
+  "ai_messages",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    conversationId: uuid("conversation_id")
+      .notNull()
+      .references(() => aiConversations.id, { onDelete: "cascade" }),
+    role: text("role").$type<"user" | "assistant">().notNull(),
+    content: text("content").notNull().default(""),
+    /** 檢索 chunk 引用快照（assistant 訊息用；AnswerSource 形狀，見 src/lib/ai/types.ts） */
+    sources: jsonb("sources").$type<AiSource[]>(),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (table) => [index("ix_ai_messages_conversation").on(table.conversationId, table.createdAt)],
+);
+
 export type User = typeof users.$inferSelect;
 export type Session = typeof sessions.$inferSelect;
 export type Space = typeof spaces.$inferSelect;
@@ -461,3 +512,5 @@ export type Attachment = typeof attachments.$inferSelect;
 export type PageEmbedding = typeof pageEmbeddings.$inferSelect;
 export type Comment = typeof comments.$inferSelect;
 export type Notification = typeof notifications.$inferSelect;
+export type AiConversation = typeof aiConversations.$inferSelect;
+export type AiMessage = typeof aiMessages.$inferSelect;

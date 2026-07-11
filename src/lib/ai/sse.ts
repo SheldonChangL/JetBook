@@ -14,7 +14,7 @@ import type { AiStreamEvent } from "./types";
  *   （視為「停止生成」而非錯誤）。
  */
 
-const KNOWN_EVENTS = new Set(["sources", "delta", "done", "error"]);
+const KNOWN_EVENTS = new Set(["conversation", "sources", "delta", "done", "error"]);
 
 /** 解析單一 SSE 幀（多行 `field: value`）為型別化事件；無法解析回 null。 */
 function parseFrame(frame: string): AiStreamEvent | null {

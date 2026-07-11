@@ -1,6 +1,6 @@
 import "server-only";
 import type { Actor } from "@/lib/authz/permission";
-import type { ChatUsage, LLMProvider } from "@/lib/llm";
+import type { ChatMessage, ChatUsage, LLMProvider } from "@/lib/llm";
 import { slugifyHeadingText } from "@/lib/content/heading-slug";
 import { HEADING_PATH_SEPARATOR } from "./chunker";
 import type { RetrievedChunk } from "./retriever";
@@ -130,6 +130,16 @@ export interface StreamChatAnswerOptions {
   actor: Actor;
   question: string;
   spaceId?: string;
+  /**
+   * 多輪對話的前序訊息（I-07；時間序 user/assistant 交替，呼叫端已截斷為最近 N 輪）。
+   * 只帶純文字（assistant 為回答、user 為原始提問，不含檢索 context）；預設空＝單輪問答。
+   */
+  history?: ChatMessage[];
+  /**
+   * 檢索用的獨立查詢（I-07；追問經 light tier query rewrite 改寫為不依賴脈絡的查詢）。
+   * 未提供則以 question 檢索（首問或無需改寫時）。
+   */
+  retrievalQuery?: string;
   /** 無檢索結果時回覆的固定訊息（由呼叫端經 i18n 提供）。 */
   noResultsMessage: string;
   /** client 斷線信號（貫通至 LLM 串流以停止生成）。 */
@@ -145,11 +155,14 @@ export interface StreamChatAnswerOptions {
  * 編排 SSE 事件序：sources → (delta)* → done(usage)。
  * 無檢索結果：送 sources:[] + 固定訊息 delta + done，**不呼叫 LLM**，回傳 null。
  * 有結果：呼叫 LLM 串流後回傳 { usage, model }（供 route 記錄 I-06 用量）。
+ *
+ * 多輪（I-07）：以 retrievalQuery（改寫後的獨立查詢，預設 question）檢索；LLM messages
+ * 為 history + 帶檢索 context 的當前提問，讓追問既有脈絡又只檢索當前意圖相關的內容。
  */
 export async function* streamChatAnswer(
   opts: StreamChatAnswerOptions,
 ): AsyncGenerator<SseEvent, ChatAnswerSummary | null> {
-  const chunks = await opts.retrieveFn(opts.actor, opts.question, {
+  const chunks = await opts.retrieveFn(opts.actor, opts.retrievalQuery ?? opts.question, {
     spaceId: opts.spaceId,
   });
   const sources = buildSources(chunks);
@@ -164,7 +177,10 @@ export async function* streamChatAnswer(
 
   const stream = opts.provider.chatStream({
     system: SYSTEM_PROMPT,
-    messages: [{ role: "user", content: buildUserPrompt(chunks, opts.question) }],
+    messages: [
+      ...(opts.history ?? []),
+      { role: "user", content: buildUserPrompt(chunks, opts.question) },
+    ],
     maxTokens: opts.maxTokens ?? ANSWER_MAX_TOKENS,
     tier: "primary",
     signal: opts.signal,
