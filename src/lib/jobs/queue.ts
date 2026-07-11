@@ -1,5 +1,7 @@
 import "server-only";
 import { PgBoss, type SendOptions } from "pg-boss";
+import { sql } from "drizzle-orm";
+import { db } from "@/lib/db";
 import { env } from "@/lib/env";
 import { logger } from "@/lib/logger";
 
@@ -21,6 +23,8 @@ export const JOBS = {
   cleanupSessions: "cleanup-sessions",
   /** 回收桶逾期清除（C-08，cron） */
   purgeTrash: "purge-trash",
+  /** Zip 批次匯入（J-02）：{ storageKey, fileName, spaceId, parentId, userId } */
+  importZip: "import-zip",
 } as const;
 
 export type JobName = (typeof JOBS)[keyof typeof JOBS];
@@ -28,6 +32,19 @@ export type JobName = (typeof JOBS)[keyof typeof JOBS];
 /** embed-page job 的 payload 型別（enqueue 與 worker handler 共用）。 */
 export interface EmbedPageJob {
   pageId: string;
+}
+
+/** import-zip job 的 payload 型別（enqueue 與 worker handler 共用）。 */
+export interface ImportZipJob {
+  /** StorageProvider 內暫存的 zip 檔 key（處理完刪除） */
+  storageKey: string;
+  /** 原始上傳檔名（僅供顯示／稽核） */
+  fileName: string;
+  spaceId: string;
+  /** 匯入目標父節點；null＝根層 */
+  parentId: string | null;
+  /** 匯入發起者（enqueue 時已驗 page.edit 權限；worker 據此建頁） */
+  userId: string;
 }
 
 const globalForBoss = globalThis as unknown as { jetbookBoss?: PgBoss };
@@ -93,4 +110,89 @@ export async function enqueueEmbedPage(pageId: string): Promise<string | null> {
       retryBackoff: true,
     },
   );
+}
+
+// ── Zip 批次匯入（J-02） ───────────────────────────────────────────
+
+/** import-zip job 執行寬限（大量檔案匯入）；避免長工作被判過期而重跑。 */
+const IMPORT_ZIP_EXPIRE_SECONDS = 15 * 60;
+
+/** 確保 import-zip 佇列存在（enqueue 與 worker 兩端一致）。 */
+export async function ensureImportZipQueue(boss: PgBoss): Promise<void> {
+  await boss.createQueue(JOBS.importZip);
+}
+
+/**
+ * enqueue Zip 匯入 job。**retryLimit=0**：匯入非冪等（部分完成後重跑會重複建頁），
+ * 故失敗不自動重試——由 UI 呈現錯誤、使用者重新上傳。expireInSeconds 放寬給大批次。
+ */
+export async function enqueueImportZip(data: ImportZipJob): Promise<string | null> {
+  const boss = await getBoss();
+  await ensureImportZipQueue(boss);
+  return boss.send(JOBS.importZip, data, {
+    retryLimit: 0,
+    expireInSeconds: IMPORT_ZIP_EXPIRE_SECONDS,
+  });
+}
+
+/** 匯入 job 進度／結果報告（寫入 job output；UI 輪詢顯示）。 */
+export interface ImportZipProgress {
+  phase: "unzipping" | "importing" | "completed" | "failed";
+  /** 已處理頁面數 */
+  processed: number;
+  /** 需建立的頁面總數 */
+  total: number;
+  createdPages: number;
+  uploadedImages: number;
+  rewrittenImageLinks: number;
+  /** 略過的檔案（未支援類型） */
+  skipped: { path: string; reason: string }[];
+  /** phase=failed 時的錯誤碼／訊息 */
+  errorCode?: string;
+  errorMessage?: string;
+}
+
+/** pg-boss 內部 schema（預設；queue.ts 未自訂 schema）。 */
+const PGBOSS_SCHEMA = "pgboss";
+
+/**
+ * 將進度寫入 import-zip job 的 output 欄位（best-effort）。pg-boss 無 job 執行中
+ * 更新 output 的公開 API，故直接更新其 job 表 output；失敗只記錄不中斷匯入。
+ * job 完成時 pg-boss 會以 handler 回傳值覆寫 output（＝最終報告）。
+ */
+export async function updateImportZipProgress(
+  jobId: string,
+  progress: ImportZipProgress,
+): Promise<void> {
+  try {
+    await db.execute(
+      sql`UPDATE ${sql.raw(`${PGBOSS_SCHEMA}.job`)} SET output = ${JSON.stringify(progress)}::jsonb
+          WHERE name = ${JOBS.importZip} AND id = ${jobId}::uuid`,
+    );
+  } catch (error) {
+    logger.warn({ err: error, jobId }, "更新 import-zip 進度失敗（不中斷匯入）");
+  }
+}
+
+export interface ImportZipStatus {
+  state: "created" | "retry" | "active" | "completed" | "cancelled" | "failed";
+  /** 發起匯入的空間（供狀態路由授權：需 page.edit） */
+  spaceId: string;
+  /** 發起者（供狀態路由授權） */
+  startedBy: string;
+  output: ImportZipProgress | null;
+}
+
+/** 查詢 import-zip job 狀態與進度／結果（UI 輪詢用）。找不到回 null。 */
+export async function getImportZipStatus(jobId: string): Promise<ImportZipStatus | null> {
+  const boss = await getBoss();
+  const job = await boss.getJobById<ImportZipJob>(JOBS.importZip, jobId);
+  if (!job) return null;
+  const output = job.output as ImportZipProgress | null;
+  return {
+    state: job.state,
+    spaceId: job.data.spaceId,
+    startedBy: job.data.userId,
+    output: output ?? null,
+  };
 }
