@@ -1,5 +1,12 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import type { ChatDelta, ChatParams, ChatResult, ChatUsage, LLMProvider } from "@/lib/llm";
+import type {
+  ChatDelta,
+  ChatParams,
+  ChatResult,
+  ChatStreamResult,
+  ChatUsage,
+  LLMProvider,
+} from "@/lib/llm";
 import type { RetrievedChunk } from "@/lib/rag/retriever";
 import { slugifyHeadingText } from "@/lib/content/heading-slug";
 
@@ -37,6 +44,21 @@ vi.mock("@/lib/rag/retriever", () => ({
   retrieve: (...args: unknown[]) => retrieve(...args),
 }));
 
+// audit（server-only + DB）：只需 ipFromHeaders，不觸 DB。
+vi.mock("@/lib/audit", () => ({
+  ipFromHeaders: () => "10.0.0.1",
+}));
+
+const recordAiUsage = vi.fn();
+vi.mock("@/lib/ai/usage", () => ({
+  recordAiUsage: (...args: unknown[]) => recordAiUsage(...args),
+}));
+
+const aiRateCheck = vi.fn();
+vi.mock("@/lib/rate-limit", () => ({
+  aiRateLimiter: { check: (...args: unknown[]) => aiRateCheck(...args) },
+}));
+
 import { POST } from "./route";
 
 class FakeProvider implements LLMProvider {
@@ -45,12 +67,13 @@ class FakeProvider implements LLMProvider {
   constructor(
     private deltas: string[] = ["答案"],
     private usage: ChatUsage = { inputTokens: 20, outputTokens: 6 },
+    private modelId = "fake-model",
   ) {}
-  async *chatStream(_params: ChatParams): AsyncGenerator<ChatDelta, ChatUsage> {
+  async *chatStream(_params: ChatParams): AsyncGenerator<ChatDelta, ChatStreamResult> {
     void _params;
     this.chatStreamCalls += 1;
     for (const text of this.deltas) yield { type: "text", text };
-    return this.usage;
+    return { usage: this.usage, model: this.modelId };
   }
   async chat(): Promise<ChatResult> {
     throw new Error("未使用");
@@ -110,6 +133,7 @@ beforeEach(() => {
   vi.clearAllMocks();
   getCurrentSession.mockResolvedValue({ user: { id: "user-1", orgRole: "member" } });
   isLlmConfigured.mockReturnValue(true);
+  aiRateCheck.mockReturnValue({ allowed: true, retryAfterSeconds: 0 });
 });
 
 describe("POST /api/ai/chat", () => {
@@ -125,6 +149,16 @@ describe("POST /api/ai/chat", () => {
     const res = await POST(post({ question: "hi" }));
     expect(res.status).toBe(503);
     expect((await res.json()).error.code).toBe("AI_DISABLED");
+  });
+
+  it("超過限流回 429 + Retry-After（NFR-SEC-07）", async () => {
+    aiRateCheck.mockReturnValue({ allowed: false, retryAfterSeconds: 42 });
+    const res = await POST(post({ question: "hi" }));
+    expect(res.status).toBe(429);
+    expect(res.headers.get("retry-after")).toBe("42");
+    expect((await res.json()).error.code).toBe("RATE_LIMITED");
+    // 限流以 user id 為 key。
+    expect(aiRateCheck).toHaveBeenCalledWith("user-1");
   });
 
   it("空問題回 400", async () => {
@@ -182,5 +216,35 @@ describe("POST /api/ai/chat", () => {
     expect(events[2]?.data).toEqual({ usage: { inputTokens: 0, outputTokens: 0 } });
     // 出貨閘門：無依據不打 LLM。
     expect(provider.chatStreamCalls).toBe(0);
+  });
+
+  it("有結果：串流結束後記一筆 ai.query 用量（model/tokens/latency/mode，I-06）", async () => {
+    const provider = new FakeProvider(["答"], { inputTokens: 40, outputTokens: 9 }, "gpt-x");
+    getLlmProvider.mockReturnValue(provider);
+    retrieve.mockResolvedValue([chunk()]);
+
+    await readSse(await POST(post({ question: "如何校準？" })));
+
+    await vi.waitFor(() => expect(recordAiUsage).toHaveBeenCalledTimes(1));
+    const arg = recordAiUsage.mock.calls[0]![0] as Record<string, unknown>;
+    expect(arg).toMatchObject({
+      actorId: "user-1",
+      model: "gpt-x",
+      inputTokens: 40,
+      outputTokens: 9,
+      mode: "chat",
+      ip: "10.0.0.1",
+    });
+    expect(typeof arg.latencyMs).toBe("number");
+  });
+
+  it("無結果：不記 ai.query 用量（未呼叫 LLM）", async () => {
+    getLlmProvider.mockReturnValue(new FakeProvider());
+    retrieve.mockResolvedValue([]);
+
+    await readSse(await POST(post({ question: "查無此題" })));
+    // 讓 stream 完整結束後再斷言（無結果路徑不呼叫 recordAiUsage）。
+    await new Promise((r) => setTimeout(r, 10));
+    expect(recordAiUsage).not.toHaveBeenCalled();
   });
 });

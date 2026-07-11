@@ -64,6 +64,17 @@ describe("OpenAICompatProvider（mock SSE server 整合）", () => {
     expect(out).toEqual(["預熱", "30", " 分鐘"]);
   });
 
+  it("chatStream 結束回傳 usage + model（I-06 用量記錄需 model 分項）", async () => {
+    const gen = makeProvider().chatStream({
+      messages: [{ role: "user", content: "預熱多久？" }],
+      maxTokens: 64,
+      tier: "primary",
+    });
+    let step = await gen.next();
+    while (!step.done) step = await gen.next();
+    expect(step.value).toEqual({ usage: { inputTokens: 9, outputTokens: 5 }, model: "qwen3-32b" });
+  });
+
   it("chat 聚合全文並取得最後 chunk 的 usage", async () => {
     const result = await makeProvider().chat({
       system: "以繁體中文回答",

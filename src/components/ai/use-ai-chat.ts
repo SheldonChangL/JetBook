@@ -27,6 +27,11 @@ export interface AiMessage {
 export interface UseAiChatOptions {
   /** HTTP 非 2xx 或未知錯誤時顯示的訊息（經 i18n）。 */
   genericError: string;
+  /**
+   * 觸發限流（HTTP 429，NFR-SEC-07）時的回呼，帶建議重試秒數（Retry-After）。
+   * 由元件層顯示 toast 提示（I-06）；不設定則靜默（回 idle，不顯示 inline 錯誤）。
+   */
+  onRateLimited?: (retryAfterSeconds: number) => void;
 }
 
 export interface UseAiChat {
@@ -46,7 +51,7 @@ function nextId(prefix: string): string {
   return `${prefix}-${idCounter}`;
 }
 
-export function useAiChat({ genericError }: UseAiChatOptions): UseAiChat {
+export function useAiChat({ genericError, onRateLimited }: UseAiChatOptions): UseAiChat {
   const [messages, setMessages] = useState<AiMessage[]>([]);
   const [status, setStatus] = useState<AiChatStatus>("idle");
   const [error, setError] = useState<string | null>(null);
@@ -76,6 +81,14 @@ export function useAiChat({ genericError }: UseAiChatOptions): UseAiChat {
           body: JSON.stringify({ question }),
           signal: controller.signal,
         });
+
+        // 限流（NFR-SEC-07）：交由元件層以 toast 提示（帶 Retry-After 秒數），不顯示 inline 錯誤。
+        if (res.status === 429) {
+          const retryAfter = Number(res.headers.get("retry-after"));
+          onRateLimited?.(Number.isFinite(retryAfter) && retryAfter > 0 ? retryAfter : 60);
+          setStatus("idle");
+          return;
+        }
 
         if (!res.ok || !res.body) {
           let message = genericError;
@@ -121,7 +134,7 @@ export function useAiChat({ genericError }: UseAiChatOptions): UseAiChat {
         if (abortRef.current === controller) abortRef.current = null;
       }
     },
-    [genericError, patchAssistant],
+    [genericError, onRateLimited, patchAssistant],
   );
 
   const send = useCallback(

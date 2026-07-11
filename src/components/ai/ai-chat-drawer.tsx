@@ -11,6 +11,7 @@ import { useTranslations } from "next-intl";
 import { AlertTriangle, ArrowUp, Sparkles, Square } from "lucide-react";
 import { Drawer, DrawerContent } from "@/components/ui/drawer";
 import { EmptyState } from "@/components/ui/empty-state";
+import { useToast } from "@/components/ui/toast";
 import { AnswerContent } from "./answer-content";
 import { SourceCards } from "./source-cards";
 import { useAiChat, type AiMessage } from "./use-ai-chat";
@@ -35,7 +36,19 @@ export interface AiChatDrawerProps {
 export function AiChatDrawer({ open, onOpenChange }: AiChatDrawerProps) {
   const t = useTranslations("ai");
   const router = useRouter();
-  const chat = useAiChat({ genericError: t("failed") });
+  const toast = useToast();
+  // 限流（NFR-SEC-07）：以 toast 提示已達每分鐘上限並帶重試秒數（I-06）。
+  const onRateLimited = useCallback(
+    (retryAfterSeconds: number) => {
+      toast({
+        variant: "error",
+        title: t("rateLimited"),
+        description: t("rateLimitedRetry", { seconds: retryAfterSeconds }),
+      });
+    },
+    [t, toast],
+  );
+  const chat = useAiChat({ genericError: t("failed"), onRateLimited });
   const { messages, status, error, isStreaming, send, stop, retry } = chat;
 
   const inputRef = useRef<HTMLTextAreaElement>(null);

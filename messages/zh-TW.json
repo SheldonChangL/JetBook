@@ -667,6 +667,8 @@
     "generatingPlain": "生成中…",
     "sourcesLabel": "引用來源",
     "citationLabel": "來源 {n}",
-    "disclaimer": "AI 回覆依內部文件生成，請以原文為準"
+    "disclaimer": "AI 回覆依內部文件生成，請以原文為準",
+    "rateLimited": "AI 請求過於頻繁",
+    "rateLimitedRetry": "已達每分鐘查詢上限，請於 {seconds} 秒後再試"
   }
 }

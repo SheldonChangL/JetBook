@@ -1,11 +1,14 @@
 import { NextResponse } from "next/server";
 import { getTranslations } from "next-intl/server";
 import { z } from "zod";
+import { ipFromHeaders } from "@/lib/audit";
+import { recordAiUsage } from "@/lib/ai/usage";
 import { getCurrentSession } from "@/lib/auth/current";
 import { getLlmProvider, isLlmConfigured } from "@/lib/llm";
 import { logger } from "@/lib/logger";
-import { streamChatAnswer } from "@/lib/rag/answer";
+import { streamChatAnswer, type ChatAnswerSummary } from "@/lib/rag/answer";
 import { retrieve } from "@/lib/rag/retriever";
+import { aiRateLimiter } from "@/lib/rate-limit";
 
 export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
@@ -46,6 +49,15 @@ export async function POST(request: Request) {
     );
   }
 
+  // 每使用者限流（NFR-SEC-07：AI 端點 20 次/分/使用者）→ 429 + Retry-After。
+  const rate = aiRateLimiter.check(session.user.id);
+  if (!rate.allowed) {
+    return NextResponse.json(
+      { error: { code: "RATE_LIMITED", message: t("rateLimited") } },
+      { status: 429, headers: { "retry-after": String(rate.retryAfterSeconds) } },
+    );
+  }
+
   let raw: unknown;
   try {
     raw = await request.json();
@@ -67,9 +79,9 @@ export async function POST(request: Request) {
   const provider = getLlmProvider();
   const noResultsMessage = t("noResults");
   const encoder = new TextEncoder();
+  const ip = ipFromHeaders(request.headers);
 
   let sourceCount = 0;
-  let usage = { inputTokens: 0, outputTokens: 0 };
 
   const stream = new ReadableStream<Uint8Array>({
     async start(controller) {
@@ -81,31 +93,52 @@ export async function POST(request: Request) {
           // 已關閉／已取消
         }
       };
+      const startedAt = Date.now();
+      // 手動迭代以取得 generator 回傳的用量摘要（含 model；不進 SSE 幀，不外洩 client）。
+      const gen = streamChatAnswer({
+        actor: session.user,
+        question,
+        spaceId,
+        noResultsMessage,
+        signal: request.signal,
+        retrieveFn: retrieve,
+        provider,
+      });
       try {
-        for await (const evt of streamChatAnswer({
-          actor: session.user,
-          question,
-          spaceId,
-          noResultsMessage,
-          signal: request.signal,
-          retrieveFn: retrieve,
-          provider,
-        })) {
+        let summary: ChatAnswerSummary | null = null;
+        for (;;) {
+          const step = await gen.next();
+          if (step.done) {
+            summary = step.value;
+            break;
+          }
+          const evt = step.value;
           if (evt.event === "sources") sourceCount = evt.data.length;
-          if (evt.event === "done") usage = evt.data.usage;
           controller.enqueue(encoder.encode(frame(evt.event, evt.data)));
         }
         safeClose();
-        // 用量入記錄（NFR-OBS；持久化 ai_usage 表待 migration 就緒後接手）。
-        logger.info(
-          {
+        // 用量記錄：僅在實際呼叫 LLM（有檢索結果）時記一筆 ai.query（I-06、NFR-OBS-04）。
+        if (summary) {
+          logger.info(
+            {
+              actorId: session.user.id,
+              sourceCount,
+              model: summary.model,
+              inputTokens: summary.usage.inputTokens,
+              outputTokens: summary.usage.outputTokens,
+            },
+            "ai chat",
+          );
+          await recordAiUsage({
             actorId: session.user.id,
-            sourceCount,
-            inputTokens: usage.inputTokens,
-            outputTokens: usage.outputTokens,
-          },
-          "ai chat",
-        );
+            model: summary.model,
+            inputTokens: summary.usage.inputTokens,
+            outputTokens: summary.usage.outputTokens,
+            latencyMs: Date.now() - startedAt,
+            mode: "chat",
+            ip,
+          });
+        }
       } catch (err) {
         // client 斷線：LLM 已依 signal 停止，安靜關閉，不視為錯誤。
         if (request.signal.aborted) {

@@ -52,6 +52,7 @@ export function createMemoryRateLimiter(options: {
 const globalForRateLimit = globalThis as unknown as {
   jetbookLoginLimiter?: RateLimiter;
   jetbookPasswordResetLimiter?: RateLimiter;
+  jetbookAiLimiter?: RateLimiter;
 };
 
 /** 登入端點：5 次/分/IP（NFR-SEC-07）。 */
@@ -67,5 +68,16 @@ export const passwordResetRateLimiter: RateLimiter =
   globalForRateLimit.jetbookPasswordResetLimiter ??
   (globalForRateLimit.jetbookPasswordResetLimiter = createMemoryRateLimiter({
     limit: 5,
+    windowMs: 60_000,
+  }));
+
+/**
+ * AI 端點：20 次/分/使用者（NFR-SEC-07、I-06）。key 為 user id，
+ * 涵蓋 /api/ai/chat 與語意／hybrid 搜尋，避免單一使用者濫用昂貴的 LLM／embedding 呼叫。
+ */
+export const aiRateLimiter: RateLimiter =
+  globalForRateLimit.jetbookAiLimiter ??
+  (globalForRateLimit.jetbookAiLimiter = createMemoryRateLimiter({
+    limit: 20,
     windowMs: 60_000,
   }));
