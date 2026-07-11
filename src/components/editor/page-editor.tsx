@@ -9,6 +9,7 @@ import { renamePage, savePage } from "@/actions/page";
 import { heartbeatLockAction, releaseLockAction } from "@/actions/lock";
 import { buildExtensions } from "./extensions";
 import { TableMenu } from "./table-menu";
+import { AiAssistMenu } from "./ai-assist/ai-assist-menu";
 import { startImageUpload } from "./image/image-upload";
 import {
   isRetryableUploadError,
@@ -34,6 +35,8 @@ export interface PageEditorProps {
   initialTitle: string;
   initialContent: ProseMirrorDoc | null;
   initialVersionNo: number;
+  /** AI 是否已設定（isLlmConfigured）；決定是否掛載選取文字的 AI 寫作輔助（I-08）。 */
+  aiEnabled: boolean;
 }
 
 /**
@@ -48,6 +51,7 @@ export function PageEditor({
   initialTitle,
   initialContent,
   initialVersionNo,
+  aiEnabled,
 }: PageEditorProps) {
   const t = useTranslations("editor");
   const router = useRouter();
@@ -347,6 +351,7 @@ export function PageEditor({
 
       <EditorContent editor={editor} />
       <TableMenu editor={editor} />
+      <AiAssistMenu editor={editor} pageId={pageId} enabled={aiEnabled && !lockLost} />
     </div>
   );
 }

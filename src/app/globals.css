@@ -770,6 +770,253 @@ html.dark {
     text-decoration: underline;
   }
 
+  /* 分頁區塊（D-12；編輯與閱讀共用 .jb-tabs 結構）：標籤列切換 + 面板顯隱。 */
+  .prose-editor .jb-tabs {
+    margin: 1rem 0;
+    border: 1px solid var(--border-default);
+    border-radius: var(--radius-md);
+    overflow: hidden;
+  }
+  .prose-editor .jb-tabs__strip {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: stretch;
+    gap: 2px;
+    padding: 4px 4px 0;
+    background: var(--bg-sidebar);
+    border-bottom: 1px solid var(--border-default);
+  }
+  .prose-editor .jb-tabs__tab {
+    display: inline-flex;
+    align-items: center;
+    gap: 2px;
+    padding: 0 2px 0 8px;
+    border: 1px solid transparent;
+    border-bottom: none;
+    border-top-left-radius: var(--radius-sm);
+    border-top-right-radius: var(--radius-sm);
+    color: var(--text-secondary);
+  }
+  .prose-editor .jb-tabs__tab.is-active {
+    background: var(--bg-raised);
+    border-color: var(--border-default);
+    color: var(--text-primary);
+  }
+  .prose-editor button.jb-tabs__tab--reader {
+    cursor: pointer;
+    padding: 6px 12px;
+    font-size: var(--text-body-ui);
+  }
+  .prose-editor .jb-tabs__tab-input {
+    min-width: 4rem;
+    max-width: 12rem;
+    padding: 6px 4px;
+    border: none;
+    background: transparent;
+    color: inherit;
+    font: inherit;
+  }
+  .prose-editor .jb-tabs__tab-input:focus {
+    outline: none;
+  }
+  .prose-editor .jb-tabs__tab-remove,
+  .prose-editor .jb-tabs__add {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: var(--radius-xs);
+    color: var(--text-tertiary);
+    cursor: pointer;
+  }
+  .prose-editor .jb-tabs__tab-remove {
+    width: 1.25rem;
+    height: 1.25rem;
+    opacity: 0;
+    transition: opacity 0.12s ease;
+  }
+  .prose-editor .jb-tabs__tab:hover .jb-tabs__tab-remove,
+  .prose-editor .jb-tabs__tab:focus-within .jb-tabs__tab-remove {
+    opacity: 1;
+  }
+  .prose-editor .jb-tabs__add {
+    width: 1.75rem;
+    align-self: center;
+    height: 1.75rem;
+    margin-left: 2px;
+    margin-bottom: 4px;
+  }
+  .prose-editor .jb-tabs__tab-remove:hover,
+  .prose-editor .jb-tabs__add:hover {
+    background: var(--bg-hover);
+    color: var(--text-secondary);
+  }
+  .prose-editor .jb-tabs__panels {
+    padding: 12px 16px;
+    background: var(--bg-raised);
+  }
+  .prose-editor .jb-tabs__panels > .jb-tab-panel {
+    display: none;
+  }
+  .prose-editor .jb-tabs__panels > .jb-tab-panel > :first-child {
+    margin-top: 0;
+  }
+  .prose-editor .jb-tabs__panels > .jb-tab-panel > :last-child {
+    margin-bottom: 0;
+  }
+  /* active 分頁面板顯示（data-active + nth-child；支援至 12 個分頁）。 */
+  .prose-editor .jb-tabs[data-active="0"] > .jb-tabs__panels > .jb-tab-panel:nth-child(1),
+  .prose-editor .jb-tabs[data-active="1"] > .jb-tabs__panels > .jb-tab-panel:nth-child(2),
+  .prose-editor .jb-tabs[data-active="2"] > .jb-tabs__panels > .jb-tab-panel:nth-child(3),
+  .prose-editor .jb-tabs[data-active="3"] > .jb-tabs__panels > .jb-tab-panel:nth-child(4),
+  .prose-editor .jb-tabs[data-active="4"] > .jb-tabs__panels > .jb-tab-panel:nth-child(5),
+  .prose-editor .jb-tabs[data-active="5"] > .jb-tabs__panels > .jb-tab-panel:nth-child(6),
+  .prose-editor .jb-tabs[data-active="6"] > .jb-tabs__panels > .jb-tab-panel:nth-child(7),
+  .prose-editor .jb-tabs[data-active="7"] > .jb-tabs__panels > .jb-tab-panel:nth-child(8),
+  .prose-editor .jb-tabs[data-active="8"] > .jb-tabs__panels > .jb-tab-panel:nth-child(9),
+  .prose-editor .jb-tabs[data-active="9"] > .jb-tabs__panels > .jb-tab-panel:nth-child(10),
+  .prose-editor .jb-tabs[data-active="10"] > .jb-tabs__panels > .jb-tab-panel:nth-child(11),
+  .prose-editor .jb-tabs[data-active="11"] > .jb-tabs__panels > .jb-tab-panel:nth-child(12) {
+    display: block;
+  }
+
+  /* 摺疊區塊（D-12）：編輯端自訂標題列 + data-open 隱藏內文；閱讀端用原生 <details>。 */
+  .prose-editor .jb-details {
+    margin: 1rem 0;
+    border: 1px solid var(--border-default);
+    border-radius: var(--radius-md);
+    background: var(--bg-raised);
+    padding: 4px 12px;
+  }
+  .prose-editor .jb-details__header {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+  .prose-editor .jb-details__toggle {
+    display: inline-flex;
+    flex: none;
+    align-items: center;
+    justify-content: center;
+    width: 1.5rem;
+    height: 1.5rem;
+    border-radius: var(--radius-xs);
+    color: var(--text-tertiary);
+    cursor: pointer;
+  }
+  .prose-editor .jb-details__toggle:hover {
+    background: var(--bg-hover);
+    color: var(--text-secondary);
+  }
+  .prose-editor .jb-details__chevron {
+    transition: transform 0.15s ease;
+  }
+  .prose-editor .jb-details[data-open="true"] .jb-details__chevron {
+    transform: rotate(90deg);
+  }
+  .prose-editor .jb-details__summary {
+    flex: 1 1 auto;
+    min-width: 0;
+    padding: 6px 4px;
+    border: none;
+    background: transparent;
+    color: var(--text-primary);
+    font: inherit;
+    font-weight: 600;
+  }
+  .prose-editor .jb-details__summary:focus {
+    outline: none;
+  }
+  .prose-editor .jb-details__summary-reader {
+    cursor: pointer;
+    padding: 6px 4px 6px 0;
+    font-weight: 600;
+    color: var(--text-primary);
+  }
+  .prose-editor .jb-details__body {
+    padding: 4px 0 8px 30px;
+  }
+  .prose-editor .jb-details__body > :first-child {
+    margin-top: 0;
+  }
+  .prose-editor .jb-details__body > :last-child {
+    margin-bottom: 0;
+  }
+  .prose-editor .jb-details[data-open="false"] > .jb-details__body {
+    display: none;
+  }
+
+  /* 步驟區塊（D-12；編輯與閱讀共用）：序號由 CSS counter 自動產生。 */
+  .prose-editor .jb-stepper {
+    margin: 1rem 0;
+    counter-reset: jb-step;
+  }
+  .prose-editor .jb-step {
+    position: relative;
+    display: flex;
+    gap: 12px;
+    counter-increment: jb-step;
+    padding-bottom: 12px;
+  }
+  .prose-editor .jb-step::before {
+    content: counter(jb-step);
+    flex: none;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 1.75rem;
+    height: 1.75rem;
+    border-radius: 999px;
+    background: var(--info-tint);
+    color: var(--info);
+    font-size: var(--text-caption);
+    font-weight: 600;
+  }
+  .prose-editor .jb-step__body {
+    flex: 1 1 auto;
+    min-width: 0;
+  }
+  .prose-editor .jb-step__body > :first-child {
+    margin-top: 0;
+  }
+  .prose-editor .jb-step__body > :last-child {
+    margin-bottom: 0;
+  }
+  .prose-editor .jb-step__remove {
+    flex: none;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 1.5rem;
+    height: 1.5rem;
+    border-radius: var(--radius-xs);
+    color: var(--text-tertiary);
+    opacity: 0;
+    cursor: pointer;
+    transition: opacity 0.12s ease;
+  }
+  .prose-editor .jb-step:hover .jb-step__remove,
+  .prose-editor .jb-step:focus-within .jb-step__remove {
+    opacity: 1;
+  }
+  .prose-editor .jb-step__remove:hover {
+    background: var(--bg-hover);
+    color: var(--text-secondary);
+  }
+  .prose-editor .jb-stepper__add {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 4px 10px;
+    border-radius: var(--radius-sm);
+    color: var(--text-secondary);
+    font-size: var(--text-body-ui);
+    cursor: pointer;
+  }
+  .prose-editor .jb-stepper__add:hover {
+    background: var(--bg-hover);
+    color: var(--text-primary);
+  }
+
   /* 動態偏好（§5.2） */
   @media (prefers-reduced-motion: reduce) {
     *,

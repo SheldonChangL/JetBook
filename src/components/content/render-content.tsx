@@ -9,6 +9,7 @@ import { CALLOUT_ICONS } from "@/components/content/callout-icons";
 import { CodeBlockReader } from "./code-block-reader";
 import { ContentImage } from "./content-image";
 import { ContentAttachment } from "./content-attachment";
+import { ContentTabs } from "./content-tabs";
 
 /**
  * TipTap JSON → React 元素（閱讀模式渲染，G-02）。
@@ -209,6 +210,42 @@ function renderNode(node: ProseMirrorNode, key: number, slug: Slugger): ReactNod
     }
     case "horizontalRule":
       return <hr key={key} />;
+    case "tabs": {
+      // D-12：分頁區塊。伺服端算好各分頁內文，交由 client ContentTabs 切換。
+      const tabs = (node.content ?? [])
+        .filter((c) => c.type === "tabItem")
+        .map((item) => ({
+          label: typeof item.attrs?.label === "string" ? item.attrs.label : "",
+          content: renderChildren(item.content, slug),
+        }));
+      if (!tabs.length) return <Fragment key={key} />;
+      return <ContentTabs key={key} tabs={tabs} />;
+    }
+    case "details": {
+      // D-12：摺疊區塊。以原生 <details> 渲染，瀏覽器原生互動（open 為作者預設）。
+      const open = node.attrs?.open !== false;
+      const summary = typeof node.attrs?.summary === "string" ? node.attrs.summary : "";
+      return (
+        <details key={key} className="jb-details" open={open}>
+          <summary className="jb-details__summary-reader">{summary}</summary>
+          <div className="jb-details__body">{renderChildren(node.content, slug)}</div>
+        </details>
+      );
+    }
+    case "stepper": {
+      // D-12：步驟區塊。序號由 CSS counter（.jb-step::before）產生，與編輯端一致。
+      const steps = (node.content ?? []).filter((c) => c.type === "step");
+      if (!steps.length) return <Fragment key={key} />;
+      return (
+        <div key={key} className="jb-stepper">
+          {steps.map((step, i) => (
+            <div key={i} className="jb-step">
+              <div className="jb-step__body">{renderChildren(step.content, slug)}</div>
+            </div>
+          ))}
+        </div>
+      );
+    }
     default:
       return <Fragment key={key}>{renderChildren(node.content, slug)}</Fragment>;
   }

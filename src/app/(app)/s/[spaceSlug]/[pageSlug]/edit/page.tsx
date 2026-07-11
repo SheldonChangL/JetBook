@@ -4,6 +4,7 @@ import { db } from "@/lib/db";
 import { pages, spaces } from "@/lib/db/schema";
 import { requireSession } from "@/lib/auth/current";
 import { can } from "@/lib/authz/permission";
+import { isLlmConfigured } from "@/lib/llm";
 import { acquireLock, getLockState } from "@/lib/pages/lock";
 import { PageEditor } from "@/components/editor/page-editor";
 import { EditLockNotice } from "./edit-lock-notice";
@@ -51,6 +52,7 @@ export default async function EditPage({
       initialTitle={page.title}
       initialContent={(page.content as ProseMirrorDoc | null) ?? null}
       initialVersionNo={page.currentVersionNo}
+      aiEnabled={isLlmConfigured()}
     />
   );
 }

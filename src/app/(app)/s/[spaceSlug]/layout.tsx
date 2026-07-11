@@ -1,6 +1,9 @@
 import type { ReactNode } from "react";
+import Link from "next/link";
 import { notFound } from "next/navigation";
 import { eq } from "drizzle-orm";
+import { getTranslations } from "next-intl/server";
+import { Trash2 } from "lucide-react";
 import { db } from "@/lib/db";
 import { spaces } from "@/lib/db/schema";
 import { requireSession } from "@/lib/auth/current";
@@ -30,14 +33,29 @@ export default async function SpaceLayout({
 
   const nodes = await listSpaceTreeNodes(space.id);
   const canEdit = actionAllowedForRole("page.edit", role);
+  // 還原需 page.delete（＝editor+）；與 canEdit 同級，故共用旗標控制垃圾桶入口顯示。
+  const tShell = await getTranslations("shell");
 
   return (
     <div className="flex h-full">
       <aside
         aria-label={space.name}
-        className="hidden w-[260px] shrink-0 overflow-y-auto border-r border-edge bg-sidebar md:block"
+        className="hidden w-[260px] shrink-0 flex-col border-r border-edge bg-sidebar md:flex"
       >
-        <PageTree spaceId={space.id} spaceSlug={space.slug} nodes={nodes} canEdit={canEdit} />
+        <div className="min-h-0 flex-1 overflow-y-auto">
+          <PageTree spaceId={space.id} spaceSlug={space.slug} nodes={nodes} canEdit={canEdit} />
+        </div>
+        {canEdit ? (
+          <div className="shrink-0 border-t border-edge p-2">
+            <Link
+              href={`/trash?space=${space.slug}`}
+              className="flex items-center gap-2 rounded-sm px-2 py-1.5 text-body-ui text-fg-secondary transition-colors hover:bg-hover hover:text-fg"
+            >
+              <Trash2 aria-hidden className="size-4" />
+              <span className="truncate">{tShell("trash")}</span>
+            </Link>
+          </div>
+        ) : null}
       </aside>
       <div className="min-w-0 flex-1 overflow-y-auto">{children}</div>
     </div>

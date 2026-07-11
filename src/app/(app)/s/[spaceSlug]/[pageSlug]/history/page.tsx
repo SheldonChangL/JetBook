@@ -11,7 +11,10 @@ import { can } from "@/lib/authz/permission";
 import { denyPageRead } from "@/lib/authz/deny";
 import { listPageVersions } from "@/actions/page";
 import { RenderContent } from "@/components/content/render-content";
+import { DiffContent, DiffEmpty, DiffLegend } from "@/components/content/diff-content";
+import { diffDocs, isUnchanged } from "@/lib/content/diff";
 import { RestoreVersionButton } from "./restore-version-button";
+import { VersionSidebar, type VersionListItem } from "./version-sidebar";
 import { Badge } from "@/components/ui/badge";
 import type { ProseMirrorDoc } from "@/lib/content/types";
 import { cn } from "@/lib/utils";
@@ -39,16 +42,27 @@ export async function generateMetadata({
   return { title: t("metaTitle", { title: page.title }) };
 }
 
-/** 版本歷史檢視（E-02，設計規範 §3.8）：左欄時間軸列表＋右欄快照唯讀渲染。 */
+/** 讀取單一版本完整快照（含 content JSON）。 */
+async function loadVersion(pageId: string, versionNo: number | null) {
+  if (versionNo == null) return null;
+  return db.query.pageVersions.findFirst({
+    where: and(eq(pageVersions.pageId, pageId), eq(pageVersions.versionNo, versionNo)),
+  });
+}
+
+/**
+ * 版本歷史檢視（E-02 選版/唯讀渲染、E-03 還原、E-04 差異比較）。
+ * 左欄時間軸列表＋勾選比較；右欄「快照」與「差異」兩 tab。
+ */
 export default async function PageHistoryPage({
   params,
   searchParams,
 }: {
   params: Promise<{ spaceSlug: string; pageSlug: string }>;
-  searchParams: Promise<{ v?: string }>;
+  searchParams: Promise<{ v?: string; tab?: string; from?: string; to?: string }>;
 }) {
   const { spaceSlug, pageSlug } = await params;
-  const { v } = await searchParams;
+  const { v, tab, from, to } = await searchParams;
   const { user } = await requireSession(`/s/${spaceSlug}/${pageSlug}/history`);
   const t = await getTranslations("versionHistory");
 
@@ -68,22 +82,70 @@ export default async function PageHistoryPage({
   const canEdit = await can(user, "page.edit", { type: "page", spaceId: space.id });
 
   const versions = await listPageVersions(page.id);
+  const versionItems: VersionListItem[] = versions.map((item) => ({
+    id: item.id,
+    versionNo: item.versionNo,
+    note: item.note,
+    authorName: item.authorName,
+    createdAtMs: item.createdAt.getTime(),
+  }));
+
+  const readingHref = `/s/${spaceSlug}/${pageSlug}`;
+  const base = `${readingHref}/history`;
+  const activeTab: "snapshot" | "diff" = tab === "diff" ? "diff" : "snapshot";
 
   // 選中版本：?v=<versionNo>；無效或未指定則取最新
   const requested = Number.parseInt(v ?? "", 10);
   const selected = versions.find((item) => item.versionNo === requested) ?? versions[0] ?? null;
-  // 列表 select 不含完整 content（避免整批快照 JSON 進列表查詢），選中版單獨取
-  const selectedFull = selected
-    ? await db.query.pageVersions.findFirst({
-        where: and(eq(pageVersions.pageId, page.id), eq(pageVersions.versionNo, selected.versionNo)),
-      })
-    : null;
 
-  const readingHref = `/s/${spaceSlug}/${pageSlug}`;
+  // 差異比較配對：?from&?to（任兩版）優先，否則「與前版差異」（選中版 vs 前一版）
+  let diffFromNo: number | null = null;
+  let diffToNo: number | null = null;
+  if (activeTab === "diff") {
+    const fromNo = Number.parseInt(from ?? "", 10);
+    const toNo = Number.parseInt(to ?? "", 10);
+    const fromValid = versions.some((item) => item.versionNo === fromNo);
+    const toValid = versions.some((item) => item.versionNo === toNo);
+    if (fromValid && toValid && fromNo !== toNo) {
+      diffFromNo = Math.min(fromNo, toNo);
+      diffToNo = Math.max(fromNo, toNo);
+    } else if (selected) {
+      const idx = versions.findIndex((item) => item.versionNo === selected.versionNo);
+      const older = versions[idx + 1] ?? null; // 新到舊排序：下一項為前一版
+      diffToNo = selected.versionNo;
+      diffFromNo = older ? older.versionNo : null;
+    }
+  }
+
+  const snapshotVersionNo = selected?.versionNo ?? null;
+  const snapshotTabHref = snapshotVersionNo != null ? `${base}?v=${snapshotVersionNo}` : base;
+  const diffTabHref =
+    snapshotVersionNo != null ? `${base}?v=${snapshotVersionNo}&tab=diff` : `${base}?tab=diff`;
+
+  // 依模式載入所需版本內容（快照載選中版；差異載新舊兩版）
+  const selectedFull =
+    activeTab === "snapshot" ? await loadVersion(page.id, snapshotVersionNo) : null;
+  const diffOld = activeTab === "diff" ? await loadVersion(page.id, diffFromNo) : null;
+  const diffNew = activeTab === "diff" ? await loadVersion(page.id, diffToNo) : null;
+  const diffEntries =
+    activeTab === "diff" && diffToNo != null
+      ? diffDocs(
+          (diffOld?.content as ProseMirrorDoc | null) ?? null,
+          (diffNew?.content as ProseMirrorDoc | null) ?? null,
+        )
+      : [];
+
+  const tabClass = (isActive: boolean) =>
+    cn(
+      "-mb-px border-b-2 pb-2 text-body-ui transition-colors",
+      isActive
+        ? "border-primary font-medium text-fg"
+        : "border-transparent text-fg-secondary hover:text-fg",
+    );
 
   return (
     <div className="flex h-full min-h-0">
-      {/* 左欄：版本列表（獨立捲動，§3.8） */}
+      {/* 左欄：版本列表（獨立捲動，§3.8）＋勾選比較 */}
       <aside className="flex w-72 shrink-0 flex-col border-r border-edge">
         <div className="border-b border-edge px-4 py-3">
           <Link
@@ -98,73 +160,82 @@ export default async function PageHistoryPage({
           </h1>
           <p className="truncate text-caption text-fg-tertiary">{page.title}</p>
         </div>
-        <nav aria-label={t("listLabel")} className="min-h-0 flex-1 overflow-y-auto py-2">
-          {versions.length === 0 ? (
-            <p className="px-4 py-6 text-caption text-fg-tertiary">{t("empty")}</p>
-          ) : (
-            <ul className="flex flex-col">
-              {versions.map((item) => {
-                const isSelected = item.versionNo === selected?.versionNo;
-                return (
-                  <li key={item.id}>
-                    <Link
-                      href={`${readingHref}/history?v=${item.versionNo}`}
-                      aria-current={isSelected ? "true" : undefined}
-                      className={cn(
-                        "block border-l-2 px-4 py-2.5 transition-colors",
-                        isSelected
-                          ? "border-primary bg-primary-tint"
-                          : "border-transparent hover:bg-hover",
-                      )}
-                    >
-                      <div className="flex items-center gap-2">
-                        <span className="text-body-ui font-medium text-fg">
-                          {t("versionLabel", { n: item.versionNo })}
-                        </span>
-                        {item.note ? (
-                          <Badge variant="primary">{item.note}</Badge>
-                        ) : (
-                          <Badge variant="neutral">{t("autoSnapshot")}</Badge>
-                        )}
-                      </div>
-                      <p className="mt-0.5 text-caption text-fg-secondary">
-                        {item.authorName ?? t("unknownAuthor")}
-                      </p>
-                      <p className="text-caption text-fg-tertiary">{formatTime(item.createdAt)}</p>
-                    </Link>
-                  </li>
-                );
-              })}
-            </ul>
-          )}
-        </nav>
+        <VersionSidebar
+          versions={versionItems}
+          spaceSlug={spaceSlug}
+          pageSlug={pageSlug}
+          selectedVersionNo={snapshotVersionNo}
+          activeTab={activeTab}
+          compareFrom={diffFromNo ?? undefined}
+          compareTo={diffToNo ?? undefined}
+        />
       </aside>
 
-      {/* 右欄：選中版本唯讀渲染 */}
+      {/* 右欄：快照 / 差異 兩 tab */}
       <section className="min-w-0 flex-1 overflow-y-auto">
-        {selected && selectedFull ? (
-          <article className="mx-auto max-w-3xl px-6 py-8">
-            <div className="mb-2 flex items-center justify-between gap-4">
-              <p className="text-caption text-fg-tertiary">
-                {t("snapshotMeta", {
-                  n: selected.versionNo,
-                  time: formatTime(selected.createdAt),
-                })}
-              </p>
-              {canEdit ? (
-                <RestoreVersionButton
-                  pageId={page.id}
-                  versionNo={selected.versionNo}
-                  readingHref={readingHref}
-                />
-              ) : null}
-            </div>
-            <h2 className="mb-6 text-h1 text-fg">{selectedFull.title}</h2>
-            <RenderContent doc={(selectedFull.content as ProseMirrorDoc | null) ?? null} />
-          </article>
-        ) : (
+        {versions.length === 0 ? (
           <div className="flex h-full items-center justify-center">
             <p className="text-body text-fg-tertiary">{t("empty")}</p>
+          </div>
+        ) : (
+          <div className="mx-auto max-w-3xl px-6 py-8">
+            <div className="mb-4 flex items-center gap-4 border-b border-edge">
+              <Link href={snapshotTabHref} className={tabClass(activeTab === "snapshot")}>
+                {t("tabSnapshot")}
+              </Link>
+              <Link href={diffTabHref} className={tabClass(activeTab === "diff")}>
+                {t("tabDiff")}
+              </Link>
+            </div>
+
+            {activeTab === "snapshot" ? (
+              selected && selectedFull ? (
+                <article>
+                  <div className="mb-2 flex items-center justify-between gap-4">
+                    <p className="text-caption text-fg-tertiary">
+                      {t("snapshotMeta", {
+                        n: selected.versionNo,
+                        time: formatTime(selected.createdAt),
+                      })}
+                    </p>
+                    {canEdit ? (
+                      <RestoreVersionButton
+                        pageId={page.id}
+                        versionNo={selected.versionNo}
+                        readingHref={readingHref}
+                      />
+                    ) : null}
+                  </div>
+                  <h2 className="mb-6 text-h1 text-fg">{selectedFull.title}</h2>
+                  <RenderContent doc={(selectedFull.content as ProseMirrorDoc | null) ?? null} />
+                </article>
+              ) : (
+                <DiffEmpty>{t("empty")}</DiffEmpty>
+              )
+            ) : diffToNo == null ? (
+              <DiffEmpty>{t("diffPickTwo")}</DiffEmpty>
+            ) : diffFromNo == null ? (
+              <div>
+                <div className="mb-4 flex items-center gap-2">
+                  <Badge variant="primary">{t("versionLabel", { n: diffToNo })}</Badge>
+                </div>
+                <DiffEmpty>{t("diffNoPrevious")}</DiffEmpty>
+              </div>
+            ) : (
+              <div>
+                <div className="mb-3 flex flex-wrap items-center justify-between gap-3">
+                  <p className="text-caption text-fg-secondary">
+                    {t("diffHeader", { from: diffFromNo, to: diffToNo })}
+                  </p>
+                  <DiffLegend />
+                </div>
+                {isUnchanged(diffEntries) ? (
+                  <DiffEmpty>{t("diffUnchanged")}</DiffEmpty>
+                ) : (
+                  <DiffContent entries={diffEntries} />
+                )}
+              </div>
+            )}
           </div>
         )}
       </section>
