@@ -33,6 +33,14 @@ const envSchema = z.object({
   /** 寄件者位址（含顯示名） */
   SMTP_FROM: z.string().default("JetBook <no-reply@jet-opto.com.tw>"),
 
+  // ── OIDC SSO（B-06 預留；全部 optional，未設定時停用 SSO——路由回 404、登入頁不顯示按鈕） ──
+  /** IdP issuer URL（OIDC discovery 起點，如 https://idp.example.com） */
+  AUTH_OIDC_ISSUER: z.url().optional(),
+  AUTH_OIDC_CLIENT_ID: z.string().optional(),
+  AUTH_OIDC_CLIENT_SECRET: z.string().optional(),
+  /** callback redirect_uri；未設定時由 BASE_URL + /api/auth/oidc/callback 推導 */
+  AUTH_OIDC_REDIRECT_URI: z.url().optional(),
+
   // ── AI Provider（M2；全部 optional，未設定時 AI 功能不可用但系統正常運作，NFR-AVAIL-02） ──
   /** chat LLM 供應商；未設定＝AI 功能關閉 */
   LLM_PROVIDER: z.enum(["anthropic", "openai-compat"]).optional(),

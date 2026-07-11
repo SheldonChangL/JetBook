@@ -113,6 +113,9 @@
     "errorInvalidCredentials": "信箱或密碼錯誤",
     "errorRateLimited": "嘗試次數過多，請稍後再試",
     "errorLockedFor": "登入失敗次數過多，請於 {seconds} 秒後再試",
+    "errorSso": "單一登入失敗，請改用帳號密碼或稍後再試",
+    "ssoDivider": "或",
+    "ssoButton": "使用單一登入（SSO）",
     "logout": "登出",
     "copyright": "© Jet Opto 捷揚光電",
     "forgotPasswordLink": "忘記密碼？",
@@ -234,7 +237,26 @@
     "passwordCopied": "已複製到剪貼簿",
     "copy": "複製",
     "done": "完成",
-    "cancel": "取消"
+    "cancel": "取消",
+    "systemTitle": "系統狀態",
+    "systemDesc": "各項依賴的連線健康狀態（唯讀；設定一律經環境變數注入）",
+    "systemCardDb": "資料庫",
+    "systemCardStorage": "附件儲存",
+    "systemCardLlm": "LLM",
+    "systemStatusOk": "正常",
+    "systemStatusError": "異常",
+    "systemLatency": "延遲 {ms} ms",
+    "systemLlmNotConfigured": "未設定（M2）",
+    "systemLlmConfigured": "已設定",
+    "systemLlmProvider": "Provider",
+    "systemLlmHint": "連線檢查將於 M2 AI 功能啟用時提供",
+    "systemStoragePath": "路徑",
+    "systemEnvTitle": "環境摘要",
+    "systemEnvNodeEnv": "NODE_ENV",
+    "systemEnvBaseUrl": "BASE_URL",
+    "systemEnvDatabaseUrl": "DATABASE_URL",
+    "systemEnvUploadDir": "UPLOAD_DIR",
+    "systemEnvMasked": "已遮罩憑證"
   },
   "trash": {
     "title": "垃圾桶",
@@ -259,6 +281,25 @@
     "backToReading": "返回閱讀",
     "steal": "強制取得編輯權",
     "stealConfirm": "搶鎖會中斷對方的編輯，確定要繼續嗎？",
+    "codeBlock": {
+      "plainText": "純文字",
+      "selectLanguage": "選擇語言",
+      "searchLanguage": "搜尋語言…",
+      "noLanguage": "找不到語言",
+      "copy": "複製",
+      "copied": "已複製",
+      "copyAriaLabel": "複製程式碼"
+    },
+    "image": {
+      "uploading": "圖片上傳中…",
+      "uploadError": "圖片上傳失敗，請再試一次",
+      "errorTooLarge": "圖片超過大小上限",
+      "errorType": "不支援的圖片格式",
+      "errorForbidden": "沒有上傳圖片的權限",
+      "retry": "重試",
+      "captionPlaceholder": "新增圖說（同時作為替代文字）…",
+      "captionLabel": "圖片說明"
+    },
     "slash": {
       "label": "區塊選單",
       "empty": "沒有符合的區塊",
@@ -268,23 +309,62 @@
         "ai": "AI"
       },
       "items": {
-        "text": { "label": "文字", "desc": "一般段落文字" },
-        "heading1": { "label": "標題 1", "desc": "大節標題" },
-        "heading2": { "label": "標題 2", "desc": "中節標題" },
-        "heading3": { "label": "標題 3", "desc": "小節標題" },
-        "bulletList": { "label": "無序清單", "desc": "以圓點符號列點" },
-        "orderedList": { "label": "有序清單", "desc": "以數字編號列點" },
-        "taskList": { "label": "任務清單", "desc": "可勾選的待辦事項" },
-        "blockquote": { "label": "引用", "desc": "標示引述內容" },
-        "divider": { "label": "分隔線", "desc": "以水平線分隔內容" },
-        "codeBlock": { "label": "程式碼區塊", "desc": "等寬字型的程式碼片段" }
+        "text": {
+          "label": "文字",
+          "desc": "一般段落文字"
+        },
+        "heading1": {
+          "label": "標題 1",
+          "desc": "大節標題"
+        },
+        "heading2": {
+          "label": "標題 2",
+          "desc": "中節標題"
+        },
+        "heading3": {
+          "label": "標題 3",
+          "desc": "小節標題"
+        },
+        "bulletList": {
+          "label": "無序清單",
+          "desc": "以圓點符號列點"
+        },
+        "orderedList": {
+          "label": "有序清單",
+          "desc": "以數字編號列點"
+        },
+        "taskList": {
+          "label": "任務清單",
+          "desc": "可勾選的待辦事項"
+        },
+        "blockquote": {
+          "label": "引用",
+          "desc": "標示引述內容"
+        },
+        "divider": {
+          "label": "分隔線",
+          "desc": "以水平線分隔內容"
+        },
+        "codeBlock": {
+          "label": "程式碼區塊",
+          "desc": "等寬字型的程式碼片段"
+        }
       }
     }
   },
   "reading": {
     "edit": "編輯",
     "lastUpdated": "最後更新：{time}",
-    "history": "版本歷史"
+    "history": "版本歷史",
+    "copyLink": "複製連結",
+    "copyAnchor": "複製此段落連結",
+    "linkCopied": "連結已複製到剪貼簿",
+    "copyFailed": "複製失敗，請手動複製網址列連結",
+    "image": {
+      "zoom": "點擊放大圖片",
+      "close": "關閉",
+      "preview": "圖片預覽"
+    }
   },
   "tree": {
     "label": "頁面",
@@ -312,7 +392,8 @@
   "spaceHome": {
     "pagesHeading": "頁面",
     "noPages": "這個空間還沒有頁面。",
-    "childCount": "{count, plural, =0 {沒有子頁面} other {# 個子頁面}}"
+    "childCount": "{count, plural, =0 {沒有子頁面} other {# 個子頁面}}",
+    "settingsLink": "空間設定"
   },
   "versionHistory": {
     "metaTitle": "版本歷史 — {title}",
@@ -331,5 +412,76 @@
     "restoreCancel": "取消",
     "restoreSuccess": "已還原為版本 {n}，並建立新版本 {newN}",
     "restoreError": "還原失敗，請重新整理後再試"
+  },
+  "spaceSettings": {
+    "title": "空間設定",
+    "backToSpace": "返回空間",
+    "cancel": "取消",
+    "visibilityHeading": "空間可見性",
+    "visibilityDesc": "控制誰可以看到與存取這個空間。",
+    "visibilityPrivate": "私人",
+    "visibilityPrivateHint": "僅限成員存取。",
+    "visibilityOrgRead": "內部公開（全公司可讀）",
+    "visibilityOrgReadHint": "全公司同仁皆可閱讀，僅成員可編輯。",
+    "visibilityOrgWrite": "內部公開且可編輯",
+    "visibilityOrgWriteHint": "全公司同仁皆可閱讀與編輯。",
+    "visibilityConfirmTitle": "變更空間可見性",
+    "visibilityConfirmTo": "將可見性變更為「{label}」。",
+    "visibilityImpactPrivate": "變更後只有成員能再看到這個空間，其他同仁將失去存取權。",
+    "visibilityImpactOrgRead": "變更後全公司同仁都將能閱讀這個空間的內容。",
+    "visibilityImpactOrgWrite": "變更後全公司同仁都將能閱讀與編輯這個空間的內容。",
+    "visibilityConfirm": "確認變更",
+    "visibilityUpdated": "可見性已更新",
+    "membersHeading": "成員與權限",
+    "membersDesc": "管理成員及其角色；權限變更於下一個請求即時生效。",
+    "inviteLabel": "加入成員",
+    "invitePlaceholder": "選擇使用者",
+    "inviteSearchPlaceholder": "搜尋姓名或 Email",
+    "inviteEmpty": "找不到使用者",
+    "inviteRoleLabel": "角色",
+    "addButton": "加入",
+    "colMember": "成員",
+    "colSource": "來源",
+    "sourceDirect": "直接",
+    "colRole": "角色",
+    "colJoinedAt": "加入時間",
+    "colActions": "操作",
+    "roleLabel": "角色",
+    "roleAdmin": "管理員",
+    "roleAdminHint": "管理成員與設定、刪除空間",
+    "roleEditor": "編輯者",
+    "roleEditorHint": "建立、編輯頁面",
+    "roleCommenter": "評論者",
+    "roleCommenterHint": "可讀可評論",
+    "roleViewer": "檢視者",
+    "roleViewerHint": "唯讀",
+    "remove": "移除",
+    "removeConfirmTitle": "移除成員",
+    "removeConfirmBody": "確定要將「{name}」從這個空間移除嗎？",
+    "removeConfirm": "移除",
+    "lastAdminTooltip": "至少需保留一位管理員",
+    "selfDemoteTitle": "變更你自己的角色",
+    "selfDemoteBody": "降低自己的角色後，你將失去管理這個空間的權限。確定要繼續嗎？",
+    "selfDemoteConfirm": "確認變更",
+    "emptyMembers": "這個空間還沒有成員。",
+    "memberAdded": "已加入成員",
+    "roleUpdated": "角色已更新",
+    "memberRemoved": "已移除成員",
+    "actionError": "操作失敗，請稍後再試",
+    "lastAdminError": "至少需保留一位管理員",
+    "archiveHeading": "封存空間",
+    "archiveDesc": "封存後，這個空間會從所有列表與搜尋中隱藏，但內容完整保留，可隨時取消封存。",
+    "archiveButton": "封存空間",
+    "archiveConfirmTitle": "封存空間",
+    "archiveConfirmBody": "封存「{name}」後，它將從列表與搜尋中隱藏。確定要繼續嗎？",
+    "archiveConfirm": "封存",
+    "archived": "空間已封存",
+    "archivedBadge": "已封存",
+    "archivedNotice": "這個空間已封存，已從列表與搜尋中隱藏。",
+    "unarchiveButton": "取消封存",
+    "unarchiveConfirmTitle": "取消封存空間",
+    "unarchiveConfirmBody": "取消封存「{name}」後，它將重新出現在列表與搜尋中。確定要繼續嗎？",
+    "unarchiveConfirm": "取消封存",
+    "unarchived": "已取消封存"
   }
 }

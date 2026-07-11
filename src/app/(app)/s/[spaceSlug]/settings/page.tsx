@@ -1,0 +1,88 @@
+import type { Metadata } from "next";
+import Link from "next/link";
+import { notFound } from "next/navigation";
+import { eq } from "drizzle-orm";
+import { getTranslations } from "next-intl/server";
+import { ChevronLeft } from "lucide-react";
+import { db } from "@/lib/db";
+import { spaces } from "@/lib/db/schema";
+import { requireSession } from "@/lib/auth/current";
+import { can } from "@/lib/authz/permission";
+import { listActiveUsers, listSpaceMembers } from "@/lib/spaces/manage";
+import { Badge } from "@/components/ui/badge";
+import { VisibilitySection } from "./visibility-section";
+import { MemberSection } from "./member-section";
+import { ArchiveSection } from "./archive-section";
+
+export async function generateMetadata(): Promise<Metadata> {
+  const t = await getTranslations("spaceSettings");
+  return { title: t("title") };
+}
+
+/**
+ * Space 權限管理設定頁（C-07，設計規範 §3.10）。僅 space admin（space.manage）可進；
+ * 其餘角色一律 notFound。含可見性三態、成員與角色管理、封存。
+ */
+export default async function SpaceSettingsPage({
+  params,
+}: {
+  params: Promise<{ spaceSlug: string }>;
+}) {
+  const { spaceSlug } = await params;
+  const { user } = await requireSession(`/s/${spaceSlug}/settings`);
+
+  const space = await db.query.spaces.findFirst({ where: eq(spaces.slug, spaceSlug) });
+  if (!space || space.deletedAt) notFound();
+
+  // 僅空間管理者可管理權限（deny by default）；非管理者視同不存在
+  if (!(await can(user, "space.manage", { type: "space", spaceId: space.id }))) notFound();
+
+  const t = await getTranslations("spaceSettings");
+  const [members, candidates] = await Promise.all([
+    listSpaceMembers(space.id),
+    listActiveUsers(),
+  ]);
+
+  return (
+    <main className="mx-auto flex max-w-[880px] flex-col gap-8 px-6 py-8">
+      <header className="flex flex-col gap-2">
+        <Link
+          href={`/s/${space.slug}`}
+          className="inline-flex w-fit items-center gap-1 text-caption text-fg-tertiary transition-colors hover:text-fg"
+        >
+          <ChevronLeft aria-hidden className="size-3.5" />
+          {t("backToSpace")}
+        </Link>
+        <div className="flex items-center gap-2">
+          <h1 className="text-h1 text-fg">
+            {space.icon ? `${space.icon} ` : ""}
+            {space.name}
+          </h1>
+          {space.archivedAt ? <Badge variant="warning">{t("archivedBadge")}</Badge> : null}
+        </div>
+        <p className="text-body-ui text-fg-secondary">{t("title")}</p>
+      </header>
+
+      {space.archivedAt ? (
+        <p className="rounded-md border border-edge bg-warning-tint px-4 py-3 text-body-ui text-warning">
+          {t("archivedNotice")}
+        </p>
+      ) : null}
+
+      <VisibilitySection spaceId={space.id} visibility={space.visibility} />
+
+      <MemberSection
+        spaceId={space.id}
+        currentUserId={user.id}
+        members={members}
+        candidates={candidates}
+      />
+
+      <ArchiveSection
+        spaceId={space.id}
+        spaceName={space.name}
+        archived={space.archivedAt !== null}
+      />
+    </main>
+  );
+}

@@ -11,6 +11,8 @@ import { can } from "@/lib/authz/permission";
 import { denyPageRead } from "@/lib/authz/deny";
 import { recordVisit } from "@/lib/pages/visits";
 import { RenderContent } from "@/components/content/render-content";
+import { CopyLinkButton } from "@/components/content/copy-link-button";
+import { AnchorHighlight } from "@/components/content/anchor-highlight";
 import { Button } from "@/components/ui/button";
 import type { ProseMirrorDoc } from "@/lib/content/types";
 
@@ -92,6 +94,7 @@ export default async function PageReadPage({
           {page.title}
         </h1>
         <div className="flex shrink-0 items-center gap-1.5">
+          <CopyLinkButton />
           <Button asChild variant="ghost" size="sm">
             <Link href={`/s/${spaceSlug}/${pageSlug}/history`}>
               <History aria-hidden className="size-4" />
@@ -112,6 +115,7 @@ export default async function PageReadPage({
       <p className="mb-6 text-caption text-fg-tertiary">{t("lastUpdated", { time: updated })}</p>
 
       <RenderContent doc={(page.content as ProseMirrorDoc | null) ?? null} />
+      <AnchorHighlight />
     </article>
   );
 }

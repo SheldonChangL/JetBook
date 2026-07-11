@@ -2,11 +2,13 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { eq } from "drizzle-orm";
 import { getTranslations } from "next-intl/server";
+import { Settings } from "lucide-react";
 import { db } from "@/lib/db";
 import { spaces } from "@/lib/db/schema";
 import { requireSession } from "@/lib/auth/current";
 import { getSpaceRole } from "@/lib/authz/permission";
 import { listSpaceTreeNodes } from "@/lib/pages/tree";
+import { Button } from "@/components/ui/button";
 
 /**
  * Space 首頁（C-03）：描述＋頂層頁面目錄卡片（標題＋子頁數，設計規範 §3.3 ③）。
@@ -36,10 +38,20 @@ export default async function SpaceHomePage({
   return (
     <main className="mx-auto flex max-w-3xl flex-col gap-8 px-6 py-8">
       <header className="flex flex-col gap-2">
-        <h1 className="text-h1 text-fg">
-          {space.icon ? `${space.icon} ` : ""}
-          {space.name}
-        </h1>
+        <div className="flex items-start justify-between gap-4">
+          <h1 className="text-h1 text-fg">
+            {space.icon ? `${space.icon} ` : ""}
+            {space.name}
+          </h1>
+          {role === "admin" ? (
+            <Button asChild variant="secondary" size="sm">
+              <Link href={`/s/${space.slug}/settings`}>
+                <Settings aria-hidden className="size-4" />
+                {t("settingsLink")}
+              </Link>
+            </Button>
+          ) : null}
+        </div>
         {space.description ? (
           <p className="text-body-read text-fg-secondary">{space.description}</p>
         ) : null}

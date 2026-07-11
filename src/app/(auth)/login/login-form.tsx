@@ -11,13 +11,14 @@ import { cn } from "@/lib/utils";
 
 const initialState: LoginState = { status: "idle" };
 
-export function LoginForm() {
+export function LoginForm({ oidcEnabled = false }: { oidcEnabled?: boolean }) {
   const t = useTranslations("auth");
   const searchParams = useSearchParams();
   const [state, formAction, pending] = useActionState(login, initialState);
   const [showPassword, setShowPassword] = useState(false);
   const [returnTo, setReturnTo] = useState(searchParams.get("returnTo") ?? "");
   const resetDone = searchParams.get("reset") === "success";
+  const ssoFailed = searchParams.get("error") === "sso";
 
   // 錨點（#hash）不會進 server；瀏覽器 redirect 會保留 fragment，
   // 在 client 端把它補回 returnTo，登入後即可回到原頁原位置（F-PUB-02）。
@@ -35,11 +36,12 @@ export function LoginForm() {
         : state.code === "rateLimited"
           ? t("errorRateLimited")
           : t("errorInvalidCredentials");
+  const alertMessage = errorMessage ?? (ssoFailed ? t("errorSso") : null);
 
   return (
     <form action={formAction} className="flex flex-col gap-4">
       <input type="hidden" name="returnTo" value={returnTo} />
-      {resetDone && !errorMessage ? (
+      {resetDone && !alertMessage ? (
         <div
           role="status"
           className="rounded-sm border border-success/30 bg-success-tint px-3 py-2 text-body-ui text-success"
@@ -47,12 +49,12 @@ export function LoginForm() {
           {t("resetSuccess")}
         </div>
       ) : null}
-      {errorMessage ? (
+      {alertMessage ? (
         <div
           role="alert"
           className="rounded-sm border border-danger/30 bg-danger-tint px-3 py-2 text-body-ui text-danger"
         >
-          {errorMessage}
+          {alertMessage}
         </div>
       ) : null}
 
@@ -113,6 +115,19 @@ export function LoginForm() {
       <Button type="submit" loading={pending} className="w-full" size="lg">
         {pending ? t("submitting") : t("submit")}
       </Button>
+
+      {oidcEnabled ? (
+        <div className="flex flex-col gap-4">
+          <div className="flex items-center gap-3 text-caption text-fg-tertiary">
+            <span aria-hidden className="h-px flex-1 bg-edge" />
+            {t("ssoDivider")}
+            <span aria-hidden className="h-px flex-1 bg-edge" />
+          </div>
+          <Button asChild variant="secondary" size="lg" className="w-full">
+            <a href="/api/auth/oidc/authorize">{t("ssoButton")}</a>
+          </Button>
+        </div>
+      ) : null}
     </form>
   );
 }
