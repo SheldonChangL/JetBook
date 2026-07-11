@@ -64,6 +64,20 @@
       "when": 1783730373652,
       "tag": "0008_curved_obadiah_stane",
       "breakpoints": true
+    },
+    {
+      "idx": 9,
+      "version": "7",
+      "when": 1783746858422,
+      "tag": "0009_unknown_azazel",
+      "breakpoints": true
+    },
+    {
+      "idx": 10,
+      "version": "7",
+      "when": 1783746870655,
+      "tag": "0010_page_embeddings_hnsw",
+      "breakpoints": true
     }
   ]
 }
