@@ -907,7 +907,13 @@
     "sourcesLabel": "引用來源",
     "citationLabel": "來源 {n}",
     "disclaimer": "AI 回覆依內部文件生成，請以原文為準",
-    "rateLimited": "AI 請求過於頻繁",
-    "rateLimitedRetry": "已達每分鐘查詢上限，請於 {seconds} 秒後再試"
+    "rateLimitedRetry": "已達每分鐘查詢上限，請於 {seconds} 秒後再試",
+    "conversationNotFound": "找不到對話或無權存取",
+    "newConversation": "新對話",
+    "history": "歷史對話",
+    "historyEmpty": "尚無歷史對話",
+    "historyLoading": "載入中…",
+    "historyError": "載入歷史失敗",
+    "untitledConversation": "未命名對話"
   }
 }
