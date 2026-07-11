@@ -1,8 +1,10 @@
-import { PgBoss } from "pg-boss";
+import { PgBoss, type Job } from "pg-boss";
 import { env } from "@/lib/env";
 import { logger } from "@/lib/logger";
 import { deleteExpiredSessions } from "@/lib/auth/session";
-import { JOBS } from "@/lib/jobs/queue";
+import { ensureEmbedQueues, JOBS, type EmbedPageJob } from "@/lib/jobs/queue";
+import { isEmbeddingConfigured } from "@/lib/llm";
+import { embedPage } from "@/lib/rag/indexer";
 
 /**
  * Worker entrypoint（H-01）：與 web 同 codebase、獨立行程（compose worker 服務）。
@@ -24,7 +26,29 @@ async function main() {
     logger.info("expired sessions cleaned");
   });
 
-  // ── 任務型 job：handler 隨功能 issue 掛入（H-06 embedding 等） ──
+  // ── 任務型 job：頁面嵌入索引（H-06） ──
+  await ensureEmbedQueues(boss);
+  await boss.work(JOBS.embedPage, async (jobs: Job<EmbedPageJob>[]) => {
+    for (const job of jobs) {
+      const { pageId } = job.data;
+      // 端點未設定（如 embedding 端點下線期）：略過，不讓 job 失敗堆積死信。
+      if (!isEmbeddingConfigured()) {
+        logger.debug({ pageId }, "embedding 未設定，略過索引 job");
+        continue;
+      }
+      const result = await embedPage(pageId);
+      logger.info({ pageId, ...result }, "page embedding indexed");
+    }
+  });
+  // 死信佇列：重試耗盡的 embed job 轉入此處，僅記錄供人工重驅動（不阻塞編輯）。
+  await boss.work(JOBS.embedPageDeadLetter, async (jobs: Job<EmbedPageJob>[]) => {
+    for (const job of jobs) {
+      logger.error(
+        { pageId: job.data?.pageId, jobId: job.id },
+        "embed-page job 進入死信佇列（重試耗盡）",
+      );
+    }
+  });
 
   const shutdown = async (signal: string) => {
     logger.info({ signal }, "worker shutting down (graceful)");
