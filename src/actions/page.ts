@@ -15,6 +15,7 @@ import { movePageNode } from "@/lib/pages/move";
 import { listSpaceTreeNodes } from "@/lib/pages/tree";
 import { reclaimSlug, recordSlugHistory, uniquePageSlug } from "@/lib/pages/slug";
 import { docToMarkdown, docToPlainText } from "@/lib/content/serialize";
+import { buildMarkdownImport } from "@/lib/content/import-markdown";
 import { EMPTY_DOC, type ProseMirrorDoc } from "@/lib/content/types";
 import { VersionConflictError } from "@/lib/pages/errors";
 import { ipFromHeaders, writeAudit } from "@/lib/audit";
@@ -304,6 +305,44 @@ export async function savePage(input: z.infer<typeof saveSchema>): Promise<{ ver
   // 三欄同交易提交後才 enqueue 嵌入索引（架構鐵律 #5：儲存管線之後）。
   await triggerEmbedPage(data.pageId);
   return { versionNo: nextVersion };
+}
+
+/** 單檔 Markdown 匯入文字大小上限（請求安全防護，非 NFR 容量規格）。 */
+const IMPORT_MARKDOWN_MAX_CHARS = 2 * 1024 * 1024; // 2 MiB 純文字
+
+const importMarkdownSchema = z.object({
+  spaceId: z.uuid(),
+  /** 匯入位置父節點；null＝根層（單檔匯入預設根層） */
+  parentId: z.uuid().nullable().default(null),
+  fileName: z.string().trim().min(1).max(255),
+  markdown: z.string().min(1).max(IMPORT_MARKDOWN_MAX_CHARS),
+});
+
+/**
+ * 單檔 Markdown 匯入（J-01，F-IE-01）：markdown → doc（markdown-to-doc 轉換器）→
+ * createPage 建頁 → savePage 寫入內容。權限（page.edit）與三欄同交易同步一律由
+ * createPage / savePage 既有管線負責，不旁路（架構鐵律 #5、#6）。回傳新頁 id 與 slug。
+ */
+export async function importMarkdownPage(
+  input: z.input<typeof importMarkdownSchema>,
+): Promise<{ id: string; slug: string }> {
+  const data = importMarkdownSchema.parse(input);
+  const { title, doc } = buildMarkdownImport(data.markdown, data.fileName);
+
+  // createPage 內含 requireEditor（session + page.edit 授權檢查）與 slug 配置。
+  const { id, slug } = await createPage({
+    spaceId: data.spaceId,
+    parentId: data.parentId,
+    title,
+  });
+  // 新頁 currentVersionNo 預設 0；以樂觀鎖初值走一次儲存管線寫入匯入內容（三欄同步 + 版本快照）。
+  await savePage({ pageId: id, expectedVersionNo: 0, content: doc });
+
+  logger.info(
+    { pageId: id, spaceId: data.spaceId, fileName: data.fileName },
+    "markdown page imported",
+  );
+  return { id, slug };
 }
 
 /** 計算某頁的後代數量（刪除前顯示影響範圍用）。需 space 讀取權。 */
