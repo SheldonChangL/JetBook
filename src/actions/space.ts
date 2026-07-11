@@ -1,13 +1,14 @@
 "use server";
 
-import { and, eq } from "drizzle-orm";
+import { eq } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
 import { headers } from "next/headers";
 import { z } from "zod";
 import { db } from "@/lib/db";
-import { spaceMembers, spaces, type SpaceRole } from "@/lib/db/schema";
+import { spaceMembers, spaces } from "@/lib/db/schema";
 import { requireSession } from "@/lib/auth/current";
 import { assertCan } from "@/lib/authz/permission";
+import { setSpaceArchived, setSpaceMemberRole } from "@/lib/spaces/manage";
 import { ipFromHeaders, writeAudit } from "@/lib/audit";
 import { logger } from "@/lib/logger";
 
@@ -103,30 +104,8 @@ export async function setSpaceMember(input: z.infer<typeof memberSchema>) {
   const data = memberSchema.parse(input);
   await assertCan(user, "space.manage", { type: "space", spaceId: data.spaceId });
 
-  await db.transaction(async (tx) => {
-    const admins = await tx
-      .select({ userId: spaceMembers.userId })
-      .from(spaceMembers)
-      .where(and(eq(spaceMembers.spaceId, data.spaceId), eq(spaceMembers.role, "admin")));
-    const isLastAdmin =
-      admins.length === 1 && admins[0]?.userId === data.userId && data.role !== "admin";
-    if (isLastAdmin) throw new Error("LAST_ADMIN");
+  await setSpaceMemberRole(data.spaceId, data.userId, data.role);
 
-    if (data.role === null) {
-      await tx
-        .delete(spaceMembers)
-        .where(and(eq(spaceMembers.spaceId, data.spaceId), eq(spaceMembers.userId, data.userId)));
-      return;
-    }
-    const role: SpaceRole = data.role;
-    await tx
-      .insert(spaceMembers)
-      .values({ spaceId: data.spaceId, userId: data.userId, role })
-      .onConflictDoUpdate({
-        target: [spaceMembers.spaceId, spaceMembers.userId],
-        set: { role },
-      });
-  });
   await writeAudit({
     actorId: user.id,
     action: "space.member_set",
@@ -136,4 +115,29 @@ export async function setSpaceMember(input: z.infer<typeof memberSchema>) {
     ip: ipFromHeaders(await headers()),
   });
   revalidatePath("/spaces");
+  revalidatePath("/s/[spaceSlug]", "layout");
+}
+
+const archiveSchema = z.object({
+  spaceId: z.uuid(),
+  archived: z.boolean(),
+});
+
+/** 封存/取消封存 Space（archived_at）；封存後自列表與搜尋隱藏，內容保留可還原。 */
+export async function archiveSpace(input: z.infer<typeof archiveSchema>) {
+  const { user } = await requireSession();
+  const data = archiveSchema.parse(input);
+  await assertCan(user, "space.manage", { type: "space", spaceId: data.spaceId });
+
+  await setSpaceArchived(data.spaceId, data.archived);
+
+  await writeAudit({
+    actorId: user.id,
+    action: data.archived ? "space.archive" : "space.unarchive",
+    targetType: "space",
+    targetId: data.spaceId,
+    ip: ipFromHeaders(await headers()),
+  });
+  revalidatePath("/spaces");
+  revalidatePath("/s/[spaceSlug]", "layout");
 }
