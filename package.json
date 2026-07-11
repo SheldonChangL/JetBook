@@ -41,6 +41,7 @@
     "drizzle-orm": "^0.45.2",
     "lowlight": "^3.3.0",
     "lucide-react": "^1.24.0",
+    "marked": "^16.4.2",
     "next": "^15.5.20",
     "next-intl": "^4.13.1",
     "nodemailer": "^9.0.3",
