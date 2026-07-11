@@ -8,6 +8,7 @@ import {
   ListOrdered,
   ListTodo,
   Minus,
+  Paperclip,
   Quote,
   Table,
   Type,
@@ -137,6 +138,17 @@ export const SLASH_MENU_ITEMS: readonly SlashMenuItem[] = [
         .deleteRange(range)
         .insertTable({ rows: 3, cols: 3, withHeaderRow: true })
         .run(),
+  },
+  {
+    id: "attachment",
+    group: "advanced",
+    icon: Paperclip,
+    keywords: ["檔案", "附件", "附加檔案", "上傳", "下載", "file", "attachment", "attach", "upload"],
+    // 先移除觸發字元，再開檔案選擇器（設定與 openPicker 由 PageEditor 填入 storage）
+    command: ({ editor, range }) => {
+      editor.chain().focus().deleteRange(range).run();
+      editor.storage.attachment.openPicker(editor.state.selection.from);
+    },
   },
 ];
 
