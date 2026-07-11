@@ -3,10 +3,14 @@ import { getTranslations } from "next-intl/server";
 import { z } from "zod";
 import { ipFromHeaders } from "@/lib/audit";
 import { recordAiUsage } from "@/lib/ai/usage";
+import { getConversation } from "@/lib/ai/conversations";
+import {
+  runConversationChat,
+  type ConversationChatSummary,
+} from "@/lib/ai/conversation-chat";
 import { getCurrentSession } from "@/lib/auth/current";
 import { getLlmProvider, isLlmConfigured } from "@/lib/llm";
 import { logger } from "@/lib/logger";
-import { streamChatAnswer, type ChatAnswerSummary } from "@/lib/rag/answer";
 import { retrieve } from "@/lib/rag/retriever";
 import { aiRateLimiter } from "@/lib/rate-limit";
 
@@ -14,16 +18,18 @@ export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
 
 /**
- * RAG 問答 API（I-02，F-AI-04）。薄殼：
- * 驗 session → 檢查 AI 已設定（否則 503 AI_DISABLED）→ zod 驗 body →
- * 呼叫 lib 層 streamChatAnswer（檢索權限於 SQL 層過濾）→ 逐事件編碼為 SSE。
- * AbortSignal 貫通：client 斷線即停止 LLM 串流。
- * POST /api/ai/chat  body: { question: string, spaceId?: uuid }
+ * RAG 多輪問答 API（I-02／I-07，F-AI-04／F-AI-07）。薄殼：
+ * 驗 session → 檢查 AI 已設定（否則 503 AI_DISABLED）→ 限流 → zod 驗 body →
+ * 續談時驗對話擁有者（getConversation，非本人一律 404）→ 呼叫 lib 層 runConversationChat
+ * （建立/載入對話、query rewrite、檢索權限於 SQL 層過濾、串流、持久化訊息與來源快照）→
+ * 逐事件編碼為 SSE。AbortSignal 貫通：client 斷線即停止 LLM 串流。
+ * POST /api/ai/chat  body: { question: string, spaceId?: uuid, conversationId?: uuid }
  */
 
 const chatRequestSchema = z.object({
   question: z.string().trim().min(1).max(2000),
   spaceId: z.string().uuid().optional(),
+  conversationId: z.string().uuid().optional(),
 });
 
 function frame(event: string, data: unknown): string {
@@ -74,7 +80,21 @@ export async function POST(request: Request) {
       { status: 400 },
     );
   }
-  const { question, spaceId } = parsed.data;
+  const { question, spaceId, conversationId } = parsed.data;
+
+  // 續談：驗對話擁有者（僅本人）。非本人或不存在一律 404（不區分，避免存在性洩漏）。
+  // 續談沿用對話原本的檢索範圍（spaceId 快照），新對話才採 body 的 spaceId。
+  let scopeSpaceId = spaceId;
+  if (conversationId) {
+    const conversation = await getConversation(session.user.id, conversationId);
+    if (!conversation) {
+      return NextResponse.json(
+        { error: { code: "NOT_FOUND", message: t("conversationNotFound") } },
+        { status: 404 },
+      );
+    }
+    scopeSpaceId = conversation.spaceId ?? undefined;
+  }
 
   const provider = getLlmProvider();
   const noResultsMessage = t("noResults");
@@ -95,17 +115,18 @@ export async function POST(request: Request) {
       };
       const startedAt = Date.now();
       // 手動迭代以取得 generator 回傳的用量摘要（含 model；不進 SSE 幀，不外洩 client）。
-      const gen = streamChatAnswer({
+      const gen = runConversationChat({
         actor: session.user,
         question,
-        spaceId,
+        conversationId,
+        spaceId: scopeSpaceId,
         noResultsMessage,
         signal: request.signal,
         retrieveFn: retrieve,
         provider,
       });
       try {
-        let summary: ChatAnswerSummary | null = null;
+        let summary: ConversationChatSummary | null = null;
         for (;;) {
           const step = await gen.next();
           if (step.done) {
@@ -117,11 +138,12 @@ export async function POST(request: Request) {
           controller.enqueue(encoder.encode(frame(evt.event, evt.data)));
         }
         safeClose();
-        // 用量記錄：僅在實際呼叫 LLM（有檢索結果）時記一筆 ai.query（I-06、NFR-OBS-04）。
-        if (summary) {
+        // 用量記錄：僅在實際呼叫 LLM 生成（有檢索結果）時記一筆 ai.query（I-06、NFR-OBS-04）。
+        if (summary && summary.usage && summary.model) {
           logger.info(
             {
               actorId: session.user.id,
+              conversationId: summary.conversationId,
               sourceCount,
               model: summary.model,
               inputTokens: summary.usage.inputTokens,

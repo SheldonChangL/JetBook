@@ -40,6 +40,16 @@ function serializeInline(node: ProseMirrorNode): string {
     return text;
   }
   if (node.type === "hardBreak") return "\n";
+  // D-11：@mention 序列化為「@姓名」（快照 label），使被提及者姓名進全文索引/匯出。
+  if (node.type === "mention") {
+    const label = (node.attrs?.label as string) ?? (node.attrs?.id as string) ?? "";
+    return label ? `@${label}` : "";
+  }
+  // D-11：頁面連結序列化為標題文字（快照 label）。canonical 錨在 attrs.id（page id），
+  // 匯出/索引無 DB 可查現行 slug，故以 label 快照代表（下次存檔即刷新）。
+  if (node.type === "pageLink") {
+    return (node.attrs?.label as string) ?? "";
+  }
   return (node.content ?? []).map(serializeInline).join("");
 }
 
@@ -191,6 +201,14 @@ export function docToPlainText(node: ProseMirrorDoc | ProseMirrorNode): string {
   // D-14：Embed 為 atom，URL 存於 attrs.url；併入純文字供全文索引/RAG。
   if ((node as ProseMirrorNode).type === "embed") {
     return String((node as ProseMirrorNode).attrs?.url ?? "");
+  }
+  // D-11：mention / pageLink 為 inline atom（無 content），label 快照併入純文字供全文索引/RAG。
+  if ((node as ProseMirrorNode).type === "mention") {
+    const label = String((node as ProseMirrorNode).attrs?.label ?? "");
+    return label ? `@${label}` : "";
+  }
+  if ((node as ProseMirrorNode).type === "pageLink") {
+    return String((node as ProseMirrorNode).attrs?.label ?? "");
   }
   // D-12：分頁標題（label）與摺疊摘要（summary）存於 attrs，須併入純文字供全文索引/RAG（F-EDIT-13）。
   const pmNode = node as ProseMirrorNode;

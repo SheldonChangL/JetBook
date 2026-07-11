@@ -19,17 +19,25 @@ import { MermaidDiagram } from "./mermaid-diagram";
  * 與編輯器 schema 對應，套用 .prose-editor 樣式，與編輯畫面視覺一致。
  * 進階區塊（表格/callout/圖片…）隨 D-03~D-14 擴充對應 case。
  * 標題加穩定 id（文字 slug + 去重）與 hover 複製錨點鈕（G-05）。
+ *
+ * D-11：頁面連結（pageLink）以 attrs.id（page id）為錨，改名不失效——由呼叫端（RSC）
+ * 先以 `resolvePageLinkTargets` 解析出「現行 slug/title」的 Map，經 `links` prop 注入；
+ * 未解析到（不可讀／已刪除）者退回作者插入時的 label 快照，且不連結。
  */
 
 type Slugger = (text: string) => string;
 
+/** 頁面連結解析結果：pageId → 現行連結目標（改名自動更新，F-EDIT-12）。 */
+export type PageLinkMap = ReadonlyMap<string, { href: string; title: string }>;
+
 /**
- * 渲染上下文：slug 產生器 + Embed 白名單（D-14）。
+ * 渲染上下文：slug 產生器 + 頁面連結解析 Map（D-11）+ Embed 白名單（D-14）。
  * embed 的「iframe/連結卡片」判斷須於渲染當下依白名單推導，故白名單須隨遞迴傳遞
  * （含巢狀於 details/tabs/stepper 內的 embed），避免巢狀嵌入誤退化為卡片。
  */
 interface RenderCtx {
   slug: Slugger;
+  links: PageLinkMap | undefined;
   embedAllowedDomains: readonly string[];
 }
 
@@ -98,29 +106,65 @@ function renderMarks(text: string, marks: ProseMirrorNode["marks"], key: number)
   return <Fragment key={key}>{node}</Fragment>;
 }
 
+/** D-11：@mention chip（`@姓名`，label 快照；非連結）。 */
+const MENTION_SIGIL = "@";
+
+function renderMention(node: ProseMirrorNode, key: number): ReactNode {
+  const label = typeof node.attrs?.label === "string" ? node.attrs.label : "";
+  // `@` 為 mention 語法符號（非可翻譯 UI 文案）；於 JS 端組字串再輸出，避免命中 i18n JSX 規則。
+  const display = MENTION_SIGIL + label;
+  return (
+    <span key={key} className="jb-mention" data-type="mention">
+      {display}
+    </span>
+  );
+}
+
+/** D-11：頁面連結。解析到現行目標→連結（現行標題）；否則以 label 快照顯示為非連結。 */
+function renderPageLink(node: ProseMirrorNode, key: number, links: PageLinkMap | undefined): ReactNode {
+  const pageId = typeof node.attrs?.id === "string" ? node.attrs.id : "";
+  const label = typeof node.attrs?.label === "string" ? node.attrs.label : "";
+  const resolved = pageId ? links?.get(pageId) : undefined;
+  if (resolved) {
+    return (
+      <a key={key} className="jb-page-link" data-type="pageLink" href={resolved.href}>
+        {resolved.title}
+      </a>
+    );
+  }
+  // 不可讀或已刪除：退回 label 快照、不連結（已刪頁 chip 由 C-13 精修）。
+  return (
+    <span key={key} className="jb-page-link jb-page-link--unresolved" data-type="pageLink">
+      {label}
+    </span>
+  );
+}
+
 function renderChildren(nodes: ProseMirrorNode[] | undefined, ctx: RenderCtx): ReactNode {
   return (nodes ?? []).map((node, i) => renderNode(node, i, ctx));
 }
 
-function renderInline(nodes: ProseMirrorNode[] | undefined): ReactNode {
+function renderInline(nodes: ProseMirrorNode[] | undefined, ctx: RenderCtx): ReactNode {
   return (nodes ?? []).map((node, i) => {
     if (node.type === "text") return renderMarks(node.text ?? "", node.marks, i);
     if (node.type === "hardBreak") return <br key={i} />;
-    return <Fragment key={i}>{renderInline(node.content)}</Fragment>;
+    if (node.type === "mention") return renderMention(node, i);
+    if (node.type === "pageLink") return renderPageLink(node, i, ctx.links);
+    return <Fragment key={i}>{renderInline(node.content, ctx)}</Fragment>;
   });
 }
 
 function renderNode(node: ProseMirrorNode, key: number, ctx: RenderCtx): ReactNode {
   switch (node.type) {
     case "paragraph":
-      return <p key={key}>{renderInline(node.content)}</p>;
+      return <p key={key}>{renderInline(node.content, ctx)}</p>;
     case "heading": {
       const level = Math.min(Math.max(Number(node.attrs?.level ?? 1), 1), 3);
       const Tag = (`h${level}` as "h1" | "h2" | "h3");
       const id = ctx.slug(headingNodeText(node));
       return (
         <Tag key={key} id={id} className="group relative scroll-mt-20">
-          {renderInline(node.content)}
+          {renderInline(node.content, ctx)}
           <HeadingAnchor id={id} />
         </Tag>
       );
@@ -280,6 +324,12 @@ function renderNode(node: ProseMirrorNode, key: number, ctx: RenderCtx): ReactNo
         </div>
       );
     }
+    // D-11：mention / pageLink 為 inline atom，正常出現在段落等 inline 內文（renderInline 處理）；
+    // 若因資料異常出現在區塊層，於此保底渲染，避免落入 default 丟失內容。
+    case "mention":
+      return renderMention(node, key);
+    case "pageLink":
+      return renderPageLink(node, key, ctx.links);
     default:
       return <Fragment key={key}>{renderChildren(node.content, ctx)}</Fragment>;
   }
@@ -287,13 +337,16 @@ function renderNode(node: ProseMirrorNode, key: number, ctx: RenderCtx): ReactNo
 
 export function RenderContent({
   doc,
+  links,
   embedAllowedDomains = [],
 }: {
   doc: ProseMirrorDoc | null;
+  /** D-11：頁面連結解析 Map（pageId → 現行 href/title）。未提供時連結退回 label 快照。 */
+  links?: PageLinkMap;
   /** Embed 白名單網域（env EMBED_ALLOWED_DOMAINS）；未提供＝空白名單，嵌入一律退化為連結卡片（D-14）。 */
   embedAllowedDomains?: readonly string[];
 }) {
   if (!doc?.content?.length) return null;
-  const ctx: RenderCtx = { slug: createHeadingSlugger(), embedAllowedDomains };
+  const ctx: RenderCtx = { slug: createHeadingSlugger(), links, embedAllowedDomains };
   return <div className="prose-editor max-w-none">{renderChildren(doc.content, ctx)}</div>;
 }

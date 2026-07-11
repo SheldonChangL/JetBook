@@ -29,6 +29,7 @@
     "@node-rs/argon2": "^2.0.2",
     "@tiptap/extension-code-block-lowlight": "^3.27.3",
     "@tiptap/extension-image": "^3.27.3",
+    "@tiptap/extension-mention": "^3.27.3",
     "@tiptap/extension-table": "^3.27.3",
     "@tiptap/extension-task-item": "^3.27.3",
     "@tiptap/extension-task-list": "^3.27.3",

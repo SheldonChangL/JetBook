@@ -69,7 +69,7 @@ export function PageEditor({
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const editor = useEditor({
-    extensions: buildExtensions(),
+    extensions: buildExtensions({ spaceId }),
     content: initialContent ?? undefined,
     immediatelyRender: false,
     editorProps: {

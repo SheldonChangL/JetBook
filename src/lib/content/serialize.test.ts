@@ -45,6 +45,34 @@ describe("docToMarkdown", () => {
   });
 });
 
+describe("docToMarkdown/PlainText mention 與 pageLink（D-11）", () => {
+  const doc: ProseMirrorDoc = {
+    type: "doc",
+    content: [
+      {
+        type: "paragraph",
+        content: [
+          { type: "text", text: "請洽 " },
+          { type: "mention", attrs: { id: "u1", label: "王小明" } },
+          { type: "text", text: "，詳見 " },
+          { type: "pageLink", attrs: { id: "p1", label: "安裝指南" } },
+          { type: "text", text: "。" },
+        ],
+      },
+    ],
+  };
+
+  it("mention 序列化為「@姓名」（Markdown 與純文字皆然，供匯出/全文索引）", () => {
+    expect(docToMarkdown(doc)).toContain("@王小明");
+    expect(docToPlainText(doc)).toContain("@王小明");
+  });
+
+  it("pageLink 以 label 快照序列化（連結文字進索引；現行 slug 於閱讀端解析）", () => {
+    expect(docToMarkdown(doc)).toContain("安裝指南");
+    expect(docToPlainText(doc)).toContain("安裝指南");
+  });
+});
+
 describe("docToMarkdown 圖片節點（D-07）", () => {
   it("image 節點序列化為 Markdown 圖片語法（alt + src）", () => {
     const withImage: ProseMirrorDoc = {

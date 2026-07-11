@@ -16,6 +16,8 @@ import { recordSlugHistory, reclaimSlug, uniquePageSlug } from "@/lib/pages/slug
 import { createPageInTx } from "@/lib/pages/create";
 import { writePageContentTx } from "@/lib/pages/content-write";
 import { buildMarkdownImport } from "@/lib/content/import-markdown";
+import { newlyMentionedUserIds } from "@/lib/content/mentions";
+import { notifyPageMention } from "@/lib/notifications";
 import { EMPTY_DOC, type ProseMirrorDoc } from "@/lib/content/types";
 import { ipFromHeaders, writeAudit } from "@/lib/audit";
 import { logger } from "@/lib/logger";
@@ -225,6 +227,17 @@ export async function savePage(input: z.infer<typeof saveSchema>): Promise<{ ver
   logger.info({ userId: user.id, pageId: data.pageId, versionNo: nextVersion }, "page saved");
   // 三欄同交易提交後才 enqueue 嵌入索引（架構鐵律 #5：儲存管線之後）。
   await triggerEmbedPage(data.pageId);
+  // D-11：以新舊內容 diff 出「本次新增」的 @mention，通知被提及者（K-02）。
+  // notifyPageMention 內部驗讀取權、略過本人/停用、且失敗不擲出——絕不阻塞存檔。
+  const added = newlyMentionedUserIds(page.content as ProseMirrorDoc | null, data.content);
+  if (added.length > 0) {
+    await notifyPageMention({
+      pageId: data.pageId,
+      actorId: user.id,
+      actorName: user.name,
+      mentionedUserIds: added,
+    });
+  }
   return { versionNo: nextVersion };
 }
 

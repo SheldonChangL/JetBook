@@ -133,6 +133,13 @@ function NotificationText({ item }: { item: NotificationView }) {
       <>{t("commentReplyNoTitle", { actor })}</>
     );
   }
+  if (item.type === "page_mention") {
+    return item.payload.pageTitle ? (
+      <>{t("pageMention", { actor, title: item.payload.pageTitle })}</>
+    ) : (
+      <>{t("pageMentionNoTitle", { actor })}</>
+    );
+  }
   return <>{t("genericEvent")}</>;
 }
 
