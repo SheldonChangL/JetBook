@@ -1017,6 +1017,99 @@ html.dark {
     color: var(--text-primary);
   }
 
+  /* Mermaid 圖表區塊（D-13；編輯端 = 原始碼 textarea + 即時預覽，閱讀端 = 靜態預覽）。 */
+  .prose-editor .jb-mermaid {
+    margin: 1rem 0;
+  }
+  .prose-editor .jb-mermaid--edit .jb-mermaid__editor {
+    border: 1px solid var(--border-default);
+    border-radius: var(--radius-md);
+    background: var(--bg-raised);
+    padding: 10px 12px;
+  }
+  .prose-editor .jb-mermaid--edit.is-selected .jb-mermaid__editor {
+    border-color: var(--primary);
+  }
+  .prose-editor .jb-mermaid__header {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    margin-bottom: 8px;
+  }
+  .prose-editor .jb-mermaid__drag {
+    display: inline-flex;
+    flex: none;
+    align-items: center;
+    justify-content: center;
+    width: 1.25rem;
+    height: 1.25rem;
+    color: var(--text-tertiary);
+    cursor: grab;
+  }
+  .prose-editor .jb-mermaid__label {
+    font-size: var(--text-caption);
+    font-weight: 600;
+    color: var(--text-tertiary);
+  }
+  .prose-editor .jb-mermaid__source {
+    width: 100%;
+    display: block;
+    resize: vertical;
+    border: 1px solid var(--border-default);
+    border-radius: var(--radius-sm);
+    background: var(--code-bg);
+    color: var(--code-fg);
+    padding: 8px 10px;
+    font-family: var(--font-mono);
+    font-size: var(--text-body-ui);
+    line-height: 1.6;
+  }
+  .prose-editor .jb-mermaid__source:focus {
+    outline: none;
+    border-color: var(--primary);
+  }
+  .prose-editor .jb-mermaid__preview-pane {
+    margin-top: 10px;
+    padding-top: 10px;
+    border-top: 1px dashed var(--border-default);
+  }
+  .prose-editor .jb-mermaid__preview {
+    display: flex;
+    justify-content: center;
+    overflow-x: auto;
+  }
+  .prose-editor .jb-mermaid__preview svg {
+    max-width: 100%;
+    height: auto;
+  }
+  .prose-editor .jb-mermaid__loading {
+    color: var(--text-tertiary);
+    font-size: var(--text-caption);
+    padding: 8px 0;
+    text-align: center;
+  }
+  .prose-editor .jb-mermaid__error {
+    border: 1px solid var(--danger);
+    border-radius: var(--radius-sm);
+    background: var(--danger-tint);
+    padding: 8px 10px;
+    color: var(--danger);
+  }
+  .prose-editor .jb-mermaid__error-title {
+    display: block;
+    font-weight: 600;
+    font-size: var(--text-body-ui);
+    margin-bottom: 4px;
+  }
+  .prose-editor .jb-mermaid__error-detail {
+    margin: 0;
+    font-family: var(--font-mono);
+    font-size: var(--text-caption);
+    white-space: pre-wrap;
+    word-break: break-word;
+    overflow-x: auto;
+  }
+
   /* 動態偏好（§5.2） */
   @media (prefers-reduced-motion: reduce) {
     *,

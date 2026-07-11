@@ -174,6 +174,17 @@
     "aiAssistant": "AI 助手（⌘J）",
     "offlineBanner": "網路連線中斷，請勿關閉分頁，系統將自動重試儲存"
   },
+  "notifications": {
+    "label": "通知",
+    "labelWithCount": "通知（{count} 則未讀）",
+    "heading": "通知",
+    "markAllRead": "全部標為已讀",
+    "empty": "目前沒有通知",
+    "commentReply": "{actor} 回覆了你在「{title}」的討論串",
+    "commentReplyNoTitle": "{actor} 回覆了你的討論串",
+    "genericEvent": "你有一則新通知",
+    "unreadBadgeMax": "9+"
+  },
   "errors": {
     "notFound": {
       "title": "找不到這個頁面",
@@ -340,7 +351,20 @@
   },
   "search": {
     "title": "搜尋",
-    "noResults": "找不到符合的結果"
+    "searchPlaceholder": "搜尋…",
+    "noResults": "找不到符合的結果",
+    "filters": {
+      "spaceLabel": "空間",
+      "allSpaces": "全部空間",
+      "updatedLabel": "更新時間",
+      "updated7": "最近 7 天",
+      "updated30": "最近 30 天",
+      "updatedAll": "全部",
+      "authorLabel": "作者",
+      "allAuthors": "全部作者",
+      "authorSearchPlaceholder": "搜尋作者…",
+      "authorEmpty": "找不到作者"
+    }
   },
   "commandPalette": {
     "label": "全域搜尋",
@@ -478,6 +502,10 @@
           "label": "步驟",
           "desc": "編號的操作步驟"
         },
+        "mermaid": {
+          "label": "Mermaid 圖表",
+          "desc": "以 Mermaid 語法繪製流程圖"
+        },
         "attachment": {
           "label": "檔案",
           "desc": "上傳並插入附件卡片"
@@ -506,6 +534,13 @@
     "stepper": {
       "addStep": "新增步驟",
       "removeStep": "刪除此步驟"
+    },
+    "mermaid": {
+      "sourceLabel": "Mermaid 原始碼",
+      "sourcePlaceholder": "輸入 Mermaid 語法（例：graph TD; A-->B）…",
+      "diagramLabel": "Mermaid 圖表",
+      "rendering": "圖表渲染中…",
+      "errorTitle": "圖表語法錯誤"
     },
     "table": {
       "addColumnBefore": "在左方插入欄",
@@ -814,6 +849,8 @@
     "generatingPlain": "生成中…",
     "sourcesLabel": "引用來源",
     "citationLabel": "來源 {n}",
-    "disclaimer": "AI 回覆依內部文件生成，請以原文為準"
+    "disclaimer": "AI 回覆依內部文件生成，請以原文為準",
+    "rateLimited": "AI 請求過於頻繁",
+    "rateLimitedRetry": "已達每分鐘查詢上限，請於 {seconds} 秒後再試"
   }
 }

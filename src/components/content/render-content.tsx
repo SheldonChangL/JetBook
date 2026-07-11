@@ -10,6 +10,7 @@ import { CodeBlockReader } from "./code-block-reader";
 import { ContentImage } from "./content-image";
 import { ContentAttachment } from "./content-attachment";
 import { ContentTabs } from "./content-tabs";
+import { MermaidDiagram } from "./mermaid-diagram";
 
 /**
  * TipTap JSON → React 元素（閱讀模式渲染，G-02）。
@@ -206,6 +207,16 @@ function renderNode(node: ProseMirrorNode, key: number, slug: Slugger): ReactNod
           fileName={fileName}
           sizeBytes={sizeBytes}
         />
+      );
+    }
+    case "mermaid": {
+      // D-13：閱讀端以 client 元件渲染圖表（mermaid 依賴 DOM）；語法錯誤顯示錯誤框不崩頁。
+      const source = typeof node.attrs?.source === "string" ? node.attrs.source : "";
+      if (!source.trim()) return <Fragment key={key} />;
+      return (
+        <div key={key} className="jb-mermaid" data-mermaid="">
+          <MermaidDiagram source={source} />
+        </div>
       );
     }
     case "horizontalRule":

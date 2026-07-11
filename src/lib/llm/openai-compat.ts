@@ -1,6 +1,6 @@
 import "server-only";
 import { logger } from "@/lib/logger";
-import type { ChatDelta, ChatParams, ChatResult, ChatUsage, LLMProvider } from "./provider";
+import type { ChatDelta, ChatParams, ChatResult, ChatStreamResult, ChatUsage, LLMProvider } from "./provider";
 
 export interface OpenAICompatProviderOptions {
   baseUrl: string;
@@ -106,9 +106,9 @@ export class OpenAICompatProvider implements LLMProvider {
     return meta;
   }
 
-  async *chatStream(params: ChatParams): AsyncGenerator<ChatDelta, ChatUsage> {
-    const meta = yield* this.streamInternal(params);
-    return meta.usage;
+  async *chatStream(params: ChatParams): AsyncGenerator<ChatDelta, ChatStreamResult> {
+    // 回傳 usage + model（I-06 用量記錄需 model 分項）；StreamMeta 即 ChatStreamResult。
+    return yield* this.streamInternal(params);
   }
 
   async chat(params: ChatParams): Promise<ChatResult> {

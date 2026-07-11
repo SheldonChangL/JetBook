@@ -51,7 +51,13 @@ export async function addMember(spaceId: string, userId: string, role: SpaceRole
 
 export async function seedPage(
   spaceId: string,
-  overrides: { title?: string; contentText?: string; parentId?: string | null } = {},
+  overrides: {
+    title?: string;
+    contentText?: string;
+    parentId?: string | null;
+    createdBy?: string;
+    updatedAt?: Date;
+  } = {},
 ) {
   const suffix = randomUUID().slice(0, 8);
   const [page] = await db
@@ -63,6 +69,8 @@ export async function seedPage(
       title: overrides.title ?? `測試頁面 ${suffix}`,
       contentText: overrides.contentText ?? "",
       position: "a0",
+      ...(overrides.createdBy ? { createdBy: overrides.createdBy } : {}),
+      ...(overrides.updatedAt ? { updatedAt: overrides.updatedAt } : {}),
     })
     .returning();
   if (!page) throw new Error("seedPage failed");

@@ -5,7 +5,13 @@ import {
   testEmbeddingConnection,
   testLlmConnection,
 } from "./settings";
-import type { ChatDelta, ChatResult, EmbeddingProvider, LLMProvider } from "./provider";
+import type {
+  ChatDelta,
+  ChatResult,
+  ChatStreamResult,
+  EmbeddingProvider,
+  LLMProvider,
+} from "./provider";
 
 /**
  * L-03 AI 連線設定摘要與連線測試單元測試。
@@ -14,9 +20,9 @@ import type { ChatDelta, ChatResult, EmbeddingProvider, LLMProvider } from "./pr
 
 const okLlm: LLMProvider = {
   name: "fake",
-  async *chatStream(): AsyncGenerator<ChatDelta, { inputTokens: number; outputTokens: number }> {
+  async *chatStream(): AsyncGenerator<ChatDelta, ChatStreamResult> {
     yield { type: "text", text: "pong" };
-    return { inputTokens: 1, outputTokens: 1 };
+    return { usage: { inputTokens: 1, outputTokens: 1 }, model: "fake-light" };
   },
   async chat(): Promise<ChatResult> {
     return { text: "pong", model: "fake-light", usage: { inputTokens: 1, outputTokens: 1 } };
@@ -25,9 +31,9 @@ const okLlm: LLMProvider = {
 
 const throwingLlm: LLMProvider = {
   name: "fake",
-  async *chatStream(): AsyncGenerator<ChatDelta, { inputTokens: number; outputTokens: number }> {
+  async *chatStream(): AsyncGenerator<ChatDelta, ChatStreamResult> {
     yield { type: "text", text: "" };
-    return { inputTokens: 0, outputTokens: 0 };
+    return { usage: { inputTokens: 0, outputTokens: 0 }, model: "fake-light" };
   },
   async chat(): Promise<ChatResult> {
     throw new Error("HTTP 401 unauthorized");

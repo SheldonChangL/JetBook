@@ -41,6 +41,16 @@ export type SseEvent =
   | { event: "delta"; data: { text: string } }
   | { event: "done"; data: { usage: ChatUsage } };
 
+/**
+ * streamChatAnswer 產生器結束時的回傳值（TReturn）：本次 LLM 用量與 model，
+ * 供 route handler 記錄 `ai.query` 用量（I-06）。model 不進 SSE 幀（不外洩到 client）。
+ * 無檢索結果（未呼叫 LLM）時回 null。
+ */
+export interface ChatAnswerSummary {
+  usage: ChatUsage;
+  model: string;
+}
+
 /** 回答生成 token 上限（控制延遲與成本；輸出風格靠 prompt 控制，ADR-009）。 */
 export const ANSWER_MAX_TOKENS = 1024;
 
@@ -133,22 +143,23 @@ export interface StreamChatAnswerOptions {
 
 /**
  * 編排 SSE 事件序：sources → (delta)* → done(usage)。
- * 無檢索結果：送 sources:[] + 固定訊息 delta + done，**不呼叫 LLM**。
+ * 無檢索結果：送 sources:[] + 固定訊息 delta + done，**不呼叫 LLM**，回傳 null。
+ * 有結果：呼叫 LLM 串流後回傳 { usage, model }（供 route 記錄 I-06 用量）。
  */
 export async function* streamChatAnswer(
   opts: StreamChatAnswerOptions,
-): AsyncGenerator<SseEvent> {
+): AsyncGenerator<SseEvent, ChatAnswerSummary | null> {
   const chunks = await opts.retrieveFn(opts.actor, opts.question, {
     spaceId: opts.spaceId,
   });
   const sources = buildSources(chunks);
   yield { event: "sources", data: sources };
 
-  // 無依據：回覆固定訊息，絕不呼叫 LLM（F-AI-04 驗收 1；避免虛構）。
+  // 無依據：回覆固定訊息，絕不呼叫 LLM（F-AI-04 驗收 1；避免虛構）。無 LLM 呼叫 → 不記用量。
   if (sources.length === 0) {
     yield { event: "delta", data: { text: opts.noResultsMessage } };
     yield { event: "done", data: { usage: { inputTokens: 0, outputTokens: 0 } } };
-    return;
+    return null;
   }
 
   const stream = opts.provider.chatStream({
@@ -159,15 +170,18 @@ export async function* streamChatAnswer(
     signal: opts.signal,
   });
 
-  // 逐 token 串流；generator 結束時 return 值即本次 usage。
+  // 逐 token 串流；generator 結束時 return 值帶回本次 usage 與 model。
   let usage: ChatUsage = { inputTokens: 0, outputTokens: 0 };
+  let model = opts.provider.name;
   for (;;) {
     const step = await stream.next();
     if (step.done) {
-      usage = step.value;
+      usage = step.value.usage;
+      model = step.value.model;
       break;
     }
     yield { event: "delta", data: { text: step.value.text } };
   }
   yield { event: "done", data: { usage } };
+  return { usage, model };
 }
