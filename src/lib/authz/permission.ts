@@ -87,6 +87,30 @@ export async function getAccessiblePageIds(
   return rows.map((r) => r.id);
 }
 
+/**
+ * 取得使用者具「編輯者以上」角色（page.edit / page.delete 前提）的 space id 集合。
+ * 回收桶還原（C-08）用：只列出／只允許還原使用者實際能編輯的 space 之已刪頁。
+ * 解析與 getSpaceRole 一致：org admin 全通、org_write 隱含 editor、成員角色 editor/admin。
+ * 排除封存與已刪除 space（與 getAccessiblePageIds 的可存取範圍一致）。
+ */
+export async function getEditableSpaceIds(user: Actor): Promise<string[]> {
+  const rows = await db.execute<{ id: string }>(sql`
+    select s.id from ${spaces} s
+    where s.archived_at is null and s.deleted_at is null
+      and (
+        ${user.orgRole === "admin" ? sql`true` : sql`
+          s.visibility = 'org_write'
+          or exists (
+            select 1 from ${spaceMembers} sm
+            where sm.space_id = s.id and sm.user_id = ${user.id}
+              and sm.role in ('editor', 'admin')
+          )
+        `}
+      )
+  `);
+  return rows.rows.map((r) => r.id);
+}
+
 /** 頁面可讀性單點判斷（RSC 載入決定 404/403 用）。 */
 export async function canReadPage(user: Actor, pageId: string): Promise<boolean> {
   const page = await db.query.pages.findFirst({

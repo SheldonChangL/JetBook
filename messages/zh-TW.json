@@ -280,8 +280,24 @@
   },
   "trash": {
     "title": "垃圾桶",
+    "subtitleGlobal": "跨空間彙整，僅顯示你有還原權限的項目。刪除的頁面保留 30 天後自動清除。",
+    "subtitleSpace": "「{space}」已刪除的頁面，保留 30 天後自動清除。",
     "emptyTitle": "垃圾桶是空的",
-    "emptyDesc": "刪除的頁面會在此保留 30 天。"
+    "emptyDesc": "刪除的頁面會在此保留 30 天。",
+    "colPage": "頁面",
+    "colSpace": "空間",
+    "colDeletedBy": "刪除者",
+    "colDeletedAt": "刪除時間",
+    "colActions": "操作",
+    "unknownUser": "未知使用者",
+    "childrenCount": "含 {count} 個子頁",
+    "daysLeft": "{days} 天後清除",
+    "purgeSoon": "即將清除",
+    "restore": "還原",
+    "restoring": "還原中…",
+    "restored": "已還原「{title}」",
+    "restoredToRoot": "已還原「{title}」至最上層（原父頁面已不存在）",
+    "restoreError": "還原失敗，請重試"
   },
   "search": {
     "title": "搜尋",
