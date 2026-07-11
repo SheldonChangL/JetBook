@@ -1,6 +1,8 @@
 import "server-only";
 import type { Actor } from "@/lib/authz/permission";
 import type { ChatUsage, LLMProvider } from "@/lib/llm";
+import { slugifyHeadingText } from "@/lib/content/heading-slug";
+import { HEADING_PATH_SEPARATOR } from "./chunker";
 import type { RetrievedChunk } from "./retriever";
 
 /**
@@ -25,7 +27,11 @@ export interface AnswerSource {
   title: string;
   headingPath: string;
   snippet: string;
-  /** 站內相對連結（/s/<spaceSlug>/<pageSlug>）。 */
+  /**
+   * 站內相對連結（`/s/<spaceSlug>/<pageSlug>`）；chunk 有 heading 時附錨點
+   * （`#<slug>`，slug 與 G-05 閱讀頁標題 id 同規則，供 I-04 引用跳轉直接定位）。
+   * 無對應 heading（headingPath 為空）則不帶錨點，載入時退化為頁面頂部。
+   */
   url: string;
 }
 
@@ -57,8 +63,27 @@ function toSnippet(text: string): string {
   return `${normalized.slice(0, SNIPPET_MAX_LENGTH)}…`;
 }
 
-function pageUrl(spaceSlug: string, pageSlug: string): string {
-  return `/s/${spaceSlug}/${pageSlug}`;
+/**
+ * 由 headingPath 取最深層 heading 的錨點 slug（I-04）。
+ * headingPath 以 `HEADING_PATH_SEPARATOR` 串接階層標題，取末段（最深）並以
+ * 與閱讀頁（G-05）相同的 `slugifyHeadingText` 轉為 id；無 heading 或 slug 為空回 null。
+ */
+export function headingAnchor(headingPath: string): string | null {
+  const deepest = headingPath
+    .split(HEADING_PATH_SEPARATOR)
+    .map((part) => part.trim())
+    .filter(Boolean)
+    .at(-1);
+  if (!deepest) return null;
+  const slug = slugifyHeadingText(deepest);
+  return slug || null;
+}
+
+/** 組來源站內連結；有 heading 時附錨點（`#<encodeURIComponent(slug)>`，與 G-05 分享連結同規則）。 */
+function sourceUrl(spaceSlug: string, pageSlug: string, headingPath: string): string {
+  const base = `/s/${spaceSlug}/${pageSlug}`;
+  const anchor = headingAnchor(headingPath);
+  return anchor ? `${base}#${encodeURIComponent(anchor)}` : base;
 }
 
 /** 檢索結果 → 帶編號引用來源（順序即編號來源，與 prompt 一致）。 */
@@ -69,7 +94,7 @@ export function buildSources(chunks: RetrievedChunk[]): AnswerSource[] {
     title: c.title,
     headingPath: c.headingPath,
     snippet: toSnippet(c.chunkText),
-    url: pageUrl(c.spaceSlug, c.pageSlug),
+    url: sourceUrl(c.spaceSlug, c.pageSlug, c.headingPath),
   }));
 }
 

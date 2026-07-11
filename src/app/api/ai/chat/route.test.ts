@@ -1,6 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import type { ChatDelta, ChatParams, ChatResult, ChatUsage, LLMProvider } from "@/lib/llm";
 import type { RetrievedChunk } from "@/lib/rag/retriever";
+import { slugifyHeadingText } from "@/lib/content/heading-slug";
 
 /**
  * Route 層測試（薄殼 + 真實 answer 編排）：只 mock 邊界（session/llm 設定/retrieve/i18n），
@@ -155,7 +156,10 @@ describe("POST /api/ai/chat", () => {
     const events = parseSse(await readSse(res));
     expect(events[0]?.event).toBe("sources");
     expect((events[0]?.data as unknown[]).length).toBe(1);
-    expect((events[0]?.data as { url: string }[])[0]?.url).toBe("/s/ops/m1");
+    // I-04：來源連結帶最深層 heading 錨點（headingPath「章節」→ #<slug>）。
+    expect((events[0]?.data as { url: string }[])[0]?.url).toBe(
+      `/s/ops/m1#${encodeURIComponent(slugifyHeadingText("章節"))}`,
+    );
 
     const deltas = events.filter((e) => e.event === "delta").map((e) => (e.data as { text: string }).text);
     expect(deltas).toEqual(["雷射", "校準"]);
