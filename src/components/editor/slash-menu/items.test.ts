@@ -85,7 +85,25 @@ describe("filterSlashMenuItems（F-EDIT-02 中英文關鍵字過濾）", () => {
     expect(filterSlashMenuItems(SLASH_MENU_ITEMS, "zzz不存在")).toEqual([]);
   });
 
-  it("涵蓋所有已實作區塊（D-01/D-03/D-04/D-05/D-06/D-08 現有節點）且 group 合法", () => {
+  it("Tabs/摺疊/Stepper：中英文關鍵字命中對應項（D-12）", () => {
+    for (const q of ["分頁", "頁籤", "tabs", "tab"]) {
+      expect(filterSlashMenuItems(SLASH_MENU_ITEMS, q).map((i) => i.id)).toContain(
+        "tabs",
+      );
+    }
+    for (const q of ["摺疊", "折疊", "收合", "details", "collapse", "toggle"]) {
+      expect(filterSlashMenuItems(SLASH_MENU_ITEMS, q).map((i) => i.id)).toContain(
+        "details",
+      );
+    }
+    for (const q of ["步驟", "流程", "stepper", "step"]) {
+      expect(filterSlashMenuItems(SLASH_MENU_ITEMS, q).map((i) => i.id)).toContain(
+        "stepper",
+      );
+    }
+  });
+
+  it("涵蓋所有已實作區塊（D-01/D-03/D-04/D-05/D-06/D-08/D-12 現有節點）且 group 合法", () => {
     const ids = SLASH_MENU_ITEMS.map((i) => i.id);
     expect(ids).toEqual([
       "text",
@@ -103,6 +121,9 @@ describe("filterSlashMenuItems（F-EDIT-02 中英文關鍵字過濾）", () => {
       "calloutSuccess",
       "calloutWarning",
       "calloutDanger",
+      "tabs",
+      "details",
+      "stepper",
       "attachment",
     ]);
     for (const item of SLASH_MENU_ITEMS) {

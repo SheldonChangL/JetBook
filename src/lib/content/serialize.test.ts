@@ -156,6 +156,97 @@ describe("docToMarkdown callout 節點（D-06）", () => {
   });
 });
 
+describe("docToMarkdown/PlainText 分頁節點（D-12，F-EDIT-13）", () => {
+  const tabsDoc: ProseMirrorDoc = {
+    type: "doc",
+    content: [
+      {
+        type: "tabs",
+        content: [
+          {
+            type: "tabItem",
+            attrs: { label: "Windows 安裝" },
+            content: [{ type: "paragraph", content: [{ type: "text", text: "下載安裝檔並執行" }] }],
+          },
+          {
+            type: "tabItem",
+            attrs: { label: "macOS 安裝" },
+            content: [{ type: "paragraph", content: [{ type: "text", text: "拖曳至應用程式資料夾" }] }],
+          },
+        ],
+      },
+    ],
+  };
+
+  it("Markdown 序列化含分頁標題與內文", () => {
+    const md = docToMarkdown(tabsDoc);
+    expect(md).toContain("**Windows 安裝**");
+    expect(md).toContain("下載安裝檔並執行");
+    expect(md).toContain("**macOS 安裝**");
+    expect(md).toContain("拖曳至應用程式資料夾");
+  });
+
+  it("純文字抽取涵蓋分頁標題（供全文索引/RAG）", () => {
+    const text = docToPlainText(tabsDoc);
+    for (const s of ["Windows 安裝", "下載安裝檔並執行", "macOS 安裝", "拖曳至應用程式資料夾"]) {
+      expect(text).toContain(s);
+    }
+    expect(text).not.toContain("**");
+  });
+});
+
+describe("docToMarkdown/PlainText 摺疊節點（D-12，F-EDIT-13）", () => {
+  const detailsDoc: ProseMirrorDoc = {
+    type: "doc",
+    content: [
+      {
+        type: "details",
+        attrs: { summary: "常見問題", open: false },
+        content: [{ type: "paragraph", content: [{ type: "text", text: "請聯絡技術支援" }] }],
+      },
+    ],
+  };
+
+  it("Markdown 序列化含摘要標題與內文", () => {
+    const md = docToMarkdown(detailsDoc);
+    expect(md).toContain("**常見問題**");
+    expect(md).toContain("請聯絡技術支援");
+  });
+
+  it("純文字抽取涵蓋摘要標題（供全文索引/RAG）", () => {
+    const text = docToPlainText(detailsDoc);
+    expect(text).toContain("常見問題");
+    expect(text).toContain("請聯絡技術支援");
+  });
+});
+
+describe("docToMarkdown/PlainText 步驟節點（D-12，F-EDIT-13）", () => {
+  const stepperDoc: ProseMirrorDoc = {
+    type: "doc",
+    content: [
+      {
+        type: "stepper",
+        content: [
+          { type: "step", content: [{ type: "paragraph", content: [{ type: "text", text: "接上電源" }] }] },
+          { type: "step", content: [{ type: "paragraph", content: [{ type: "text", text: "按下開機鍵" }] }] },
+        ],
+      },
+    ],
+  };
+
+  it("Markdown 序列化為有序清單（依步驟順序編號）", () => {
+    const md = docToMarkdown(stepperDoc);
+    expect(md).toContain("1. 接上電源");
+    expect(md).toContain("2. 按下開機鍵");
+  });
+
+  it("純文字抽取涵蓋步驟內文（供全文索引/RAG）", () => {
+    const text = docToPlainText(stepperDoc);
+    expect(text).toContain("接上電源");
+    expect(text).toContain("按下開機鍵");
+  });
+});
+
 describe("docToPlainText", () => {
   it("抽出全部文字供全文索引（去除 markdown 標記）", () => {
     const text = docToPlainText(doc);

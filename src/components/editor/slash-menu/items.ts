@@ -1,5 +1,6 @@
 import type { Editor, Range } from "@tiptap/react";
 import {
+  AppWindow,
   CircleCheck,
   Code,
   Heading1,
@@ -7,6 +8,8 @@ import {
   Heading3,
   Info,
   List,
+  ListChecks,
+  ListCollapse,
   ListOrdered,
   ListTodo,
   Minus,
@@ -163,6 +166,31 @@ export const SLASH_MENU_ITEMS: readonly SlashMenuItem[] = [
         editor.chain().focus().deleteRange(range).setCallout({ kind: c.kind }).run(),
     }),
   ),
+  // D-12（F-EDIT-13）：三種容器區塊。分頁預設兩頁、步驟預設三步、摺疊預設展開含一段。
+  {
+    id: "tabs",
+    group: "advanced",
+    icon: AppWindow,
+    keywords: ["分頁", "頁籤", "標籤頁", "分頁區塊", "tabs", "tab", "tabbed"],
+    command: ({ editor, range }) =>
+      editor.chain().focus().deleteRange(range).setTabs().run(),
+  },
+  {
+    id: "details",
+    group: "advanced",
+    icon: ListCollapse,
+    keywords: ["摺疊", "折疊", "收合", "展開", "詳情", "details", "collapse", "toggle", "accordion", "expand"],
+    command: ({ editor, range }) =>
+      editor.chain().focus().deleteRange(range).setDetails().run(),
+  },
+  {
+    id: "stepper",
+    group: "advanced",
+    icon: ListChecks,
+    keywords: ["步驟", "步驟區塊", "流程", "教學", "操作", "stepper", "step", "steps", "guide"],
+    command: ({ editor, range }) =>
+      editor.chain().focus().deleteRange(range).setStepper().run(),
+  },
   {
     id: "attachment",
     group: "advanced",

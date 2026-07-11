@@ -114,6 +114,33 @@ function serializeBlock(node: ProseMirrorNode): string {
       return "---";
     case "table":
       return serializeTable(node);
+    case "tabs":
+      // D-12：每個分頁序列化為「標題 + 內文」，確保標題文字進全文索引/RAG。
+      return (node.content ?? []).map((c) => serializeBlock(c)).join("\n\n");
+    case "tabItem": {
+      const label = (node.attrs?.label as string) ?? "";
+      const body = serializeChildren(node.content);
+      return label ? `**${label}**\n\n${body}` : body;
+    }
+    case "details": {
+      // D-12：摘要標題 + 內文（標題文字進全文索引/RAG）。
+      const summary = (node.attrs?.summary as string) ?? "";
+      const body = serializeChildren(node.content);
+      return summary ? `**${summary}**\n\n${body}` : body;
+    }
+    case "stepper":
+      // D-12：步驟序列化為有序清單（序號 = 步驟順序）。
+      return (node.content ?? [])
+        .map((step, index) => {
+          const inner = (step.content ?? []).map((c) => serializeBlock(c)).join("\n");
+          return inner
+            .split("\n")
+            .map((line, i) => (i === 0 ? `${index + 1}. ${line}` : `   ${line}`))
+            .join("\n");
+        })
+        .join("\n");
+    case "step":
+      return serializeChildren(node.content);
     default:
       // 未知區塊：盡量取出其文字，確保進得了全文索引
       return (node.content ?? []).map((c) => serializeBlock(c)).join("\n\n");
@@ -146,6 +173,14 @@ export function docToPlainText(node: ProseMirrorDoc | ProseMirrorNode): string {
   // 附件為 atom 無內文，以檔名代表（讓全文索引可依檔名命中）
   if ((node as ProseMirrorNode).type === "attachment") {
     return String((node as ProseMirrorNode).attrs?.fileName ?? "");
+  }
+  // D-12：分頁標題（label）與摺疊摘要（summary）存於 attrs，須併入純文字供全文索引/RAG（F-EDIT-13）。
+  const pmNode = node as ProseMirrorNode;
+  if (pmNode.type === "tabItem" || pmNode.type === "details") {
+    const attrKey = pmNode.type === "tabItem" ? "label" : "summary";
+    const attrText = String(pmNode.attrs?.[attrKey] ?? "");
+    const body = (pmNode.content ?? []).map((c) => docToPlainText(c)).join("\n");
+    return [attrText, body].filter(Boolean).join("\n");
   }
   const children = (node as ProseMirrorNode).content ?? [];
   const sep = ["paragraph", "heading", "codeBlock", "listItem", "tableRow"].includes(
