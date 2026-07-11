@@ -2,6 +2,7 @@ import { PgBoss, type Job } from "pg-boss";
 import { env } from "@/lib/env";
 import { logger } from "@/lib/logger";
 import { deleteExpiredSessions } from "@/lib/auth/session";
+import { purgeExpiredTrash } from "@/lib/pages/trash";
 import {
   ensureEmbedQueues,
   ensureImportZipQueue,
@@ -36,6 +37,14 @@ async function main() {
   await boss.work(JOBS.cleanupSessions, async () => {
     await deleteExpiredSessions();
     logger.info("expired sessions cleaned");
+  });
+
+  // 回收桶逾期永久清除（C-08，F-PAGE-06）：每日清除 deleted_at 逾 30 天的頁面。
+  await boss.createQueue(JOBS.purgeTrash);
+  await boss.schedule(JOBS.purgeTrash, "30 3 * * *", {}, {});
+  await boss.work(JOBS.purgeTrash, async () => {
+    const purged = await purgeExpiredTrash();
+    logger.info({ purged }, "expired trash purged");
   });
 
   // ── 任務型 job：頁面嵌入索引（H-06） ──

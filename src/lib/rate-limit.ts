@@ -52,6 +52,7 @@ export function createMemoryRateLimiter(options: {
 const globalForRateLimit = globalThis as unknown as {
   jetbookLoginLimiter?: RateLimiter;
   jetbookPasswordResetLimiter?: RateLimiter;
+  jetbookAiLimiter?: RateLimiter;
 };
 
 /** 登入端點：5 次/分/IP（NFR-SEC-07）。 */
@@ -67,5 +68,16 @@ export const passwordResetRateLimiter: RateLimiter =
   globalForRateLimit.jetbookPasswordResetLimiter ??
   (globalForRateLimit.jetbookPasswordResetLimiter = createMemoryRateLimiter({
     limit: 5,
+    windowMs: 60_000,
+  }));
+
+/**
+ * AI 端點：20 次/分/使用者，抑制濫用與成本失控（I-06 精神；以使用者 id 為 key）。
+ * I-06（#82）落地持久化用量記錄後可改由其 limiter 統一接手，呼叫端不需更動介面。
+ */
+export const aiRateLimiter: RateLimiter =
+  globalForRateLimit.jetbookAiLimiter ??
+  (globalForRateLimit.jetbookAiLimiter = createMemoryRateLimiter({
+    limit: 20,
     windowMs: 60_000,
   }));
