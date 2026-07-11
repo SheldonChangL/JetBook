@@ -37,8 +37,11 @@ export interface ChatResult {
 
 export interface LLMProvider {
   readonly name: string;
-  /** 串流輸出（SSE 直通）；結束後可從 lastUsage() 取用量。 */
-  chatStream(params: ChatParams): AsyncIterable<ChatDelta>;
+  /**
+   * 串流輸出（SSE 直通）；逐 token yield 文字增量，generator 結束時
+   * `return` 本次用量（供 done 事件與用量記錄）。
+   */
+  chatStream(params: ChatParams): AsyncGenerator<ChatDelta, ChatUsage>;
   /** 非串流（輕量任務）。 */
   chat(params: ChatParams): Promise<ChatResult>;
 }
