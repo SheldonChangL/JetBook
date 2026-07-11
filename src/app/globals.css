@@ -54,6 +54,25 @@
   --shadow-sm: 0 1px 2px rgb(16 24 32 / 0.06);
   --shadow-md: 0 4px 12px rgb(16 24 32 / 0.1);
   --shadow-lg: 0 8px 24px rgb(16 24 32 / 0.14);
+
+  /* 程式碼區塊語法高亮 token（D-04；淺色，GitHub light 風格） */
+  --code-bg: #f6f8fa;
+  --code-fg: #24292e;
+  --code-line: #97a2ad;
+  --code-comment: #6a737d;
+  --code-keyword: #d73a49;
+  --code-string: #032f62;
+  --code-number: #005cc5;
+  --code-function: #6f42c1;
+  --code-type: #e36209;
+  --code-variable: #e36209;
+  --code-tag: #22863a;
+  --code-attr: #005cc5;
+  --code-meta: #6a737d;
+  --code-addition-fg: #22863a;
+  --code-addition-bg: #e6ffec;
+  --code-deletion-fg: #b31d28;
+  --code-deletion-bg: #ffeef0;
 }
 
 html.dark {
@@ -88,6 +107,25 @@ html.dark {
   --shadow-sm: 0 1px 2px rgb(0 0 0 / 0.24);
   --shadow-md: 0 4px 12px rgb(0 0 0 / 0.36);
   --shadow-lg: 0 8px 24px rgb(0 0 0 / 0.48);
+
+  /* 程式碼區塊語法高亮 token（D-04；深色，GitHub dark 風格） */
+  --code-bg: #11171e;
+  --code-fg: #c9d1d9;
+  --code-line: #6e7681;
+  --code-comment: #8b949e;
+  --code-keyword: #ff7b72;
+  --code-string: #a5d6ff;
+  --code-number: #79c0ff;
+  --code-function: #d2a8ff;
+  --code-type: #ffa657;
+  --code-variable: #ffa657;
+  --code-tag: #7ee787;
+  --code-attr: #79c0ff;
+  --code-meta: #8b949e;
+  --code-addition-fg: #7ee787;
+  --code-addition-bg: #12291d;
+  --code-deletion-fg: #ffa198;
+  --code-deletion-bg: #331715;
 }
 
 /* class-based dark variant（dark: 前綴工具類） */
@@ -284,6 +322,158 @@ html.dark {
   .prose-editor :where(a) {
     color: var(--primary);
     text-decoration: underline;
+  }
+
+  /* 程式碼區塊（D-04）：編輯與閱讀共用 .jb-code 結構（工具列 + 行號 + 高亮）。 */
+  .prose-editor .jb-code {
+    margin: 1rem 0;
+    border: 1px solid var(--border-default);
+    border-radius: var(--radius-md);
+    background: var(--code-bg);
+    overflow: hidden;
+  }
+  .prose-editor .jb-code__bar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.5rem;
+    padding: 0.375rem 0.5rem 0.375rem 0.75rem;
+    border-bottom: 1px solid var(--border-default);
+    background: var(--bg-sidebar);
+  }
+  .prose-editor .jb-code__lang {
+    font-family: var(--font-mono);
+    font-size: var(--text-caption);
+    color: var(--text-secondary);
+  }
+  .prose-editor .jb-code__copy {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.25rem;
+    padding: 0.125rem 0.5rem;
+    border-radius: var(--radius-sm);
+    font-size: var(--text-caption);
+    color: var(--text-secondary);
+    background: transparent;
+    cursor: pointer;
+    transition:
+      background-color 0.12s ease,
+      color 0.12s ease;
+  }
+  .prose-editor .jb-code__copy:hover {
+    background: var(--bg-hover);
+    color: var(--text-primary);
+  }
+  .prose-editor .jb-code__body {
+    display: flex;
+    align-items: stretch;
+    overflow: hidden;
+  }
+  .prose-editor .jb-code__gutter {
+    flex: 0 0 auto;
+    padding: 0.75rem 0.5rem 0.75rem 0.75rem;
+    text-align: right;
+    user-select: none;
+    color: var(--code-line);
+    font-family: var(--font-mono);
+    font-size: var(--text-code);
+    line-height: var(--text-code--line-height);
+    border-right: 1px solid var(--border-default);
+  }
+  .prose-editor .jb-code__gutter span {
+    display: block;
+  }
+  /* 內層 pre 覆寫通用 pre 樣式（去邊框/底色/邊距），只留捲動與行距。 */
+  .prose-editor .jb-code__pre {
+    flex: 1 1 auto;
+    min-width: 0;
+    margin: 0;
+    padding: 0.75rem 1rem;
+    border: 0;
+    border-radius: 0;
+    background: transparent;
+    overflow-x: auto;
+    white-space: pre;
+    font-size: var(--text-code);
+    line-height: var(--text-code--line-height);
+    color: var(--code-fg);
+  }
+  .prose-editor .jb-code__pre code {
+    white-space: pre;
+    background: transparent;
+    padding: 0;
+    font-size: inherit;
+    color: inherit;
+  }
+
+  /* highlight.js token → 語意色（深淺色由 --code-* 變數切換）。 */
+  .jb-code .hljs-comment,
+  .jb-code .hljs-quote {
+    color: var(--code-comment);
+    font-style: italic;
+  }
+  .jb-code .hljs-keyword,
+  .jb-code .hljs-selector-tag,
+  .jb-code .hljs-literal,
+  .jb-code .hljs-section,
+  .jb-code .hljs-doctag {
+    color: var(--code-keyword);
+  }
+  .jb-code .hljs-string,
+  .jb-code .hljs-regexp,
+  .jb-code .hljs-symbol,
+  .jb-code .hljs-bullet,
+  .jb-code .hljs-char.escape_ {
+    color: var(--code-string);
+  }
+  .jb-code .hljs-number {
+    color: var(--code-number);
+  }
+  .jb-code .hljs-title,
+  .jb-code .hljs-title.function_ {
+    color: var(--code-function);
+  }
+  .jb-code .hljs-built_in,
+  .jb-code .hljs-title.class_,
+  .jb-code .hljs-class .hljs-title,
+  .jb-code .hljs-type {
+    color: var(--code-type);
+  }
+  .jb-code .hljs-attr,
+  .jb-code .hljs-attribute,
+  .jb-code .hljs-property,
+  .jb-code .hljs-selector-attr,
+  .jb-code .hljs-selector-pseudo {
+    color: var(--code-attr);
+  }
+  .jb-code .hljs-variable,
+  .jb-code .hljs-template-variable,
+  .jb-code .hljs-params {
+    color: var(--code-variable);
+  }
+  .jb-code .hljs-tag,
+  .jb-code .hljs-name,
+  .jb-code .hljs-selector-id,
+  .jb-code .hljs-selector-class {
+    color: var(--code-tag);
+  }
+  .jb-code .hljs-meta,
+  .jb-code .hljs-meta .hljs-keyword {
+    color: var(--code-meta);
+  }
+  .jb-code .hljs-addition {
+    color: var(--code-addition-fg);
+    background: var(--code-addition-bg);
+  }
+  .jb-code .hljs-deletion {
+    color: var(--code-deletion-fg);
+    background: var(--code-deletion-bg);
+  }
+  .jb-code .hljs-emphasis {
+    font-style: italic;
+  }
+  .jb-code .hljs-strong {
+    font-weight: 700;
   }
 
   /* 動態偏好（§5.2） */

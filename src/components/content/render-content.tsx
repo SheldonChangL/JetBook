@@ -1,5 +1,8 @@
 import { Fragment, type ReactNode } from "react";
 import type { ProseMirrorDoc, ProseMirrorNode } from "@/lib/content/types";
+import { codeLanguageLabel } from "@/lib/content/lowlight";
+import { highlightToReact } from "@/lib/content/highlight-to-react";
+import { CodeBlockReader } from "./code-block-reader";
 
 /**
  * TipTap JSON → React 元素（閱讀模式渲染，G-02）。
@@ -81,12 +84,19 @@ function renderNode(node: ProseMirrorNode, key: number): ReactNode {
       );
     case "blockquote":
       return <blockquote key={key}>{renderChildren(node.content)}</blockquote>;
-    case "codeBlock":
+    case "codeBlock": {
+      const code = (node.content ?? []).map((c) => c.text ?? "").join("");
+      const language = (node.attrs?.language as string | null | undefined) ?? null;
       return (
-        <pre key={key}>
-          <code>{(node.content ?? []).map((c) => c.text ?? "").join("")}</code>
-        </pre>
+        <CodeBlockReader
+          key={key}
+          code={code}
+          languageLabel={codeLanguageLabel(language)}
+        >
+          {highlightToReact(code, language)}
+        </CodeBlockReader>
       );
+    }
     case "horizontalRule":
       return <hr key={key} />;
     default:

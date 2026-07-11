@@ -237,6 +237,15 @@
     "backToReading": "返回閱讀",
     "steal": "強制取得編輯權",
     "stealConfirm": "搶鎖會中斷對方的編輯，確定要繼續嗎？",
+    "codeBlock": {
+      "plainText": "純文字",
+      "selectLanguage": "選擇語言",
+      "searchLanguage": "搜尋語言…",
+      "noLanguage": "找不到語言",
+      "copy": "複製",
+      "copied": "已複製",
+      "copyAriaLabel": "複製程式碼"
+    },
     "slash": {
       "label": "區塊選單",
       "empty": "沒有符合的區塊",
