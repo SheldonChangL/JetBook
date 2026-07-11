@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { Suspense } from "react";
 import { getTranslations } from "next-intl/server";
+import { isOidcEnabled } from "@/lib/auth/oidc";
 import { LoginForm } from "./login-form";
 
 export async function generateMetadata(): Promise<Metadata> {
@@ -21,7 +22,7 @@ export default async function LoginPage() {
           <p className="text-caption text-fg-tertiary">{tAuth("tagline")}</p>
         </div>
         <Suspense>
-          <LoginForm />
+          <LoginForm oidcEnabled={isOidcEnabled()} />
         </Suspense>
       </div>
       <p className="mt-6 text-caption text-fg-tertiary">{tAuth("copyright")}</p>
