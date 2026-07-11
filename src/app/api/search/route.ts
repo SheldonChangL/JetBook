@@ -12,8 +12,8 @@ export const dynamic = "force-dynamic";
 
 /**
  * 搜尋 API（F-SEARCH-01 全文 + I-05 語意）。薄殼：驗 session → 呼叫 lib 層（權限在 SQL 過濾）。
- * GET /api/search?q=...&space=<uuid>&mode=fulltext|semantic|hybrid
- * - mode 省略或 fulltext：pgroonga 全文搜尋（既有行為；非 AI，不限流）。
+ * GET /api/search?q=...&space=<uuid>&author=<uuid>&updated=7|30&mode=fulltext|semantic|hybrid
+ * - mode 省略或 fulltext：pgroonga 全文搜尋（既有行為；非 AI，不限流）；支援 space／author／updated 過濾（F-SEARCH-03）。
  * - mode=semantic：僅向量路語意搜尋（I-01 retrieve），命中近義未含原詞的頁。
  * - mode=hybrid：全文+向量 RRF 融合。
  * semantic/hybrid 為 AI（embedding）路徑（I-06）：每使用者限流 20 次/分（NFR-SEC-07，超限 429 +
@@ -62,6 +62,10 @@ export async function GET(request: Request) {
     return NextResponse.json({ data: { hits } });
   }
 
-  const hits = await fullTextSearch(session.user, q, { spaceId });
+  const authorId = url.searchParams.get("author") ?? undefined;
+  const updatedRaw = Number(url.searchParams.get("updated"));
+  const updatedWithinDays = updatedRaw === 7 || updatedRaw === 30 ? updatedRaw : undefined;
+
+  const hits = await fullTextSearch(session.user, q, { spaceId, authorId, updatedWithinDays });
   return NextResponse.json({ data: { hits } });
 }
