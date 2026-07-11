@@ -25,24 +25,44 @@ export function accessibleSpaceCondition(user: Pick<User, "id" | "orgRole">) {
   );
 }
 
+export interface SpaceAccess {
+  /** 使用者對該 space 的有效角色；無權限或 space 已軟刪回 null。 */
+  role: SpaceRole | null;
+  /** space 是否已封存（唯讀）；已軟刪（role=null）時視為 false。 */
+  archived: boolean;
+}
+
+/**
+ * 一次取得使用者對某 Space 的有效角色與封存狀態（單次 space 查詢，供 can() 同時判角色與唯讀）。
+ * 已軟刪 space 一律 role=null（不可存取）。
+ */
+export async function resolveSpaceAccess(
+  user: Pick<User, "id" | "orgRole">,
+  spaceId: string,
+): Promise<SpaceAccess> {
+  const space = await db.query.spaces.findFirst({ where: eq(spaces.id, spaceId) });
+  if (!space || space.deletedAt) return { role: null, archived: false };
+
+  const archived = space.archivedAt !== null;
+
+  if (user.orgRole === "admin") return { role: "admin", archived };
+
+  const membership = await db.query.spaceMembers.findFirst({
+    where: and(eq(spaceMembers.spaceId, spaceId), eq(spaceMembers.userId, user.id)),
+  });
+  if (membership) return { role: membership.role, archived };
+
+  // 非成員：依可見性給隱含角色
+  if (space.visibility === "org_write") return { role: "editor", archived };
+  if (space.visibility === "org_read") return { role: "viewer", archived };
+  return { role: null, archived };
+}
+
 /** 取得使用者對某 Space 的有效角色；無權限回 null。 */
 export async function getSpaceRole(
   user: Pick<User, "id" | "orgRole">,
   spaceId: string,
 ): Promise<SpaceRole | null> {
-  const space = await db.query.spaces.findFirst({ where: eq(spaces.id, spaceId) });
-  if (!space || space.deletedAt) return null;
-
-  if (user.orgRole === "admin") return "admin";
-
-  const membership = await db.query.spaceMembers.findFirst({
-    where: and(eq(spaceMembers.spaceId, spaceId), eq(spaceMembers.userId, user.id)),
-  });
-  if (membership) return membership.role;
-
-  // 非成員：依可見性給隱含角色
-  if (space.visibility === "org_write") return "editor";
-  if (space.visibility === "org_read") return "viewer";
-  return null;
+  return (await resolveSpaceAccess(user, spaceId)).role;
 }
 
