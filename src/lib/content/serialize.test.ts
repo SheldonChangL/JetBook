@@ -45,6 +45,21 @@ describe("docToMarkdown", () => {
   });
 });
 
+describe("docToMarkdown 圖片節點（D-07）", () => {
+  it("image 節點序列化為 Markdown 圖片語法（alt + src）", () => {
+    const withImage: ProseMirrorDoc = {
+      type: "doc",
+      content: [
+        { type: "image", attrs: { src: "/api/files/abc", alt: "爐體外觀" } },
+        { type: "image", attrs: { src: "/api/files/def" } },
+      ],
+    };
+    const md = docToMarkdown(withImage);
+    expect(md).toContain("![爐體外觀](/api/files/abc)");
+    expect(md).toContain("![](/api/files/def)");
+  });
+});
+
 describe("docToPlainText", () => {
   it("抽出全部文字供全文索引（去除 markdown 標記）", () => {
     const text = docToPlainText(doc);

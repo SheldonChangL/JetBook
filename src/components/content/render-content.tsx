@@ -1,5 +1,6 @@
 import { Fragment, type ReactNode } from "react";
 import type { ProseMirrorDoc, ProseMirrorNode } from "@/lib/content/types";
+import { ContentImage } from "./content-image";
 
 /**
  * TipTap JSON → React 元素（閱讀模式渲染，G-02）。
@@ -87,6 +88,13 @@ function renderNode(node: ProseMirrorNode, key: number): ReactNode {
           <code>{(node.content ?? []).map((c) => c.text ?? "").join("")}</code>
         </pre>
       );
+    case "image": {
+      const src = typeof node.attrs?.src === "string" ? node.attrs.src : "";
+      // 安全：只渲染同源上傳圖片（/api/files/），外部或被竄改的 src 一律不輸出
+      if (!src.startsWith("/api/files/")) return <Fragment key={key} />;
+      const alt = typeof node.attrs?.alt === "string" ? node.attrs.alt : "";
+      return <ContentImage key={key} src={src} alt={alt} />;
+    }
     case "horizontalRule":
       return <hr key={key} />;
     default:
