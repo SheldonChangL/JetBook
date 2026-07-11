@@ -4,6 +4,7 @@ import { getTranslations } from "next-intl/server";
 import { Home, Library, Trash2 } from "lucide-react";
 import { requireSession } from "@/lib/auth/current";
 import { isOrgAdmin } from "@/lib/authz/permission";
+import { isEmbeddingConfigured, isLlmConfigured } from "@/lib/llm";
 import { listAccessibleSpaces } from "@/lib/spaces/queries";
 import { AppShell } from "@/components/layout/app-shell";
 
@@ -39,6 +40,8 @@ export default async function AppLayout({ children }: { children: ReactNode }) {
     <AppShell
       user={{ name: user.name, email: user.email, isAdmin: isOrgAdmin(user) }}
       sidebar={sidebar}
+      llmConfigured={isLlmConfigured()}
+      embeddingConfigured={isEmbeddingConfigured()}
     >
       {children}
     </AppShell>
