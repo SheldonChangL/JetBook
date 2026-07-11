@@ -6,6 +6,7 @@ import { ReactNodeViewRenderer, type Extensions } from "@tiptap/react";
 import { lowlight } from "@/lib/content/lowlight";
 import { CodeBlockView } from "./code-block-view";
 import { SlashCommand } from "./slash-menu/slash-command";
+import { createImageExtension } from "./image/image-extension";
 
 /**
  * 程式碼區塊（D-04，F-EDIT-06）：以 CodeBlockLowlight 取代 StarterKit 內建 codeBlock，
@@ -41,7 +42,8 @@ const CodeBlock = CodeBlockLowlight.extend({
  * 粗斜刪除線/行內碼/hr 與 Markdown input rules。
  * D-03 加入：任務清單（TaskList/TaskItem，巢狀）與 slash 指令選單。
  * D-04 加入：程式碼區塊語法高亮（lowlight）+ 語言下拉 NodeView。
- * 進階區塊（表格、callout、圖片、附件、mention…）於後續 issue 各自加入。
+ * D-07 加入：圖片區塊（drop/貼上上傳 + 可編輯圖說）。
+ * 其餘進階區塊（表格、callout、附件、mention…）於後續 issue 各自加入。
  *
  * R1 降險：一律採用現成 TipTap extension，不自研核心編輯行為。
  */
@@ -54,6 +56,7 @@ export function buildExtensions(): Extensions {
     CodeBlock.configure({ lowlight }),
     TaskList,
     TaskItem.configure({ nested: true }), // F-EDIT-04：任務清單支援巢狀縮排
+    createImageExtension(), // D-07：圖片區塊與上傳整合
     SlashCommand,
   ];
 }

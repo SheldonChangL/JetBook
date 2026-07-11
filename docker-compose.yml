@@ -69,6 +69,35 @@ services:
     volumes:
       - pgdata:/var/lib/postgresql/data
 
+  # N-03 備份 sidecar：每小時 pg_dump -Fc（保留 48 份）＋每日晉升（保留 30 天）＋uploads rsync 鏡像。
+  # 以高頻邏輯備份達成 RPO ≤ 1h（小庫合理）；WAL 歸檔取捨與升級路徑見 docs/ops/backup-restore-runbook.md。
+  backup:
+    build: backup/
+    restart: always
+    env_file:
+      - path: .env
+        required: true
+    environment:
+      PGHOST: db
+      PGPORT: "5432"
+      PGUSER: ${POSTGRES_USER:-jetbook}
+      PGPASSWORD: ${POSTGRES_PASSWORD:?POSTGRES_PASSWORD 必須在 .env 設定}
+      PGDATABASE: ${POSTGRES_DB:-jetbook}
+      # 保留策略（可經 .env 覆寫）：小時備份份數、日備保留天數、cron 排程
+      HOURLY_KEEP: ${BACKUP_HOURLY_KEEP:-48}
+      DAILY_KEEP_DAYS: ${BACKUP_DAILY_KEEP_DAYS:-30}
+      CRON_SCHEDULE: ${BACKUP_CRON_SCHEDULE:-0 * * * *}
+    depends_on:
+      db:
+        condition: service_healthy
+    volumes:
+      - backups:/backups
+      # 附件來源唯讀掛載：備份不可寫壞正式資料
+      - uploads:/data/uploads:ro
+
 volumes:
   pgdata:
   uploads:
+  # 備份存放區。正式環境應改綁至「不同實體主機」的儲存（NFR-DATA-03）——
+  # 見 runbook「異機保存」段落；此處 named volume 為單機基準。
+  backups:
