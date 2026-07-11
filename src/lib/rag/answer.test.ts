@@ -1,14 +1,17 @@
 import { describe, expect, it } from "vitest";
 import type { ChatDelta, ChatParams, ChatResult, ChatUsage, LLMProvider } from "@/lib/llm";
 import type { Actor } from "@/lib/authz/permission";
+import { slugifyHeadingText } from "@/lib/content/heading-slug";
 import {
   ANSWER_MAX_TOKENS,
   SYSTEM_PROMPT,
   buildSources,
   buildUserPrompt,
+  headingAnchor,
   streamChatAnswer,
   type SseEvent,
 } from "./answer";
+import { HEADING_PATH_SEPARATOR } from "./chunker";
 import type { RetrievedChunk } from "./retriever";
 
 const actor: Actor = { id: "user-1", orgRole: "member" };
@@ -17,7 +20,7 @@ function chunk(overrides: Partial<RetrievedChunk> = {}): RetrievedChunk {
   return {
     pageId: "page-1",
     chunkIndex: 0,
-    headingPath: "安裝 > 需求",
+    headingPath: ["安裝", "需求"].join(HEADING_PATH_SEPARATOR),
     chunkText: "雷射系統需在 20±2°C 環境運作，並預熱 30 分鐘。",
     score: 0.5,
     title: "雷射操作手冊",
@@ -26,6 +29,12 @@ function chunk(overrides: Partial<RetrievedChunk> = {}): RetrievedChunk {
     pageSlug: "laser-manual",
     ...overrides,
   };
+}
+
+/** 由頁面 slug 與 headingPath 組出預期的來源連結（與實作同一 slug/編碼規則）。 */
+function expectedUrl(spaceSlug: string, pageSlug: string, headingPath: string): string {
+  const anchor = headingAnchor(headingPath);
+  return anchor ? `/s/${spaceSlug}/${pageSlug}#${encodeURIComponent(anchor)}` : `/s/${spaceSlug}/${pageSlug}`;
 }
 
 /** 記錄 chatStream 呼叫次數與參數的假 provider。 */
@@ -57,14 +66,26 @@ async function collect(gen: AsyncGenerator<SseEvent>): Promise<SseEvent[]> {
 }
 
 describe("buildSources", () => {
-  it("依順序編號並組出站內連結與摘要", () => {
+  it("依順序編號並組出帶錨點的站內連結與摘要", () => {
     const sources = buildSources([
       chunk({ title: "甲", spaceSlug: "s1", pageSlug: "p1" }),
       chunk({ pageId: "page-2", title: "乙", spaceSlug: "s2", pageSlug: "p2", chunkText: "乙內容" }),
     ]);
     expect(sources).toHaveLength(2);
-    expect(sources[0]).toMatchObject({ n: 1, title: "甲", url: "/s/s1/p1", pageId: "page-1" });
-    expect(sources[1]).toMatchObject({ n: 2, title: "乙", url: "/s/s2/p2", pageId: "page-2" });
+    // headingPath 末段 = 「需求」→ 錨點 slug（與 G-05 閱讀頁標題 id 同規則）。
+    expect(sources[0]).toMatchObject({
+      n: 1,
+      title: "甲",
+      url: expectedUrl("s1", "p1", chunk().headingPath),
+      pageId: "page-1",
+    });
+    expect(sources[0]?.url).toContain(`#${encodeURIComponent("需求")}`);
+    expect(sources[1]).toMatchObject({
+      n: 2,
+      title: "乙",
+      url: expectedUrl("s2", "p2", chunk().headingPath),
+      pageId: "page-2",
+    });
     expect(sources[0]?.snippet).toContain("雷射系統");
   });
 
@@ -73,6 +94,39 @@ describe("buildSources", () => {
     const [source] = buildSources([chunk({ chunkText: long })]);
     expect(source?.snippet.length).toBeLessThanOrEqual(161);
     expect(source?.snippet.endsWith("…")).toBe(true);
+  });
+});
+
+describe("headingAnchor / buildSources 引用跳轉錨點（I-04，F-AI-05）", () => {
+  it("取最深層 heading 並以 slugifyHeadingText 產生錨點（與 G-05 閱讀頁 id 同規則）", () => {
+    const headingPath = ["第一章 背景", "1.2 系統需求", "溫控條件"].join(HEADING_PATH_SEPARATOR);
+    expect(headingAnchor(headingPath)).toBe(slugifyHeadingText("溫控條件"));
+  });
+
+  it("單層 headingPath 直接取該標題", () => {
+    expect(headingAnchor("光軸校準")).toBe(slugifyHeadingText("光軸校準"));
+  });
+
+  it("headingPath 為空 → 無錨點，url 退化為頁面頂部", () => {
+    expect(headingAnchor("")).toBeNull();
+    const [source] = buildSources([chunk({ headingPath: "", spaceSlug: "ops", pageSlug: "top" })]);
+    expect(source?.url).toBe("/s/ops/top");
+  });
+
+  it("忽略空白／空段，取最後一個有效層級", () => {
+    const headingPath = ["  ", "安裝流程", "   "].join(HEADING_PATH_SEPARATOR);
+    expect(headingAnchor(headingPath)).toBe(slugifyHeadingText("安裝流程"));
+  });
+
+  it("錨點於 url 中經 encodeURIComponent 編碼（CJC 標題可解回原 slug）", () => {
+    const [source] = buildSources([
+      chunk({ headingPath: "散熱系統 › 風道設計", spaceSlug: "hw", pageSlug: "cooling" }),
+    ]);
+    const slug = slugifyHeadingText("風道設計");
+    expect(source?.url).toBe(`/s/hw/cooling#${encodeURIComponent(slug)}`);
+    // AnchorHighlight（G-05）以 decodeURIComponent 反解 hash → 應等於 slug（heading id）。
+    const hash = new URL(`http://x${source!.url}`).hash.slice(1);
+    expect(decodeURIComponent(hash)).toBe(slug);
   });
 });
 

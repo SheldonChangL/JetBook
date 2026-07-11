@@ -14,7 +14,7 @@ export interface AiSource {
   title: string;
   headingPath: string;
   snippet: string;
-  /** 站內相對連結（/s/<spaceSlug>/<pageSlug>）。 */
+  /** 站內相對連結（`/s/<spaceSlug>/<pageSlug>`，chunk 有 heading 時附 `#<slug>` 錨點，I-04 跳轉用）。 */
   url: string;
 }
 

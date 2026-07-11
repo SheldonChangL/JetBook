@@ -23,6 +23,8 @@ export interface Chunk {
 
 export const TARGET_TOKENS = 500;
 export const MAX_TOKENS = 800;
+/** heading 階層路徑分隔符（headingPath 序列化用；跳轉錨點解析須以此反解）。 */
+export const HEADING_PATH_SEPARATOR = " › ";
 const MIN_MERGE_TOKENS = 300;
 /** 重疊上限：target 的 15% */
 const MAX_OVERLAP_TOKENS = Math.floor(TARGET_TOKENS * 0.15);
@@ -219,7 +221,7 @@ export function chunkMarkdown(pageTitle: string, markdown: string): Chunk[] {
 
   for (const section of sections) {
     const groups = packBlocks(section.blocks);
-    const headingPath = section.headingPath.join(" › ");
+    const headingPath = section.headingPath.join(HEADING_PATH_SEPARATOR);
     let previousParts: string[] | null = null;
 
     for (const group of groups) {

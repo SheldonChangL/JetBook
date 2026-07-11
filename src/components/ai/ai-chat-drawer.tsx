@@ -6,6 +6,7 @@ import {
   useRef,
   type KeyboardEvent as ReactKeyboardEvent,
 } from "react";
+import { useRouter } from "next/navigation";
 import { useTranslations } from "next-intl";
 import { AlertTriangle, ArrowUp, Sparkles, Square } from "lucide-react";
 import { Drawer, DrawerContent } from "@/components/ui/drawer";
@@ -33,12 +34,23 @@ export interface AiChatDrawerProps {
 
 export function AiChatDrawer({ open, onOpenChange }: AiChatDrawerProps) {
   const t = useTranslations("ai");
+  const router = useRouter();
   const chat = useAiChat({ genericError: t("failed") });
   const { messages, status, error, isStreaming, send, stop, retry } = chat;
 
   const inputRef = useRef<HTMLTextAreaElement>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
   const composingRef = useRef(false);
+
+  // 引用跳轉（I-04，F-AI-05）：收合抽屜後導向來源頁錨點；閱讀頁載入時捲動＋高亮（G-05）。
+  const closeDrawer = useCallback(() => onOpenChange(false), [onOpenChange]);
+  const navigateToSource = useCallback(
+    (url: string) => {
+      onOpenChange(false);
+      router.push(url);
+    },
+    [onOpenChange, router],
+  );
 
   // 新內容時捲到底（串流逐字亦持續貼底）。
   useEffect(() => {
@@ -116,6 +128,8 @@ export function AiChatDrawer({ open, onOpenChange }: AiChatDrawerProps) {
                       streaming={isStreaming && m.id === lastAssistantId}
                       sourcesLabel={t("sourcesLabel")}
                       citeLabel={(n) => t("citationLabel", { n })}
+                      onNavigateToSource={navigateToSource}
+                      onCloseDrawer={closeDrawer}
                     />
                   ),
                 )}
@@ -221,25 +235,30 @@ function AssistantMessage({
   streaming,
   sourcesLabel,
   citeLabel,
+  onNavigateToSource,
+  onCloseDrawer,
 }: {
   message: AiMessage;
   streaming: boolean;
   sourcesLabel: string;
   citeLabel: (n: number) => string;
+  /** 點內文引用 [n]：導向對應來源頁錨點（I-04，F-AI-05）。 */
+  onNavigateToSource: (url: string) => void;
+  /** 點來源卡片（<Link> 導頁）前收合抽屜。 */
+  onCloseDrawer: () => void;
 }) {
-  const rootRef = useRef<HTMLDivElement>(null);
-
-  // 點內文引用 [n] → 捲動至對應來源卡片並短暫高亮。
-  const onCite = useCallback((n: number) => {
-    const card = rootRef.current?.querySelector<HTMLElement>(`[data-cite="${n}"]`);
-    if (!card) return;
-    card.scrollIntoView({ behavior: "smooth", block: "nearest", inline: "nearest" });
-    card.classList.add("ring-2", "ring-ai");
-    window.setTimeout(() => card.classList.remove("ring-2", "ring-ai"), 1200);
-  }, []);
+  // 點內文引用 [n] → 導向對應來源頁的錨點（收合抽屜由 onNavigateToSource 處理）。
+  // 串流中 sources 尚未送達時（找不到對應 n）不動作，待來源就緒再跳轉。
+  const onCite = useCallback(
+    (n: number) => {
+      const url = message.sources.find((s) => s.n === n)?.url;
+      if (url) onNavigateToSource(url);
+    },
+    [message.sources, onNavigateToSource],
+  );
 
   return (
-    <div ref={rootRef} className="flex flex-col gap-2">
+    <div className="flex flex-col gap-2">
       <div className="text-body-ui leading-6 text-fg">
         <AnswerContent text={message.text} onCite={onCite} citeLabel={citeLabel} />
         {streaming ? (
@@ -249,7 +268,7 @@ function AssistantMessage({
           />
         ) : null}
       </div>
-      <SourceCards label={sourcesLabel} sources={message.sources} />
+      <SourceCards label={sourcesLabel} sources={message.sources} onSelect={onCloseDrawer} />
     </div>
   );
 }
