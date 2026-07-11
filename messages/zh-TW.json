@@ -459,7 +459,13 @@
     "emptyDesc": "建立第一個頁面，開始累積團隊知識。",
     "createFirst": "建立第一個頁面",
     "actionError": "操作失敗，請稍後再試",
-    "dragHandle": "拖曳排序"
+    "dragHandle": "拖曳排序",
+    "spaceMenu": "空間動作",
+    "importMarkdown": "匯入 Markdown",
+    "importSuccess": "已匯入 Markdown 頁面",
+    "importError": "匯入失敗，請確認檔案格式後再試",
+    "importTooLarge": "檔案過大，無法匯入（上限 2 MB）",
+    "importEmpty": "檔案是空的，無內容可匯入"
   },
   "spaceHome": {
     "pagesHeading": "頁面",
