@@ -1,5 +1,12 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import type { ChatDelta, ChatParams, ChatResult, ChatUsage, LLMProvider } from "@/lib/llm";
+import type {
+  ChatDelta,
+  ChatParams,
+  ChatResult,
+  ChatStreamResult,
+  ChatUsage,
+  LLMProvider,
+} from "@/lib/llm";
 
 /**
  * Route 層測試（薄殼 + 真實 streamAssist 編排）：只 mock 邊界
@@ -42,6 +49,16 @@ vi.mock("@/lib/rate-limit", () => ({
   aiRateLimiter: { check: (...args: unknown[]) => rateCheck(...args) },
 }));
 
+// audit（server-only + DB）：只需 ipFromHeaders，不觸 DB。
+vi.mock("@/lib/audit", () => ({
+  ipFromHeaders: () => "10.0.0.2",
+}));
+
+const recordAiUsage = vi.fn();
+vi.mock("@/lib/ai/usage", () => ({
+  recordAiUsage: (...args: unknown[]) => recordAiUsage(...args),
+}));
+
 import { POST } from "./route";
 
 class FakeProvider implements LLMProvider {
@@ -51,12 +68,13 @@ class FakeProvider implements LLMProvider {
   constructor(
     private deltas: string[] = ["結果"],
     private usage: ChatUsage = { inputTokens: 10, outputTokens: 3 },
+    private modelId = "fake-model",
   ) {}
-  async *chatStream(params: ChatParams): AsyncGenerator<ChatDelta, ChatUsage> {
+  async *chatStream(params: ChatParams): AsyncGenerator<ChatDelta, ChatStreamResult> {
     this.lastParams = params;
     this.chatStreamCalls += 1;
     for (const text of this.deltas) yield { type: "text", text };
-    return this.usage;
+    return { usage: this.usage, model: this.modelId };
   }
   async chat(): Promise<ChatResult> {
     throw new Error("未使用");
@@ -155,7 +173,7 @@ describe("POST /api/ai/assist", () => {
   });
 
   it("成功：SSE delta → done(usage)，以 light tier 呼叫", async () => {
-    const provider = new FakeProvider(["更", "正式"], { inputTokens: 22, outputTokens: 5 });
+    const provider = new FakeProvider(["更", "正式"], { inputTokens: 22, outputTokens: 5 }, "light-x");
     getLlmProvider.mockReturnValue(provider);
 
     const res = await POST(post({ mode: "formal", text: "把這句變正式", pageId: PAGE_ID }));
@@ -173,5 +191,25 @@ describe("POST /api/ai/assist", () => {
     expect(provider.lastParams?.tier).toBe("light");
     // rate limit key 以使用者 id 命名空間隔離
     expect(rateCheck).toHaveBeenCalledWith("assist:user-1");
+
+    // 串流結束後記一筆 ai.query 用量（mode=assist、model/tokens/latency，I-06）。
+    await vi.waitFor(() => expect(recordAiUsage).toHaveBeenCalledTimes(1));
+    const arg = recordAiUsage.mock.calls[0]![0] as Record<string, unknown>;
+    expect(arg).toMatchObject({
+      actorId: "user-1",
+      model: "light-x",
+      inputTokens: 22,
+      outputTokens: 5,
+      mode: "assist",
+      ip: "10.0.0.2",
+    });
+    expect(typeof arg.latencyMs).toBe("number");
+  });
+
+  it("無編輯權限（403）：不記 ai.query 用量", async () => {
+    canEditPage.mockResolvedValue(false);
+    getLlmProvider.mockReturnValue(new FakeProvider());
+    await POST(post({ mode: "formal", text: "hi", pageId: PAGE_ID }));
+    expect(recordAiUsage).not.toHaveBeenCalled();
   });
 });

@@ -44,6 +44,15 @@ export type AssistSseEvent =
   | { event: "delta"; data: { text: string } }
   | { event: "done"; data: { usage: ChatUsage } };
 
+/**
+ * streamAssist 產生器結束時的回傳值（TReturn）：本次用量與 model，
+ * 供 route handler 記錄 `ai.query` 用量（I-06）。model 不進 SSE 幀（不外洩 client）。
+ */
+export interface AssistSummary {
+  usage: ChatUsage;
+  model: string;
+}
+
 export interface StreamAssistOptions {
   mode: AssistMode;
   /** 使用者選取的原文（route 已驗長度與非空）。 */
@@ -57,11 +66,11 @@ export interface StreamAssistOptions {
 
 /**
  * 編排 SSE 事件序：(delta)* → done(usage)。逐 token 串流，generator 結束時
- * return 值即本次用量（供 done 事件與用量記錄）。
+ * return 值帶回本次用量與 model（供 done 事件與 I-06 用量記錄）。
  */
 export async function* streamAssist(
   opts: StreamAssistOptions,
-): AsyncGenerator<AssistSseEvent> {
+): AsyncGenerator<AssistSseEvent, AssistSummary> {
   const stream = opts.provider.chatStream({
     system: buildAssistSystemPrompt(opts.mode),
     messages: [{ role: "user", content: opts.text.trim() }],
@@ -71,13 +80,16 @@ export async function* streamAssist(
   });
 
   let usage: ChatUsage = { inputTokens: 0, outputTokens: 0 };
+  let model = opts.provider.name;
   for (;;) {
     const step = await stream.next();
     if (step.done) {
-      usage = step.value;
+      usage = step.value.usage;
+      model = step.value.model;
       break;
     }
     yield { event: "delta", data: { text: step.value.text } };
   }
   yield { event: "done", data: { usage } };
+  return { usage, model };
 }
