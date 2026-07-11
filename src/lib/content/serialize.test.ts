@@ -247,6 +247,36 @@ describe("docToMarkdown/PlainText 步驟節點（D-12，F-EDIT-13）", () => {
   });
 });
 
+describe("docToMarkdown/PlainText Mermaid 節點（D-13，F-EDIT-14）", () => {
+  const mermaidDoc: ProseMirrorDoc = {
+    type: "doc",
+    content: [
+      {
+        type: "mermaid",
+        attrs: { source: "graph TD\n  設計 --> 製造" },
+      },
+    ],
+  };
+
+  it("序列化為 ```mermaid fenced 區塊（保留原始碼供匯出/RAG）", () => {
+    const md = docToMarkdown(mermaidDoc);
+    expect(md).toContain("```mermaid\ngraph TD\n  設計 --> 製造\n```");
+  });
+
+  it("純文字抽取涵蓋圖表原始碼（供全文索引/RAG）", () => {
+    const text = docToPlainText(mermaidDoc);
+    expect(text).toContain("graph TD");
+    expect(text).toContain("設計 --> 製造");
+    expect(text).not.toContain("```");
+  });
+
+  it("source 缺失（資料異常）不炸，序列化為空 fenced 區塊", () => {
+    const empty: ProseMirrorDoc = { type: "doc", content: [{ type: "mermaid" }] };
+    expect(docToMarkdown(empty)).toContain("```mermaid\n\n```");
+    expect(docToPlainText(empty)).toBe("");
+  });
+});
+
 describe("docToPlainText", () => {
   it("抽出全部文字供全文索引（去除 markdown 標記）", () => {
     const text = docToPlainText(doc);
