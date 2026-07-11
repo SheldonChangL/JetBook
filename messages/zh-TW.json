@@ -301,7 +301,20 @@
   },
   "search": {
     "title": "搜尋",
-    "noResults": "找不到符合的結果"
+    "searchPlaceholder": "搜尋…",
+    "noResults": "找不到符合的結果",
+    "filters": {
+      "spaceLabel": "空間",
+      "allSpaces": "全部空間",
+      "updatedLabel": "更新時間",
+      "updated7": "最近 7 天",
+      "updated30": "最近 30 天",
+      "updatedAll": "全部",
+      "authorLabel": "作者",
+      "allAuthors": "全部作者",
+      "authorSearchPlaceholder": "搜尋作者…",
+      "authorEmpty": "找不到作者"
+    }
   },
   "commandPalette": {
     "label": "全域搜尋",
