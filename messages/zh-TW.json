@@ -182,6 +182,8 @@
     "empty": "目前沒有通知",
     "commentReply": "{actor} 回覆了你在「{title}」的討論串",
     "commentReplyNoTitle": "{actor} 回覆了你的討論串",
+    "pageMention": "{actor} 在「{title}」提及了你",
+    "pageMentionNoTitle": "{actor} 在一個頁面提及了你",
     "genericEvent": "你有一則新通知",
     "unreadBadgeMax": "9+"
   },
@@ -431,6 +433,12 @@
       "retry": "重試",
       "captionPlaceholder": "新增圖說（同時作為替代文字）…",
       "captionLabel": "圖片說明"
+    },
+    "mention": {
+      "membersLabel": "提及成員",
+      "pagesLabel": "連結頁面",
+      "membersEmpty": "找不到成員",
+      "pagesEmpty": "找不到頁面"
     },
     "slash": {
       "label": "區塊選單",

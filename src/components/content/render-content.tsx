@@ -17,9 +17,21 @@ import { MermaidDiagram } from "./mermaid-diagram";
  * 與編輯器 schema 對應，套用 .prose-editor 樣式，與編輯畫面視覺一致。
  * 進階區塊（表格/callout/圖片…）隨 D-03~D-14 擴充對應 case。
  * 標題加穩定 id（文字 slug + 去重）與 hover 複製錨點鈕（G-05）。
+ *
+ * D-11：頁面連結（pageLink）以 attrs.id（page id）為錨，改名不失效——由呼叫端（RSC）
+ * 先以 `resolvePageLinkTargets` 解析出「現行 slug/title」的 Map，經 `links` prop 注入；
+ * 未解析到（不可讀／已刪除）者退回作者插入時的 label 快照，且不連結。
  */
 
 type Slugger = (text: string) => string;
+
+/** 頁面連結解析結果：pageId → 現行連結目標（改名自動更新，F-EDIT-12）。 */
+export type PageLinkMap = ReadonlyMap<string, { href: string; title: string }>;
+
+interface RenderCtx {
+  slug: Slugger;
+  links: PageLinkMap | undefined;
+}
 
 /**
  * 由首列儲存格的 colwidth 屬性推導 <colgroup>（D-05）：
@@ -86,43 +98,79 @@ function renderMarks(text: string, marks: ProseMirrorNode["marks"], key: number)
   return <Fragment key={key}>{node}</Fragment>;
 }
 
-function renderChildren(nodes: ProseMirrorNode[] | undefined, slug: Slugger): ReactNode {
-  return (nodes ?? []).map((node, i) => renderNode(node, i, slug));
+/** D-11：@mention chip（`@姓名`，label 快照；非連結）。 */
+const MENTION_SIGIL = "@";
+
+function renderMention(node: ProseMirrorNode, key: number): ReactNode {
+  const label = typeof node.attrs?.label === "string" ? node.attrs.label : "";
+  // `@` 為 mention 語法符號（非可翻譯 UI 文案）；於 JS 端組字串再輸出，避免命中 i18n JSX 規則。
+  const display = MENTION_SIGIL + label;
+  return (
+    <span key={key} className="jb-mention" data-type="mention">
+      {display}
+    </span>
+  );
 }
 
-function renderInline(nodes: ProseMirrorNode[] | undefined): ReactNode {
+/** D-11：頁面連結。解析到現行目標→連結（現行標題）；否則以 label 快照顯示為非連結。 */
+function renderPageLink(node: ProseMirrorNode, key: number, links: PageLinkMap | undefined): ReactNode {
+  const pageId = typeof node.attrs?.id === "string" ? node.attrs.id : "";
+  const label = typeof node.attrs?.label === "string" ? node.attrs.label : "";
+  const resolved = pageId ? links?.get(pageId) : undefined;
+  if (resolved) {
+    return (
+      <a key={key} className="jb-page-link" data-type="pageLink" href={resolved.href}>
+        {resolved.title}
+      </a>
+    );
+  }
+  // 不可讀或已刪除：退回 label 快照、不連結（已刪頁 chip 由 C-13 精修）。
+  return (
+    <span key={key} className="jb-page-link jb-page-link--unresolved" data-type="pageLink">
+      {label}
+    </span>
+  );
+}
+
+function renderChildren(nodes: ProseMirrorNode[] | undefined, ctx: RenderCtx): ReactNode {
+  return (nodes ?? []).map((node, i) => renderNode(node, i, ctx));
+}
+
+function renderInline(nodes: ProseMirrorNode[] | undefined, ctx: RenderCtx): ReactNode {
   return (nodes ?? []).map((node, i) => {
     if (node.type === "text") return renderMarks(node.text ?? "", node.marks, i);
     if (node.type === "hardBreak") return <br key={i} />;
-    return <Fragment key={i}>{renderInline(node.content)}</Fragment>;
+    if (node.type === "mention") return renderMention(node, i);
+    if (node.type === "pageLink") return renderPageLink(node, i, ctx.links);
+    return <Fragment key={i}>{renderInline(node.content, ctx)}</Fragment>;
   });
 }
 
-function renderNode(node: ProseMirrorNode, key: number, slug: Slugger): ReactNode {
+function renderNode(node: ProseMirrorNode, key: number, ctx: RenderCtx): ReactNode {
   switch (node.type) {
     case "paragraph":
-      return <p key={key}>{renderInline(node.content)}</p>;
+      return <p key={key}>{renderInline(node.content, ctx)}</p>;
     case "heading": {
       const level = Math.min(Math.max(Number(node.attrs?.level ?? 1), 1), 3);
       const Tag = (`h${level}` as "h1" | "h2" | "h3");
-      const id = slug(headingNodeText(node));
+      const id = ctx.slug(headingNodeText(node));
       return (
         <Tag key={key} id={id} className="group relative scroll-mt-20">
-          {renderInline(node.content)}
+          {renderInline(node.content, ctx)}
           <HeadingAnchor id={id} />
         </Tag>
       );
     }
     case "bulletList":
-      return <ul key={key}>{renderChildren(node.content, slug)}</ul>;
+      return <ul key={key}>{renderChildren(node.content, ctx)}</ul>;
     case "orderedList":
-      return <ol key={key}>{renderChildren(node.content, slug)}</ol>;
+      return <ol key={key}>{renderChildren(node.content, ctx)}</ol>;
     case "listItem":
-      return <li key={key}>{renderChildren(node.content, slug)}</li>;
+      return <li key={key}>{renderChildren(node.content, ctx)}</li>;
     case "taskList":
       return (
         <ul key={key} data-type="taskList">
-          {renderChildren(node.content, slug)}
+          {renderChildren(node.content, ctx)}
         </ul>
       );
     case "taskItem":
@@ -131,11 +179,11 @@ function renderNode(node: ProseMirrorNode, key: number, slug: Slugger): ReactNod
           <label>
             <input type="checkbox" defaultChecked={Boolean(node.attrs?.checked)} disabled />
           </label>
-          <div>{renderChildren(node.content, slug)}</div>
+          <div>{renderChildren(node.content, ctx)}</div>
         </li>
       );
     case "blockquote":
-      return <blockquote key={key}>{renderChildren(node.content, slug)}</blockquote>;
+      return <blockquote key={key}>{renderChildren(node.content, ctx)}</blockquote>;
     case "callout": {
       // D-06：與編輯端共用 .jb-callout 樣式（左緣色條 + 淡底，依 data-kind 取語意 token）。
       const kind = normalizeCalloutKind(node.attrs?.kind);
@@ -145,7 +193,7 @@ function renderNode(node: ProseMirrorNode, key: number, slug: Slugger): ReactNod
           <span className="jb-callout__icon" aria-hidden>
             <Icon />
           </span>
-          <div className="jb-callout__body">{renderChildren(node.content, slug)}</div>
+          <div className="jb-callout__body">{renderChildren(node.content, ctx)}</div>
         </div>
       );
     }
@@ -175,22 +223,22 @@ function renderNode(node: ProseMirrorNode, key: number, slug: Slugger): ReactNod
         <div key={key} className="tableWrapper overflow-x-auto">
           <table>
             {renderColgroup(node, 0)}
-            <tbody>{renderChildren(node.content, slug)}</tbody>
+            <tbody>{renderChildren(node.content, ctx)}</tbody>
           </table>
         </div>
       );
     case "tableRow":
-      return <tr key={key}>{renderChildren(node.content, slug)}</tr>;
+      return <tr key={key}>{renderChildren(node.content, ctx)}</tr>;
     case "tableHeader":
       return (
         <th key={key} {...cellSpanProps(node)}>
-          {renderChildren(node.content, slug)}
+          {renderChildren(node.content, ctx)}
         </th>
       );
     case "tableCell":
       return (
         <td key={key} {...cellSpanProps(node)}>
-          {renderChildren(node.content, slug)}
+          {renderChildren(node.content, ctx)}
         </td>
       );
     case "attachment": {
@@ -227,7 +275,7 @@ function renderNode(node: ProseMirrorNode, key: number, slug: Slugger): ReactNod
         .filter((c) => c.type === "tabItem")
         .map((item) => ({
           label: typeof item.attrs?.label === "string" ? item.attrs.label : "",
-          content: renderChildren(item.content, slug),
+          content: renderChildren(item.content, ctx),
         }));
       if (!tabs.length) return <Fragment key={key} />;
       return <ContentTabs key={key} tabs={tabs} />;
@@ -239,7 +287,7 @@ function renderNode(node: ProseMirrorNode, key: number, slug: Slugger): ReactNod
       return (
         <details key={key} className="jb-details" open={open}>
           <summary className="jb-details__summary-reader">{summary}</summary>
-          <div className="jb-details__body">{renderChildren(node.content, slug)}</div>
+          <div className="jb-details__body">{renderChildren(node.content, ctx)}</div>
         </details>
       );
     }
@@ -251,19 +299,32 @@ function renderNode(node: ProseMirrorNode, key: number, slug: Slugger): ReactNod
         <div key={key} className="jb-stepper">
           {steps.map((step, i) => (
             <div key={i} className="jb-step">
-              <div className="jb-step__body">{renderChildren(step.content, slug)}</div>
+              <div className="jb-step__body">{renderChildren(step.content, ctx)}</div>
             </div>
           ))}
         </div>
       );
     }
+    // D-11：mention / pageLink 為 inline atom，正常出現在段落等 inline 內文（renderInline 處理）；
+    // 若因資料異常出現在區塊層，於此保底渲染，避免落入 default 丟失內容。
+    case "mention":
+      return renderMention(node, key);
+    case "pageLink":
+      return renderPageLink(node, key, ctx.links);
     default:
-      return <Fragment key={key}>{renderChildren(node.content, slug)}</Fragment>;
+      return <Fragment key={key}>{renderChildren(node.content, ctx)}</Fragment>;
   }
 }
 
-export function RenderContent({ doc }: { doc: ProseMirrorDoc | null }) {
+export function RenderContent({
+  doc,
+  links,
+}: {
+  doc: ProseMirrorDoc | null;
+  /** D-11：頁面連結解析 Map（pageId → 現行 href/title）。未提供時連結退回 label 快照。 */
+  links?: PageLinkMap;
+}) {
   if (!doc?.content?.length) return null;
-  const slug = createHeadingSlugger();
-  return <div className="prose-editor max-w-none">{renderChildren(doc.content, slug)}</div>;
+  const ctx: RenderCtx = { slug: createHeadingSlugger(), links };
+  return <div className="prose-editor max-w-none">{renderChildren(doc.content, ctx)}</div>;
 }

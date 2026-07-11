@@ -15,6 +15,7 @@ import { Details } from "./details/details-extension";
 import { Stepper, Step } from "./stepper/stepper-extension";
 import { Mermaid } from "./mermaid/mermaid-extension";
 import { MarkdownPaste } from "./markdown-paste";
+import { createMemberMention, createPageLink } from "./mention/mention-extension";
 
 /**
  * 程式碼區塊（D-04，F-EDIT-06）：以 CodeBlockLowlight 取代 StarterKit 內建 codeBlock，
@@ -57,11 +58,13 @@ const CodeBlock = CodeBlockLowlight.extend({
  * D-10 加入：Markdown 貼上（多行含 md 特徵 → 轉區塊插入，否則預設）。
  * D-12 加入：分頁（tabs/tabItem）、摺疊（details）、步驟（stepper/step）容器區塊。
  * D-13 加入：Mermaid 圖表區塊（atom 節點，即時預覽、client 端渲染、語法錯誤不崩頁）。
- * 其餘進階區塊（mention…）於後續 issue 各自加入。
+ * D-11 加入：@mention（成員，char `@`）與頁面連結（char `[[`）兩個 inline atom 節點。
  *
  * R1 降險：一律採用現成 TipTap extension，不自研核心編輯行為。
+ *
+ * @param spaceId 目前所在 Space；@mention／頁面連結 suggestion 的候選查詢以此為範圍（權限在 lib 層過濾）。
  */
-export function buildExtensions(): Extensions {
+export function buildExtensions({ spaceId }: { spaceId: string }): Extensions {
   return [
     StarterKit.configure({
       heading: { levels: [1, 2, 3] }, // 統一 H1–H3（C11）
@@ -85,6 +88,8 @@ export function buildExtensions(): Extensions {
     Stepper,
     Step,
     Mermaid, // D-13：Mermaid 圖表區塊（即時預覽 + 錯誤容錯）
+    createMemberMention(spaceId), // D-11：@成員提及（char `@`）
+    createPageLink(spaceId), // D-11：頁面連結（char `[[`，改名不失效）
     MarkdownPaste, // D-10：Markdown 貼上轉區塊
     SlashCommand,
   ];

@@ -1,7 +1,8 @@
 import "server-only";
-import { and, desc, eq, isNull, sql } from "drizzle-orm";
+import { and, desc, eq, inArray, isNull, sql } from "drizzle-orm";
 import { db } from "@/lib/db";
-import { comments, notifications, pages, spaces } from "@/lib/db/schema";
+import { comments, notifications, pages, spaces, users } from "@/lib/db/schema";
+import { can } from "@/lib/authz/permission";
 import { logger } from "@/lib/logger";
 
 /**
@@ -15,7 +16,7 @@ import { logger } from "@/lib/logger";
  */
 
 /** 已知通知種類。新增事件時擴充此聯集並在 UI 對應顯示文案。 */
-export const NOTIFICATION_TYPES = ["comment_reply"] as const;
+export const NOTIFICATION_TYPES = ["comment_reply", "page_mention"] as const;
 export type NotificationType = (typeof NOTIFICATION_TYPES)[number];
 
 /** 通知 payload：跨 server→client 邊界的顯示與跳轉脈絡（至少含 url）。 */
@@ -141,6 +142,63 @@ export async function notifyCommentReply(input: {
     });
   } catch (error) {
     logger.warn({ error, topLevelCommentId: input.topLevelCommentId }, "notifyCommentReply failed");
+  }
+}
+
+/**
+ * 頁面 @mention 事件掛點（D-11，K-02）：通知本次「新增被提及」的成員。
+ * - `mentionedUserIds` 由 savePage 薄殼以新舊內容 diff 得出（只含新增者，不重複洗版）。
+ * - 略過：提及者本人、帳號已停用、以及對該頁「無讀取權」者（`can` 判斷，架構鐵律 #1；
+ *   避免通知洩漏無權者可見一個他讀不到的頁面）。
+ * - 內部 try/catch 包覆全部查詢：任何失敗都不得中斷存檔主流程（比照 audit / notifyCommentReply）。
+ */
+export async function notifyPageMention(input: {
+  pageId: string;
+  actorId: string;
+  actorName: string;
+  mentionedUserIds: string[];
+}): Promise<void> {
+  try {
+    const targetIds = [...new Set(input.mentionedUserIds)].filter(
+      (id) => id && id !== input.actorId,
+    );
+    if (targetIds.length === 0) return;
+
+    const [page] = await db
+      .select({
+        title: pages.title,
+        slug: pages.slug,
+        spaceId: pages.spaceId,
+        spaceSlug: spaces.slug,
+        deletedAt: pages.deletedAt,
+      })
+      .from(pages)
+      .innerJoin(spaces, eq(pages.spaceId, spaces.id))
+      .where(eq(pages.id, input.pageId))
+      .limit(1);
+    if (!page || page.deletedAt) return;
+
+    // 只取在職候選；逐一以 can(page.read) 驗證讀取權（預設拒絕）。
+    const candidates = await db
+      .select({ id: users.id, orgRole: users.orgRole })
+      .from(users)
+      .where(and(inArray(users.id, targetIds), eq(users.isActive, true)));
+
+    const url = `/s/${page.spaceSlug}/${page.slug}`;
+    for (const candidate of candidates) {
+      const allowed = await can(candidate, "page.read", {
+        type: "page",
+        spaceId: page.spaceId,
+      });
+      if (!allowed) continue;
+      await notify(candidate.id, "page_mention", {
+        url,
+        actorName: input.actorName,
+        pageTitle: page.title,
+      });
+    }
+  } catch (error) {
+    logger.warn({ error, pageId: input.pageId }, "notifyPageMention failed");
   }
 }
 
