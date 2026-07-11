@@ -55,8 +55,12 @@ export function SelectContent({
 export function SelectItem({
   className,
   children,
+  description,
   ...props
-}: ComponentProps<typeof SelectPrimitive.Item>) {
+}: ComponentProps<typeof SelectPrimitive.Item> & {
+  /** 選項下方輔助說明（僅顯示於下拉，不進觸發器；如角色四級說明） */
+  description?: string;
+}) {
   return (
     <SelectPrimitive.Item
       className={cn(
@@ -65,9 +69,12 @@ export function SelectItem({
       )}
       {...props}
     >
-      <SelectPrimitive.ItemText>{children}</SelectPrimitive.ItemText>
+      <span className="flex min-w-0 flex-col">
+        <SelectPrimitive.ItemText>{children}</SelectPrimitive.ItemText>
+        {description ? <span className="text-caption text-fg-tertiary">{description}</span> : null}
+      </span>
       <SelectPrimitive.ItemIndicator>
-        <Check aria-hidden className="size-4 text-primary" />
+        <Check aria-hidden className="size-4 shrink-0 text-primary" />
       </SelectPrimitive.ItemIndicator>
     </SelectPrimitive.Item>
   );
