@@ -269,6 +269,13 @@
       "captionPlaceholder": "新增圖說（同時作為替代文字）…",
       "captionLabel": "圖片說明"
     },
+    "attachment": {
+      "uploadError": "附件上傳失敗，請再試一次",
+      "errorTooLarge": "附件超過大小上限",
+      "errorType": "不支援的檔案類型",
+      "errorForbidden": "沒有上傳附件的權限",
+      "retry": "重試"
+    },
     "slash": {
       "label": "區塊選單",
       "empty": "沒有符合的區塊",
@@ -287,8 +294,16 @@
         "taskList": { "label": "任務清單", "desc": "可勾選的待辦事項" },
         "blockquote": { "label": "引用", "desc": "標示引述內容" },
         "divider": { "label": "分隔線", "desc": "以水平線分隔內容" },
-        "codeBlock": { "label": "程式碼區塊", "desc": "等寬字型的程式碼片段" }
+        "codeBlock": { "label": "程式碼區塊", "desc": "等寬字型的程式碼片段" },
+        "attachment": { "label": "檔案", "desc": "上傳並插入附件卡片" }
       }
+    }
+  },
+  "content": {
+    "attachment": {
+      "download": "下載",
+      "downloadAria": "下載附件 {fileName}",
+      "unnamed": "未命名檔案"
     }
   },
   "reading": {

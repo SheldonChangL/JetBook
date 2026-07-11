@@ -4,7 +4,7 @@ import type { ProseMirrorDoc, ProseMirrorNode } from "./types";
  * TipTap JSON → Markdown 與純文字的衍生轉換（架構鐵律 #5）。
  * canonical 是 JSON；此處只做「單向」衍生（匯出 / RAG chunking / 全文索引）。
  * 支援節點：段落、heading(1-3)、清單、任務清單、程式碼區塊、引用、
- *          callout、表格、圖片、水平線；行內：粗/斜/刪除線/行內碼/連結。
+ *          callout、表格、圖片、附件、水平線；行內：粗/斜/刪除線/行內碼/連結。
  */
 
 function escapeText(text: string): string {
@@ -105,6 +105,11 @@ function serializeBlock(node: ProseMirrorNode): string {
       const src = (node.attrs?.src as string) ?? "";
       return `![${alt}](${src})`;
     }
+    case "attachment": {
+      const fileName = (node.attrs?.fileName as string) ?? "";
+      const id = (node.attrs?.attachmentId as string) ?? "";
+      return `[${fileName}](/api/files/${id})`;
+    }
     case "horizontalRule":
       return "---";
     case "table":
@@ -138,6 +143,10 @@ export function docToMarkdown(doc: ProseMirrorDoc): string {
 /** doc → 純文字（衍生，餵 pgroonga 全文索引）。 */
 export function docToPlainText(node: ProseMirrorDoc | ProseMirrorNode): string {
   if ("text" in node && typeof node.text === "string") return node.text;
+  // 附件為 atom 無內文，以檔名代表（讓全文索引可依檔名命中）
+  if ((node as ProseMirrorNode).type === "attachment") {
+    return String((node as ProseMirrorNode).attrs?.fileName ?? "");
+  }
   const children = (node as ProseMirrorNode).content ?? [];
   const sep = ["paragraph", "heading", "codeBlock", "listItem", "tableRow"].includes(
     (node as ProseMirrorNode).type,

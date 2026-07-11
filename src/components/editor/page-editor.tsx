@@ -14,6 +14,8 @@ import {
   uploadErrorMessageKey,
   type UploadErrorCode,
 } from "./image/image-upload-utils";
+import { startAttachmentUpload } from "./attachment/attachment-upload";
+import { attachmentAcceptAttr } from "./attachment/attachment-utils";
 import type { ProseMirrorDoc } from "@/lib/content/types";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/components/ui/toast";
@@ -120,6 +122,83 @@ export function PageEditor({
     storage.uploadingLabel = t("image.uploading");
     storage.onError = showUploadError;
   }, [editor, spaceId, pageId, t, showUploadError]);
+
+  // 附件上傳（D-08）：錯誤提示與 image 一致（可重試者附重試鈕，走 selection 重傳）
+  const attachmentRetryRef = useRef<(file: File) => void>(() => {});
+
+  const showAttachmentError = useCallback(
+    (file: File, code: UploadErrorCode) => {
+      toast({
+        variant: "error",
+        title: t(`attachment.${uploadErrorMessageKey(code)}`),
+        action: isRetryableUploadError(code) ? (
+          <button
+            type="button"
+            onClick={() => attachmentRetryRef.current(file)}
+            className="text-body-ui font-medium text-primary hover:underline"
+          >
+            {t("attachment.retry")}
+          </button>
+        ) : undefined,
+      });
+    },
+    [toast, t],
+  );
+
+  const uploadAttachmentAtSelection = useCallback(
+    (file: File) => {
+      const ed = editorRef.current;
+      if (!ed) return;
+      startAttachmentUpload({
+        editor: ed,
+        file,
+        pos: ed.state.selection.from,
+        spaceId,
+        pageId,
+        onError: showAttachmentError,
+      });
+    },
+    [spaceId, pageId, showAttachmentError],
+  );
+
+  useEffect(() => {
+    attachmentRetryRef.current = uploadAttachmentAtSelection;
+  }, [uploadAttachmentAtSelection]);
+
+  // slash「檔案」→ 開檔案選擇器（隱藏 input，click 於使用者手勢中觸發原生對話框）
+  const openAttachmentPicker = useCallback(
+    (pos: number) => {
+      const input = document.createElement("input");
+      input.type = "file";
+      input.accept = attachmentAcceptAttr();
+      input.addEventListener("change", () => {
+        const file = input.files?.[0];
+        if (!file) return;
+        const ed = editorRef.current;
+        if (!ed) return;
+        startAttachmentUpload({
+          editor: ed,
+          file,
+          pos,
+          spaceId,
+          pageId,
+          onError: showAttachmentError,
+        });
+      });
+      input.click();
+    },
+    [spaceId, pageId, showAttachmentError],
+  );
+
+  // 把上傳設定填入 attachment extension 的 storage，供 slash 指令於觸發當下讀取
+  useEffect(() => {
+    if (!editor) return;
+    const storage = editor.storage.attachment;
+    storage.spaceId = spaceId;
+    storage.pageId = pageId;
+    storage.onError = showAttachmentError;
+    storage.openPicker = openAttachmentPicker;
+  }, [editor, spaceId, pageId, showAttachmentError, openAttachmentPicker]);
 
   const doSave = useCallback(async () => {
     if (!editor) return;
