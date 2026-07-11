@@ -107,15 +107,18 @@ describe("notifyPageMention（@mention 通知，K-02）", () => {
   });
 });
 
-describe("resolvePageLinkTargets（頁面連結解析，F-EDIT-12）", () => {
+describe("resolvePageLinkTargets（頁面連結解析，F-EDIT-12 / 死鏈 C-13）", () => {
   it("解析可讀目標為現行 href/title；改名後自動更新（以 page id 為錨）", async () => {
     const user = await seedUser();
     const space = await seedSpace(user.id, { visibility: "org_read" });
     const target = await seedPage(space.id, { title: "舊標題" });
 
     const before = await resolvePageLinkTargets(user, [target.id]);
-    expect(before.get(target.id)?.title).toBe("舊標題");
-    expect(before.get(target.id)?.href).toBe(`/s/${space.slug}/${target.slug}`);
+    const beforeEntry = before.get(target.id);
+    expect(beforeEntry?.status).toBe("resolved");
+    if (beforeEntry?.status !== "resolved") throw new Error("expected resolved");
+    expect(beforeEntry.title).toBe("舊標題");
+    expect(beforeEntry.href).toBe(`/s/${space.slug}/${target.slug}`);
 
     // 模擬改名（slug 與 title 皆變）。連結錨在 id，故解析結果應更新。
     await db
@@ -124,11 +127,14 @@ describe("resolvePageLinkTargets（頁面連結解析，F-EDIT-12）", () => {
       .where(eq(pages.id, target.id));
 
     const after = await resolvePageLinkTargets(user, [target.id]);
-    expect(after.get(target.id)?.title).toBe("新標題");
-    expect(after.get(target.id)?.href).toBe(`/s/${space.slug}/renamed-slug`);
+    const afterEntry = after.get(target.id);
+    expect(afterEntry?.status).toBe("resolved");
+    if (afterEntry?.status !== "resolved") throw new Error("expected resolved");
+    expect(afterEntry.title).toBe("新標題");
+    expect(afterEntry.href).toBe(`/s/${space.slug}/renamed-slug`);
   });
 
-  it("不可讀目標（private 非成員）不納入解析 Map", async () => {
+  it("不可讀目標（private 非成員）不納入解析 Map（不洩漏存在性）", async () => {
     const owner = await seedUser();
     const viewer = await seedUser();
     const priv = await seedSpace(owner.id, { visibility: "private" });
@@ -138,14 +144,65 @@ describe("resolvePageLinkTargets（頁面連結解析，F-EDIT-12）", () => {
     expect(map.has(target.id)).toBe(false);
   });
 
-  it("已刪除目標不納入解析 Map", async () => {
-    const user = await seedUser();
-    const space = await seedSpace(user.id, { visibility: "org_read" });
+  it("已刪除目標（C-13）：具還原權限者標為 deleted 且附回收桶還原入口", async () => {
+    const editor = await seedUser();
+    const space = await seedSpace(editor.id, { visibility: "private" });
+    await addMember(space.id, editor.id, "editor");
     const target = await seedPage(space.id);
     await db.update(pages).set({ deletedAt: new Date() }).where(eq(pages.id, target.id));
 
-    const map = await resolvePageLinkTargets(user, [target.id]);
+    const map = await resolvePageLinkTargets(editor, [target.id]);
+    const entry = map.get(target.id);
+    expect(entry?.status).toBe("deleted");
+    if (entry?.status !== "deleted") throw new Error("expected deleted");
+    expect(entry.canRestore).toBe(true);
+    expect(entry.trashHref).toBe(`/trash?space=${space.slug}`);
+  });
+
+  it("已刪除目標（C-13）：無還原權限者（viewer）僅見 chip、無還原入口", async () => {
+    const viewer = await seedUser();
+    // org_read：非成員可讀（見得到死鏈 chip），但角色只到 viewer（不可還原）。
+    const space = await seedSpace(viewer.id, { visibility: "org_read" });
+    const target = await seedPage(space.id);
+    await db.update(pages).set({ deletedAt: new Date() }).where(eq(pages.id, target.id));
+
+    const map = await resolvePageLinkTargets(viewer, [target.id]);
+    const entry = map.get(target.id);
+    expect(entry?.status).toBe("deleted");
+    if (entry?.status !== "deleted") throw new Error("expected deleted");
+    expect(entry.canRestore).toBe(false);
+    expect(entry.trashHref).toBeNull();
+  });
+
+  it("已刪除目標（C-13）：不可讀 space 者不納入 Map（不洩漏刪除狀態）", async () => {
+    const owner = await seedUser();
+    const outsider = await seedUser();
+    const priv = await seedSpace(owner.id, { visibility: "private" });
+    const target = await seedPage(priv.id);
+    await db.update(pages).set({ deletedAt: new Date() }).where(eq(pages.id, target.id));
+
+    const map = await resolvePageLinkTargets(outsider, [target.id]);
     expect(map.has(target.id)).toBe(false);
+  });
+
+  it("還原後（C-13）：deleted 狀態消失、恢復正常 resolved 渲染", async () => {
+    const editor = await seedUser();
+    const space = await seedSpace(editor.id, { visibility: "private" });
+    await addMember(space.id, editor.id, "editor");
+    const target = await seedPage(space.id, { title: "還原測試頁" });
+    await db.update(pages).set({ deletedAt: new Date() }).where(eq(pages.id, target.id));
+
+    const deleted = await resolvePageLinkTargets(editor, [target.id]);
+    expect(deleted.get(target.id)?.status).toBe("deleted");
+
+    // 還原（清 deleted_at）——連結應自動恢復正常渲染。
+    await db.update(pages).set({ deletedAt: null }).where(eq(pages.id, target.id));
+
+    const restored = await resolvePageLinkTargets(editor, [target.id]);
+    const entry = restored.get(target.id);
+    expect(entry?.status).toBe("resolved");
+    if (entry?.status !== "resolved") throw new Error("expected resolved");
+    expect(entry.title).toBe("還原測試頁");
   });
 });
 
