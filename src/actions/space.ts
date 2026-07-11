@@ -7,8 +7,13 @@ import { z } from "zod";
 import { db } from "@/lib/db";
 import { spaceMembers, spaces } from "@/lib/db/schema";
 import { requireSession } from "@/lib/auth/current";
-import { assertCan } from "@/lib/authz/permission";
-import { setSpaceArchived, setSpaceMemberRole } from "@/lib/spaces/manage";
+import { assertCan, assertOrgAdmin } from "@/lib/authz/permission";
+import {
+  restoreSpace as restoreSpaceRow,
+  setSpaceArchived,
+  setSpaceMemberRole,
+  softDeleteSpace,
+} from "@/lib/spaces/manage";
 import { ipFromHeaders, writeAudit } from "@/lib/audit";
 import { logger } from "@/lib/logger";
 
@@ -140,4 +145,65 @@ export async function archiveSpace(input: z.infer<typeof archiveSchema>) {
   });
   revalidatePath("/spaces");
   revalidatePath("/s/[spaceSlug]", "layout");
+}
+
+const deleteSchema = z.object({ spaceId: z.uuid() });
+
+/**
+ * 軟刪除 Space（deleted_at）；space admin（space.manage）可執行。刪除後空間與其所有頁面
+ * 自列表、搜尋、RAG 全面隱藏，內容保留，org admin 可於 30 天內於後台還原，逾期由 cron 清除。
+ */
+export async function deleteSpace(input: z.infer<typeof deleteSchema>) {
+  const { user } = await requireSession();
+  const data = deleteSchema.parse(input);
+  await assertCan(user, "space.manage", { type: "space", spaceId: data.spaceId });
+
+  await softDeleteSpace(data.spaceId);
+
+  await writeAudit({
+    actorId: user.id,
+    action: "space.delete",
+    targetType: "space",
+    targetId: data.spaceId,
+    ip: ipFromHeaders(await headers()),
+  });
+  revalidatePath("/spaces");
+  revalidatePath("/s/[spaceSlug]", "layout");
+  revalidatePath("/admin/spaces");
+}
+
+export type RestoreSpaceResult = { ok: true } | { ok: false; error: "NOT_FOUND" };
+
+/**
+ * 還原軟刪 Space（org admin only，後台 §L-01）：保留期（30 天）內清除 deleted_at，
+ * 空間與頁面即恢復可見。逾期或不存在回 NOT_FOUND 供 UI 提示。
+ */
+export async function restoreSpaceAction(
+  input: z.infer<typeof deleteSchema>,
+): Promise<RestoreSpaceResult> {
+  const { user } = await requireSession();
+  assertOrgAdmin(user);
+  const data = deleteSchema.parse(input);
+
+  let restored;
+  try {
+    restored = await restoreSpaceRow(data.spaceId);
+  } catch (err) {
+    if (err instanceof Error && err.message === "NOT_FOUND") {
+      return { ok: false, error: "NOT_FOUND" };
+    }
+    throw err;
+  }
+
+  await writeAudit({
+    actorId: user.id,
+    action: "space.restore",
+    targetType: "space",
+    targetId: data.spaceId,
+    metadata: { slug: restored.slug },
+    ip: ipFromHeaders(await headers()),
+  });
+  revalidatePath("/spaces");
+  revalidatePath("/admin/spaces");
+  return { ok: true };
 }

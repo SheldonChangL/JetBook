@@ -2,8 +2,13 @@ import "server-only";
 import { and, eq, isNull, sql } from "drizzle-orm";
 import { db } from "@/lib/db";
 import { pages, spaceMembers, spaces, type SpaceRole, type User } from "@/lib/db/schema";
-import { getSpaceRole } from "./spaces";
-import { actionAllowedForRole, roleAtLeast, type Action } from "./policy";
+import { getSpaceRole, resolveSpaceAccess } from "./spaces";
+import {
+  actionAllowedForRole,
+  actionAllowedWhenArchived,
+  roleAtLeast,
+  type Action,
+} from "./policy";
 
 /**
  * 權限判斷唯一入口（架構鐵律 #1）。UI／Server Action／Route Handler／RSC
@@ -25,8 +30,11 @@ export type { Action };
 
 /** 集中式權限判斷。預設拒絕。 */
 export async function can(user: Actor, action: Action, resource: Resource): Promise<boolean> {
-  const role = await getSpaceRole(user, resource.spaceId);
-  return actionAllowedForRole(action, role);
+  const { role, archived } = await resolveSpaceAccess(user, resource.spaceId);
+  if (!actionAllowedForRole(action, role)) return false;
+  // 封存 space 唯讀（F-ORG-04）：僅放行讀取與管理動作，其餘寫入一律拒絕。
+  if (archived && !actionAllowedWhenArchived(action)) return false;
+  return true;
 }
 
 /** 組織層級管理權（管理後台／使用者管理入口，L-01）。 */
@@ -136,5 +144,5 @@ export async function filterReadablePageIds(user: Actor, pageIds: string[]): Pro
   return pageIds.filter((id) => accessible.has(id));
 }
 
-export { getSpaceRole, roleAtLeast };
+export { getSpaceRole, resolveSpaceAccess, roleAtLeast };
 export type { SpaceRole };
