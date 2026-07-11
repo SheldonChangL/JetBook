@@ -177,6 +177,29 @@ export const spaceMembers = pgTable(
   (table) => [primaryKey({ columns: [table.spaceId, table.userId] })],
 );
 
+/**
+ * Space 掛載群組授權（K-03，主體泛化 C5）：一個群組以某角色掛在某 space，
+ * 群組全體成員即以該角色繼承 space 存取權。使用者的有效角色＝直接成員與所有
+ * 群組來源角色取最高（見 lib/authz）。移出群組即失效（F-SEC-06）由此表 join 保證。
+ */
+export const spaceMemberGroups = pgTable(
+  "space_member_groups",
+  {
+    spaceId: uuid("space_id")
+      .notNull()
+      .references(() => spaces.id, { onDelete: "cascade" }),
+    groupId: uuid("group_id")
+      .notNull()
+      .references(() => groups.id, { onDelete: "cascade" }),
+    role: spaceRoleEnum("role").notNull().default("viewer"),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (table) => [
+    primaryKey({ columns: [table.spaceId, table.groupId] }),
+    index("ix_smg_group").on(table.groupId),
+  ],
+);
+
 /** Space 首頁釘選頁面（G8/F-ORG-06，最多 6）。page_id 於 C-02 加 FK。 */
 export const spacePinnedPages = pgTable(
   "space_pinned_pages",
@@ -504,6 +527,9 @@ export type User = typeof users.$inferSelect;
 export type Session = typeof sessions.$inferSelect;
 export type Space = typeof spaces.$inferSelect;
 export type SpaceMember = typeof spaceMembers.$inferSelect;
+export type SpaceMemberGroup = typeof spaceMemberGroups.$inferSelect;
+export type Group = typeof groups.$inferSelect;
+export type GroupMember = typeof groupMembers.$inferSelect;
 export type SpaceRole = (typeof spaceRoleEnum.enumValues)[number];
 export type SpaceVisibility = (typeof spaceVisibilityEnum.enumValues)[number];
 export type Page = typeof pages.$inferSelect;
