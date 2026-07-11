@@ -509,7 +509,20 @@
     "restoreConfirm": "確認還原",
     "restoreCancel": "取消",
     "restoreSuccess": "已還原為版本 {n}，並建立新版本 {newN}",
-    "restoreError": "還原失敗，請重新整理後再試"
+    "restoreError": "還原失敗，請重新整理後再試",
+    "tabSnapshot": "快照",
+    "tabDiff": "差異",
+    "compareHint": "勾選任意兩個版本進行比較",
+    "compareSelected": "比較所選版本",
+    "compareCheckboxLabel": "勾選版本 {n} 以比較",
+    "clearSelection": "清除勾選",
+    "diffHeader": "比較：版本 {from} → 版本 {to}",
+    "diffNoPrevious": "這是最初版本，沒有前一版可供比較。",
+    "diffUnchanged": "兩個版本內容相同，沒有差異。",
+    "diffPickTwo": "請勾選兩個不同的版本進行比較。",
+    "diffLegendAdded": "新增",
+    "diffLegendRemoved": "刪除",
+    "diffLegendModified": "修改"
   },
   "spaceSettings": {
     "title": "空間設定",
