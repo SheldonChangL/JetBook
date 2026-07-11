@@ -10,10 +10,12 @@ export function EditLockNotice({
   pageId,
   spaceSlug,
   isOrgAdmin,
+  lockedByName,
 }: {
   pageId: string;
   spaceSlug: string;
   isOrgAdmin: boolean;
+  lockedByName: string | null;
 }) {
   const t = useTranslations("editor");
   const router = useRouter();
@@ -27,7 +29,9 @@ export function EditLockNotice({
   return (
     <div className="mx-auto max-w-2xl px-6 py-12 text-center">
       <h1 className="text-h2 text-fg">{t("lockedTitle")}</h1>
-      <p className="mt-2 text-body-ui text-fg-secondary">{t("lockedHint")}</p>
+      <p className="mt-2 text-body-ui text-fg-secondary">
+        {lockedByName ? t("lockedByHint", { name: lockedByName }) : t("lockedHint")}
+      </p>
       <div className="mt-6 flex justify-center gap-2">
         <Button variant="secondary" onClick={() => router.push(`/s/${spaceSlug}`)}>
           {t("backToReading")}

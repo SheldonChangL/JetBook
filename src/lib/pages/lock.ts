@@ -1,7 +1,7 @@
 import "server-only";
 import { and, eq, isNull, lt, or, sql } from "drizzle-orm";
 import { db } from "@/lib/db";
-import { pages } from "@/lib/db/schema";
+import { pages, users } from "@/lib/db/schema";
 
 /**
  * 軟性編輯鎖（C1 / ADR-006）：心跳續租 30s、閒置 5 分鐘視為過期可被搶。
@@ -13,6 +13,8 @@ export interface LockState {
   lockedByMe: boolean;
   lockedByOther: boolean;
   lockedBy: string | null;
+  /** 鎖持有者顯示姓名（他人持鎖時供 UI 提示；無鎖為 null）。 */
+  lockedByName: string | null;
 }
 
 function staleBefore(): Date {
@@ -62,15 +64,25 @@ export async function releaseLock(pageId: string, userId: string): Promise<void>
     .where(and(eq(pages.id, pageId), eq(pages.lockedBy, userId)));
 }
 
-/** 查詢當前鎖狀態（未過期才算有效鎖）。 */
+/** 查詢當前鎖狀態（未過期才算有效鎖），含持有者姓名（join users）。 */
 export async function getLockState(pageId: string, userId: string): Promise<LockState> {
-  const page = await db.query.pages.findFirst({ where: eq(pages.id, pageId) });
-  if (!page?.lockedBy || !page.lockedAt || page.lockedAt < staleBefore()) {
-    return { lockedByMe: false, lockedByOther: false, lockedBy: null };
+  const [row] = await db
+    .select({
+      lockedBy: pages.lockedBy,
+      lockedAt: pages.lockedAt,
+      lockedByName: users.name,
+    })
+    .from(pages)
+    .leftJoin(users, eq(users.id, pages.lockedBy))
+    .where(eq(pages.id, pageId))
+    .limit(1);
+  if (!row?.lockedBy || !row.lockedAt || row.lockedAt < staleBefore()) {
+    return { lockedByMe: false, lockedByOther: false, lockedBy: null, lockedByName: null };
   }
   return {
-    lockedByMe: page.lockedBy === userId,
-    lockedByOther: page.lockedBy !== userId,
-    lockedBy: page.lockedBy,
+    lockedByMe: row.lockedBy === userId,
+    lockedByOther: row.lockedBy !== userId,
+    lockedBy: row.lockedBy,
+    lockedByName: row.lockedByName,
   };
 }
