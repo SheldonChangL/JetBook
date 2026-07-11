@@ -19,8 +19,10 @@ export interface AppShellProps {
   user: { name: string; email: string; isAdmin?: boolean };
   sidebar: ReactNode;
   children: ReactNode;
-  /** AI 問答入口是否啟用（server 依 isLlmConfigured 決定；NFR-AVAIL-02）。 */
-  aiEnabled?: boolean;
+  /** AI 生成已設定（isLlmConfigured）：Cmd+K「問 AI」列與 ✦／⌘J AI 抽屜入口據此啟用（NFR-AVAIL-02）。 */
+  llmConfigured?: boolean;
+  /** 語意索引已設定（isEmbeddingConfigured）：Cmd+K 語意區據此渲染。 */
+  embeddingConfigured?: boolean;
 }
 
 /**
@@ -28,7 +30,13 @@ export interface AppShellProps {
  * 56px 頂部列 + 可收合左側欄（⌘\、記憶狀態）+ 內容區。右側 TOC/AI 抽屜由頁面掛載。
  * 響應式：md 以下側欄轉 overlay 抽屜。AI 問答抽屜由 ✦ 鈕或 ⌘J 開關（I-03）。
  */
-export function AppShell({ user, sidebar, children, aiEnabled = false }: AppShellProps) {
+export function AppShell({
+  user,
+  sidebar,
+  children,
+  llmConfigured = false,
+  embeddingConfigured = false,
+}: AppShellProps) {
   const t = useTranslations("shell");
   const [collapsed, setCollapsed] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
@@ -50,7 +58,7 @@ export function AppShell({ user, sidebar, children, aiEnabled = false }: AppShel
         });
       }
       // ⌘J／Ctrl+J 開關 AI 抽屜；IME 組字中不誤觸（isComposing 防護）。
-      if (aiEnabled && (e.metaKey || e.ctrlKey) && !e.altKey && (e.key === "j" || e.key === "J")) {
+      if (llmConfigured && (e.metaKey || e.ctrlKey) && !e.altKey && (e.key === "j" || e.key === "J")) {
         if (e.isComposing) return;
         e.preventDefault();
         setAiOpen((v) => !v);
@@ -58,7 +66,7 @@ export function AppShell({ user, sidebar, children, aiEnabled = false }: AppShel
     }
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
-  }, [aiEnabled]);
+  }, [llmConfigured]);
 
   return (
     <div className="flex h-dvh flex-col">
@@ -99,7 +107,7 @@ export function AppShell({ user, sidebar, children, aiEnabled = false }: AppShel
         </div>
 
         <div className="flex items-center gap-1">
-          {aiEnabled ? (
+          {llmConfigured ? (
             <IconButton
               label={t("aiAssistant")}
               aria-pressed={aiOpen}
@@ -158,11 +166,16 @@ export function AppShell({ user, sidebar, children, aiEnabled = false }: AppShel
         <main className="min-w-0 flex-1 overflow-y-auto bg-base">{children}</main>
       </div>
 
-      {/* 全域搜尋命令面板（F-SEARCH-02，⌘K 呼出） */}
-      <CommandPalette open={paletteOpen} onOpenChange={setPaletteOpen} />
+      {/* 全域搜尋命令面板（F-SEARCH-02，⌘K 呼出；I-05 語意區＋問 AI） */}
+      <CommandPalette
+        open={paletteOpen}
+        onOpenChange={setPaletteOpen}
+        llmConfigured={llmConfigured}
+        embeddingConfigured={embeddingConfigured}
+      />
 
       {/* AI 問答抽屜（I-03，✦／⌘J 開關）；未啟用時不掛載 */}
-      {aiEnabled ? <AiChatDrawer open={aiOpen} onOpenChange={setAiOpen} /> : null}
+      {llmConfigured ? <AiChatDrawer open={aiOpen} onOpenChange={setAiOpen} /> : null}
     </div>
   );
 }

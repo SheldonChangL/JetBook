@@ -7,6 +7,7 @@ import {
   useState,
   useTransition,
   type ButtonHTMLAttributes,
+  type ChangeEvent,
   type DragEvent,
   type KeyboardEvent,
   type ReactNode,
@@ -22,9 +23,17 @@ import {
   Pencil,
   Plus,
   Trash2,
+  Upload,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { countDescendants, createPage, deletePage, movePage, renamePage } from "@/actions/page";
+import {
+  countDescendants,
+  createPage,
+  deletePage,
+  importMarkdownPage,
+  movePage,
+  renamePage,
+} from "@/actions/page";
 import { Button } from "@/components/ui/button";
 import { EmptyState } from "@/components/ui/empty-state";
 import { IconButton } from "@/components/ui/icon-button";
@@ -41,6 +50,9 @@ export interface PageTreeNode {
   slug: string;
   icon: string | null;
 }
+
+/** 前端匯入檔案大小上限（bytes），對齊 server 端 IMPORT_MARKDOWN_MAX_CHARS（2 MiB）。 */
+const MAX_IMPORT_BYTES = 2 * 1024 * 1024;
 
 export interface PageTreeProps {
   spaceId: string;
@@ -299,6 +311,34 @@ export function PageTree({ spaceId, spaceSlug, nodes, canEdit }: PageTreeProps) 
     });
   }
 
+  // --- 匯入單檔 Markdown（J-01）→ importMarkdownPage → 閱讀頁 ---
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  function handleImportFile(e: ChangeEvent<HTMLInputElement>) {
+    const input = e.currentTarget;
+    const file = input.files?.[0];
+    input.value = ""; // 重設，使再次選同一檔仍觸發 onChange
+    if (!file) return;
+    if (file.size === 0) {
+      toast({ variant: "error", title: t("importEmpty") });
+      return;
+    }
+    // 與 server 端 IMPORT_MARKDOWN_MAX_CHARS（2 MiB）對齊的前端保護
+    if (file.size > MAX_IMPORT_BYTES) {
+      toast({ variant: "error", title: t("importTooLarge") });
+      return;
+    }
+    startTransition(async () => {
+      try {
+        const markdown = await file.text();
+        const { slug } = await importMarkdownPage({ spaceId, fileName: file.name, markdown });
+        toast({ variant: "success", title: t("importSuccess") });
+        router.push(`/s/${spaceSlug}/${slug}`);
+      } catch {
+        toast({ variant: "error", title: t("importError") });
+      }
+    });
+  }
+
   // --- 重新命名 ---
   const [renameTarget, setRenameTarget] = useState<PageTreeNode | null>(null);
   function handleRename(formData: FormData) {
@@ -364,14 +404,45 @@ export function PageTree({ spaceId, spaceSlug, nodes, canEdit }: PageTreeProps) 
       <div className="flex h-8 items-center justify-between pl-3 pr-2">
         <span className="text-caption font-medium text-fg-tertiary">{t("label")}</span>
         {canEdit ? (
-          <IconButton
-            label={t("newRootPage")}
-            className="size-6"
-            disabled={pending}
-            onClick={() => handleCreate(null)}
-          >
-            <Plus className="size-4" />
-          </IconButton>
+          <div className="flex items-center gap-0.5">
+            <IconButton
+              label={t("newRootPage")}
+              className="size-6"
+              disabled={pending}
+              onClick={() => handleCreate(null)}
+            >
+              <Plus className="size-4" />
+            </IconButton>
+            <Popover>
+              <PopoverTrigger asChild>
+                <button
+                  type="button"
+                  aria-label={t("spaceMenu")}
+                  title={t("spaceMenu")}
+                  disabled={pending}
+                  className="inline-flex size-6 items-center justify-center rounded-sm text-fg-secondary transition-colors hover:bg-hover hover:text-fg disabled:pointer-events-none disabled:text-fg-disabled"
+                >
+                  <Ellipsis className="size-4" />
+                </button>
+              </PopoverTrigger>
+              <PopoverContent align="end" sideOffset={4} className="w-48 p-1">
+                <PopoverClose asChild>
+                  <MenuItem onClick={() => fileInputRef.current?.click()}>
+                    <Upload aria-hidden className="size-4" />
+                    {t("importMarkdown")}
+                  </MenuItem>
+                </PopoverClose>
+              </PopoverContent>
+            </Popover>
+            {/* 隱藏 file input：由匯入選單觸發；只接受 Markdown 副檔名 */}
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept=".md,.markdown,.mdown,.mkd,.mkdn,text/markdown"
+              className="hidden"
+              onChange={handleImportFile}
+            />
+          </div>
         ) : null}
       </div>
 

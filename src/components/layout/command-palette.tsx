@@ -6,8 +6,11 @@ import { useTranslations } from "next-intl";
 import { Command } from "cmdk";
 import { ArrowRight, Clock, FileText, Search, Sparkles } from "lucide-react";
 import type { SearchHit } from "@/lib/search/fulltext";
+import type { SemanticHit } from "@/lib/search/semantic";
+import { createAskAiEvent } from "@/lib/ai/ask-ai-event";
 import { Badge } from "@/components/ui/badge";
 import { Kbd } from "@/components/ui/kbd";
+import { Skeleton } from "@/components/ui/skeleton";
 
 const KBD_UP = "↑";
 const KBD_DOWN = "↓";
@@ -27,6 +30,10 @@ interface RecentItem {
 export interface CommandPaletteProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
+  /** AI 生成已設定（isLlmConfigured）：「✦ 問 AI」列據此啟用，否則停用。 */
+  llmConfigured?: boolean;
+  /** 語意索引已設定（isEmbeddingConfigured）：語意相關區據此渲染，否則不出現。 */
+  embeddingConfigured?: boolean;
 }
 
 function escapeHtml(value: string): string {
@@ -61,9 +68,17 @@ function highlightTitle(title: string, query: string): string {
  * - 任頁 ⌘K/Ctrl+K 呼出（IME composition 期間不觸發，防中文輸入誤觸）。
  * - 250ms debounce 打 /api/search；無輸入時顯示最近瀏覽（/api/recent，page_visits 前 5）。
  * - 全鍵盤：↑↓ 選擇、Enter 開啟、⌘Enter 新分頁、Esc 關閉（cmdk 內建於 IME 期間停用導航）。
- * - 「✦ 問 AI」列為 M2 預留（disabled + 徽章）；「顯示全部」導向 /search?q=（F-SEARCH-03）。
+ * - 全文區下方為「語意相關 ✦」區（I-05）：embeddingConfigured 時渲染，400ms debounce 打
+ *   /api/search?mode=semantic，載入中以固定高度骨架佔位（防面板抖動），命中近義未含原詞的頁。
+ * - 「✦ 問 AI」列於 llmConfigured 時啟用 → dispatch ask-ai 事件開 AI 抽屜並預帶問題（I-03 接手）；
+ *   未設定時停用。「顯示全部」導向 /search?q=（F-SEARCH-03）。
  */
-export function CommandPalette({ open, onOpenChange }: CommandPaletteProps) {
+export function CommandPalette({
+  open,
+  onOpenChange,
+  llmConfigured = false,
+  embeddingConfigured = false,
+}: CommandPaletteProps) {
   const t = useTranslations("commandPalette");
   const router = useRouter();
   const [query, setQuery] = useState("");
@@ -71,6 +86,9 @@ export function CommandPalette({ open, onOpenChange }: CommandPaletteProps) {
   const [recent, setRecent] = useState<RecentItem[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(false);
+  const [semanticHits, setSemanticHits] = useState<SemanticHit[]>([]);
+  const [semanticLoading, setSemanticLoading] = useState(false);
+  const [semanticError, setSemanticError] = useState(false);
 
   const openRef = useRef(open);
   const onOpenChangeRef = useRef(onOpenChange);
@@ -95,6 +113,9 @@ export function CommandPalette({ open, onOpenChange }: CommandPaletteProps) {
     if (open) {
       setQuery("");
       setError(false);
+      setSemanticHits([]);
+      setSemanticError(false);
+      setSemanticLoading(false);
     }
   }, [open]);
 
@@ -149,12 +170,57 @@ export function CommandPalette({ open, onOpenChange }: CommandPaletteProps) {
     };
   }, [open, query]);
 
+  // 語意相關區（I-05）：僅在 embedding 已設定時取。400ms debounce（晚於全文 250ms，
+  // 讓全文結果先落定、語意結果隨後補上）；載入中以骨架佔位。失敗靜默降級（AI 為輔助，
+  // 不影響全文搜尋，NFR-AVAIL-02）。無輸入時清空。
+  useEffect(() => {
+    if (!open || !embeddingConfigured) return;
+    const q = query.trim();
+    if (q === "") {
+      setSemanticHits([]);
+      setSemanticLoading(false);
+      setSemanticError(false);
+      return;
+    }
+
+    const ctrl = new AbortController();
+    setSemanticLoading(true);
+    setSemanticError(false);
+    const id = setTimeout(() => {
+      fetch(`/api/search?mode=semantic&q=${encodeURIComponent(q)}`, { signal: ctrl.signal })
+        .then((r) => {
+          if (!r.ok) throw new Error("semantic search failed");
+          return r.json();
+        })
+        .then((j) => {
+          setSemanticHits(j.data?.hits ?? []);
+          setSemanticLoading(false);
+        })
+        .catch(() => {
+          if (ctrl.signal.aborted) return;
+          setSemanticError(true);
+          setSemanticLoading(false);
+        });
+    }, 400);
+    return () => {
+      clearTimeout(id);
+      ctrl.abort();
+    };
+  }, [open, query, embeddingConfigured]);
+
   const trimmed = query.trim();
   const showAi = trimmed.length >= 2;
 
   function go(href: string) {
     onOpenChange(false);
     router.push(href);
+  }
+
+  // 「✦ 問 AI」：關面板 → dispatch ask-ai 事件（AI 抽屜 I-03 監聽並開啟、預帶問題）。
+  function askAi() {
+    if (!llmConfigured) return;
+    onOpenChange(false);
+    window.dispatchEvent(createAskAiEvent(trimmed));
   }
 
   // ⌘Enter：於新分頁開啟目前選取的頁面列。
@@ -173,6 +239,15 @@ export function CommandPalette({ open, onOpenChange }: CommandPaletteProps) {
   const itemClass =
     "flex cursor-default select-none items-center gap-3 rounded-md px-3 py-2 text-body-ui text-fg data-[disabled=true]:cursor-not-allowed data-[disabled=true]:opacity-60 data-[selected=true]:bg-hover";
   const statusClass = "px-3 py-6 text-center text-body-ui text-fg-tertiary";
+
+  // 語意相關區標題（載入骨架與結果兩態共用，維持一致），含 ✦ 與 AI 徽章。
+  const semanticHeadingEl = (
+    <div className="flex items-center gap-1.5 px-3 py-1.5">
+      <Sparkles aria-hidden className="size-3.5 shrink-0 text-ai" />
+      <span className="text-caption font-medium text-fg-tertiary">{t("semanticHeading")}</span>
+      <Badge variant="ai">{t("aiBadge")}</Badge>
+    </div>
+  );
 
   return (
     <Command.Dialog
@@ -197,7 +272,12 @@ export function CommandPalette({ open, onOpenChange }: CommandPaletteProps) {
 
       <Command.List className="min-h-0 flex-1 overflow-y-auto overscroll-contain p-2">
         {showAi ? (
-          <Command.Item value="__ask_ai__" disabled className={itemClass}>
+          <Command.Item
+            value="__ask_ai__"
+            disabled={!llmConfigured}
+            onSelect={askAi}
+            className={itemClass}
+          >
             <Sparkles aria-hidden className="size-4 shrink-0 text-ai" />
             <span className="min-w-0 flex-1 truncate">{t("askAi", { query: trimmed })}</span>
             <Badge variant="ai">{t("aiBadge")}</Badge>
@@ -252,6 +332,51 @@ export function CommandPalette({ open, onOpenChange }: CommandPaletteProps) {
                   <ArrowRight aria-hidden className="size-4 shrink-0" />
                 </Command.Item>
               </Command.Group>
+            ) : null}
+
+            {/* 語意相關區（I-05）：embedding 已設定才渲染。載入中固定高度骨架佔位；
+                失敗或無結果則靜默收合（不影響上方全文區）。 */}
+            {embeddingConfigured && semanticLoading ? (
+              <div className="mt-1">
+                {semanticHeadingEl}
+                <div aria-hidden className="px-3 pb-1">
+                  {[0, 1, 2].map((i) => (
+                    <div key={i} className="flex items-center gap-3 py-1.5">
+                      <Skeleton className="size-4 shrink-0 rounded-sm" />
+                      <div className="min-w-0 flex-1 space-y-1.5">
+                        <Skeleton className="h-3.5 w-1/2" />
+                        <Skeleton className="h-3 w-1/3" />
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            ) : null}
+
+            {embeddingConfigured && !semanticLoading && !semanticError && semanticHits.length > 0 ? (
+              <div className="mt-1">
+                {semanticHeadingEl}
+                {semanticHits.map((hit) => {
+                  const href = `/s/${hit.spaceSlug}/${hit.slug}`;
+                  return (
+                    <Command.Item
+                      key={`semantic-${hit.pageId}`}
+                      value={`semantic:${href}`}
+                      data-href={href}
+                      onSelect={() => go(href)}
+                      className={itemClass}
+                    >
+                      <Sparkles aria-hidden className="size-4 shrink-0 text-ai" />
+                      <span className="min-w-0 flex-1">
+                        <span className="block truncate font-medium text-fg">{hit.title}</span>
+                        <span className="block truncate text-caption text-fg-tertiary">
+                          {hit.spaceName}
+                        </span>
+                      </span>
+                    </Command.Item>
+                  );
+                })}
+              </div>
             ) : null}
           </>
         ) : (
