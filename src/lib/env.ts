@@ -56,6 +56,11 @@ const envSchema = z.object({
   EMBEDDING_MODEL: z.string().default("bge-m3"),
   EMBEDDING_DIMENSIONS: z.coerce.number().int().positive().default(1024),
   EMBEDDING_QUERY_PREFIX: z.string().optional(),
+  /**
+   * HNSW 向量檢索 `hnsw.ef_search`（I-01，R4 降險）：候選佇列大小，越大召回越高、越慢。
+   * 必須 ≥ 向量路 over-fetch（40）；依基準測試調校（NFR-PERF-03），預設 100。
+   */
+  RAG_HNSW_EF_SEARCH: z.coerce.number().int().positive().default(100),
 });
 
 export type Env = z.infer<typeof envSchema>;
