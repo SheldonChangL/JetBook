@@ -12,6 +12,7 @@ import { listActiveUsers, listSpaceMembers } from "@/lib/spaces/manage";
 import { Badge } from "@/components/ui/badge";
 import { VisibilitySection } from "./visibility-section";
 import { MemberSection } from "./member-section";
+import { ImportSection } from "./import-section";
 import { ArchiveSection } from "./archive-section";
 
 export async function generateMetadata(): Promise<Metadata> {
@@ -77,6 +78,8 @@ export default async function SpaceSettingsPage({
         members={members}
         candidates={candidates}
       />
+
+      <ImportSection spaceId={space.id} spaceSlug={space.slug} />
 
       <ArchiveSection
         spaceId={space.id}

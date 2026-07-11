@@ -12,8 +12,29 @@ import type { ProseMirrorDoc, ProseMirrorMark, ProseMirrorNode } from "./types";
  * 刻意排除：圖片（本專案 image 節點僅渲染同源上傳檔，外部 markdown 圖片會在閱讀端被擋，
  *          故 `![alt](url)` 一律降級為連結以免內容遺失）；區塊級 raw HTML 以純文字保留。
  *
+ * 例外：呼叫端可透過 `options.resolveImageSrc` 提供圖片解析器（J-02 Zip 匯入用）。
+ *      當「單獨成段」的圖片 `![alt](path)` 之 path 能解析為同源上傳附件時，產生 block image
+ *      節點（`src=/api/files/<id>`），而非降級為連結；解析回 null 時維持連結降級行為。
+ *      未帶 options（如編輯器貼上）時行為完全不變。
+ *
  * 產出的 JSON 皆為一般物件（非 null-prototype），可直接餵 savePage 與 Server Action。
  */
+
+/** markdownToDoc 選項（opt-in；未帶時行為與既有一致）。 */
+export interface MarkdownToDocOptions {
+  /**
+   * 圖片來源解析器：輸入原始 `![](href)` 的 href 與 alt，回傳同源上傳 URL（如
+   * `/api/files/<id>`）時，單獨成段的圖片會產生 block image 節點；回 null 則維持
+   * 「降級為連結」的預設行為。混排於文字中的行內圖片一律仍降級為連結（image 為 block 節點）。
+   */
+  resolveImageSrc?: (href: string, alt: string) => string | null;
+}
+
+/**
+ * 現行轉換的圖片解析器（模組層同步上下文）。轉換器為純同步遞迴、單執行緒，
+ * 逐次轉換前設定、try/finally 清除；避免把 options 逐一穿透數層內部函式。
+ */
+let activeImageResolver: MarkdownToDocOptions["resolveImageSrc"] | null = null;
 
 const NAMED_ENTITIES: Record<string, string> = {
   amp: "&",
@@ -137,6 +158,20 @@ function paragraph(tokens: Token[] | undefined): ProseMirrorNode {
   return content.length > 0 ? { type: "paragraph", content } : { type: "paragraph" };
 }
 
+/**
+ * 單獨成段的圖片 → block image 節點（僅在有 activeImageResolver 且解析成功時）。
+ * 其餘情況回 null，交由一般段落處理（image 降級為連結，維持既有行為）。
+ */
+function loneImageBlock(tokens: Token[] | undefined): ProseMirrorNode | null {
+  if (!activeImageResolver || !tokens || tokens.length !== 1) return null;
+  const only = tokens[0]!;
+  if (only.type !== "image") return null;
+  const image = only as Tokens.Image;
+  const src = activeImageResolver(image.href ?? "", image.text ?? "");
+  if (!src) return null;
+  return { type: "image", attrs: { src, alt: normalizeText(image.text ?? "") } };
+}
+
 /** 儲存格內容：block+，永遠至少一個段落。 */
 function cellParagraph(cell: Tokens.TableCell): ProseMirrorNode {
   return paragraph(cell.tokens);
@@ -207,9 +242,11 @@ function blockTokensToNodes(tokens: Token[] | undefined): ProseMirrorNode[] {
         out.push(node);
         break;
       }
-      case "paragraph":
-        out.push(paragraph((token as Tokens.Paragraph).tokens));
+      case "paragraph": {
+        const p = token as Tokens.Paragraph;
+        out.push(loneImageBlock(p.tokens) ?? paragraph(p.tokens));
         break;
+      }
       case "text": {
         // 清單項目（tight list）內文以 text token 承載行內內容 → 包成段落。
         const t = token as Tokens.Text;
@@ -256,15 +293,24 @@ function blockTokensToNodes(tokens: Token[] | undefined): ProseMirrorNode[] {
  * Markdown 字串 → ProseMirror doc（canonical JSON）。
  * 空輸入回傳空 doc（content: []），與 EMPTY_DOC 慣例一致。
  */
-export function markdownToDoc(markdown: string): ProseMirrorDoc {
-  const tokens = marked.lexer(markdown, { gfm: true });
-  const content = blockTokensToNodes(tokens);
-  return { type: "doc", content };
+export function markdownToDoc(markdown: string, options?: MarkdownToDocOptions): ProseMirrorDoc {
+  activeImageResolver = options?.resolveImageSrc ?? null;
+  try {
+    const tokens = marked.lexer(markdown, { gfm: true });
+    return { type: "doc", content: blockTokensToNodes(tokens) };
+  } finally {
+    activeImageResolver = null;
+  }
 }
 
 /** 純區塊節點串（供插入既有文件時使用，避免多包一層 doc）。 */
-export function markdownToBlockNodes(markdown: string): ProseMirrorNode[] {
-  return blockTokensToNodes(marked.lexer(markdown, { gfm: true }));
+export function markdownToBlockNodes(markdown: string, options?: MarkdownToDocOptions): ProseMirrorNode[] {
+  activeImageResolver = options?.resolveImageSrc ?? null;
+  try {
+    return blockTokensToNodes(marked.lexer(markdown, { gfm: true }));
+  } finally {
+    activeImageResolver = null;
+  }
 }
 
 const MARKDOWN_BLOCK_SIGNALS: RegExp[] = [

@@ -336,6 +336,50 @@ describe("markdownToDoc — 綜合（F-EDIT-05 驗收：多段含 code block、�
   });
 });
 
+describe("markdownToDoc — 圖片解析器（J-02 opt-in）", () => {
+  it("預設（未帶 options）：圖片降級為連結，不產生 image 節點", () => {
+    const doc = markdownToDoc("![標誌](images/logo.png)");
+    const first = doc.content?.[0];
+    expect(first?.type).toBe("paragraph");
+    const text = first?.content?.[0];
+    expect(text?.type).toBe("text");
+    expect(text?.marks?.[0]).toEqual({ type: "link", attrs: { href: "images/logo.png" } });
+  });
+
+  it("resolveImageSrc 命中：單獨成段的圖片 → block image 節點", () => {
+    const doc = markdownToDoc("![標誌](images/logo.png)", {
+      resolveImageSrc: (href) => (href === "images/logo.png" ? "/api/files/abc" : null),
+    });
+    expect(doc.content).toEqual([
+      { type: "image", attrs: { src: "/api/files/abc", alt: "標誌" } },
+    ]);
+  });
+
+  it("resolveImageSrc 回 null：維持降級為連結", () => {
+    const doc = markdownToDoc("![外部](https://x.com/a.png)", {
+      resolveImageSrc: () => null,
+    });
+    const first = doc.content?.[0];
+    expect(first?.type).toBe("paragraph");
+    expect(first?.content?.[0]?.marks?.[0]?.type).toBe("link");
+  });
+
+  it("圖片與文字混排（非單獨成段）：仍降級為連結，不變 block", () => {
+    const doc = markdownToDoc("看這張 ![標誌](images/logo.png) 圖", {
+      resolveImageSrc: () => "/api/files/abc",
+    });
+    const first = doc.content?.[0];
+    expect(first?.type).toBe("paragraph");
+    expect((first?.content ?? []).some((n) => n.type === "image")).toBe(false);
+  });
+
+  it("解析器只在該次轉換生效：轉換後不殘留（後續呼叫回預設行為）", () => {
+    markdownToDoc("![a](x.png)", { resolveImageSrc: () => "/api/files/x" });
+    const doc = markdownToDoc("![a](x.png)");
+    expect(doc.content?.[0]?.type).toBe("paragraph");
+  });
+});
+
 describe("looksLikeMarkdown", () => {
   it.each([
     "# 標題",
