@@ -4,6 +4,8 @@ import { createHeadingSlugger, headingNodeText } from "@/lib/content/heading-slu
 import { HeadingAnchor } from "@/components/content/heading-anchor";
 import { codeLanguageLabel } from "@/lib/content/lowlight";
 import { highlightToReact } from "@/lib/content/highlight-to-react";
+import { normalizeCalloutKind } from "@/lib/content/callout";
+import { CALLOUT_ICONS } from "@/components/content/callout-icons";
 import { CodeBlockReader } from "./code-block-reader";
 import { ContentImage } from "./content-image";
 import { ContentAttachment } from "./content-attachment";
@@ -132,6 +134,19 @@ function renderNode(node: ProseMirrorNode, key: number, slug: Slugger): ReactNod
       );
     case "blockquote":
       return <blockquote key={key}>{renderChildren(node.content, slug)}</blockquote>;
+    case "callout": {
+      // D-06：與編輯端共用 .jb-callout 樣式（左緣色條 + 淡底，依 data-kind 取語意 token）。
+      const kind = normalizeCalloutKind(node.attrs?.kind);
+      const Icon = CALLOUT_ICONS[kind];
+      return (
+        <div key={key} className="jb-callout" data-kind={kind}>
+          <span className="jb-callout__icon" aria-hidden>
+            <Icon />
+          </span>
+          <div className="jb-callout__body">{renderChildren(node.content, slug)}</div>
+        </div>
+      );
+    }
     case "codeBlock": {
       const code = (node.content ?? []).map((c) => c.text ?? "").join("");
       const language = (node.attrs?.language as string | null | undefined) ?? null;

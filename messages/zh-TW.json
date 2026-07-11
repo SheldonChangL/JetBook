@@ -353,10 +353,35 @@
           "label": "表格",
           "desc": "插入 3x3 表格（含表頭）"
         },
+        "calloutInfo": {
+          "label": "提示：資訊",
+          "desc": "藍色資訊提示區塊"
+        },
+        "calloutSuccess": {
+          "label": "提示：成功",
+          "desc": "綠色成功提示區塊"
+        },
+        "calloutWarning": {
+          "label": "提示：警告",
+          "desc": "黃色警告提示區塊"
+        },
+        "calloutDanger": {
+          "label": "提示：危險",
+          "desc": "紅色危險提示區塊"
+        },
         "attachment": {
           "label": "檔案",
           "desc": "上傳並插入附件卡片"
         }
+      }
+    },
+    "callout": {
+      "switchLabel": "切換提示類型",
+      "kinds": {
+        "info": "資訊",
+        "success": "成功",
+        "warning": "警告",
+        "danger": "危險"
       }
     },
     "table": {

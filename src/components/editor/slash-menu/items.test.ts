@@ -68,11 +68,24 @@ describe("filterSlashMenuItems（F-EDIT-02 中英文關鍵字過濾）", () => {
     }
   });
 
+  it("Callout：「提示」/ callout 命中全部四項，kind 關鍵字命中單項（D-06）", () => {
+    const allFour = ["calloutInfo", "calloutSuccess", "calloutWarning", "calloutDanger"];
+    for (const q of ["提示", "callout"]) {
+      expect(filterSlashMenuItems(SLASH_MENU_ITEMS, q).map((i) => i.id)).toEqual(allFour);
+    }
+    expect(filterSlashMenuItems(SLASH_MENU_ITEMS, "警告").map((i) => i.id)).toEqual([
+      "calloutWarning",
+    ]);
+    expect(filterSlashMenuItems(SLASH_MENU_ITEMS, "danger").map((i) => i.id)).toEqual([
+      "calloutDanger",
+    ]);
+  });
+
   it("無符合關鍵字回傳空陣列", () => {
     expect(filterSlashMenuItems(SLASH_MENU_ITEMS, "zzz不存在")).toEqual([]);
   });
 
-  it("涵蓋所有已實作區塊（D-01/D-03/D-04/D-05/D-08 現有節點）且 group 合法", () => {
+  it("涵蓋所有已實作區塊（D-01/D-03/D-04/D-05/D-06/D-08 現有節點）且 group 合法", () => {
     const ids = SLASH_MENU_ITEMS.map((i) => i.id);
     expect(ids).toEqual([
       "text",
@@ -86,6 +99,10 @@ describe("filterSlashMenuItems（F-EDIT-02 中英文關鍵字過濾）", () => {
       "divider",
       "codeBlock",
       "table",
+      "calloutInfo",
+      "calloutSuccess",
+      "calloutWarning",
+      "calloutDanger",
       "attachment",
     ]);
     for (const item of SLASH_MENU_ITEMS) {
