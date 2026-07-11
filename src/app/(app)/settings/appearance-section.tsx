@@ -14,8 +14,9 @@ const OPTIONS: { value: Theme; labelKey: string; icon: typeof Sun }[] = [
 ];
 
 /**
- * ③ 外觀偏好（驗收 2）：淺色／深色／跟隨系統。變更立即套用至本機並持久化至
- * users.theme_preference；登入其他裝置時由 ThemeSync 以此值校正，達成跨裝置同步。
+ * ③ 外觀偏好（驗收 2）：淺色／深色／跟隨系統。變更立即套用至本機（class + localStorage）
+ * 並持久化至 users.theme_preference；其他裝置首次載入時由 root layout 依此值 SSR 掛主題
+ * class，達成跨裝置同步（G-03）。
  */
 export function AppearanceSection({ initialTheme }: { initialTheme: Theme }) {
   const t = useTranslations("settings");
