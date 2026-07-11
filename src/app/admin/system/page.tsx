@@ -5,7 +5,9 @@ import { getTranslations } from "next-intl/server";
 import { requireSession } from "@/lib/auth/current";
 import { isOrgAdmin } from "@/lib/authz/permission";
 import { checkDatabase, checkLlm, checkStorage, getEnvSummary } from "@/lib/health";
+import { isEmbeddingConfigured } from "@/lib/llm";
 import { Badge } from "@/components/ui/badge";
+import { ReindexButton } from "./reindex-button";
 
 // 每次請求即時檢查，不做靜態化
 export const dynamic = "force-dynamic";
@@ -25,6 +27,7 @@ export default async function AdminSystemPage() {
   const [database, storage] = await Promise.all([checkDatabase(), checkStorage()]);
   const llm = checkLlm();
   const summary = getEnvSummary();
+  const embeddingConfigured = isEmbeddingConfigured();
 
   return (
     <div className="mx-auto flex max-w-5xl flex-col gap-6 px-6 py-8">
@@ -104,6 +107,17 @@ export default async function AdminSystemPage() {
           />
           <EnvRow label={t("systemEnvUploadDir")} value={summary.uploadDir} />
         </dl>
+      </section>
+
+      {/* AI 全庫重嵌（H-07，F-AI-02）：換模型／維度變更後重建索引；關閉索引空間一併清除 */}
+      <section className="rounded-md border border-edge">
+        <div className="border-b border-edge bg-sidebar px-4 py-2.5">
+          <h2 className="text-body-ui font-semibold text-fg">{t("reindexSectionTitle")}</h2>
+        </div>
+        <div className="flex flex-col gap-3 px-4 py-4">
+          <p className="text-body-ui text-fg-secondary">{t("reindexSectionDesc")}</p>
+          <ReindexButton embeddingConfigured={embeddingConfigured} />
+        </div>
       </section>
     </div>
   );

@@ -5,13 +5,17 @@ import { deleteExpiredSessions } from "@/lib/auth/session";
 import {
   ensureEmbedQueues,
   ensureImportZipQueue,
+  ensureReindexAllQueue,
   JOBS,
   updateImportZipProgress,
+  updateReindexAllProgress,
   type EmbedPageJob,
   type ImportZipJob,
+  type ReindexAllProgress,
 } from "@/lib/jobs/queue";
 import { isEmbeddingConfigured } from "@/lib/llm";
 import { embedPage } from "@/lib/rag/indexer";
+import { runReindexAll } from "@/lib/rag/reindex";
 import { runImportZip } from "@/lib/jobs/import-zip";
 
 /**
@@ -56,6 +60,32 @@ async function main() {
         "embed-page job 進入死信佇列（重試耗盡）",
       );
     }
+  });
+
+  // ── 任務型 job：全庫重嵌（H-07） ──
+  await ensureReindexAllQueue(boss);
+  await boss.work(JOBS.reindexAll, { batchSize: 1 }, async (jobs: Job<unknown>[]) => {
+    // batchSize=1：同時只跑一個全庫重嵌；回傳最終報告寫入 job output。
+    const job = jobs[0];
+    if (!job) return;
+    // 端點未設定：不啟動重嵌，回報明確失敗（admin action 已擋，此為防呆）。
+    if (!isEmbeddingConfigured()) {
+      logger.warn({ jobId: job.id }, "reindex-all：embedding 未設定，略過");
+      const output: ReindexAllProgress = {
+        phase: "failed",
+        total: 0,
+        done: 0,
+        indexed: 0,
+        cleared: 0,
+        purgedDisabledSpaces: 0,
+        failedCount: 0,
+        failed: [],
+        errorCode: "EMBEDDING_NOT_CONFIGURED",
+        errorMessage: "尚未設定 embedding 端點，無法執行全庫重嵌",
+      };
+      return output;
+    }
+    return runReindexAll({ onProgress: (progress) => updateReindexAllProgress(job.id, progress) });
   });
 
   // ── 任務型 job：Zip 批次匯入（J-02） ──

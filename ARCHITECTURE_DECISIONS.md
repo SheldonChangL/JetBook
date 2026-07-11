@@ -147,11 +147,14 @@ RAG 需要 embedding。候選：Voyage AI（`voyage-3.5` 系列，品質頂級�
 
 **Embedding 自 day-1 即採 local BGE-M3（1024 維）**，透過 OpenAI-compatible embedding endpoint（Ollama/vLLM/TEI）供應，介面與後期 Local LLM 階段完全一致。
 `page_embeddings.embedding` 定為 `vector(1024)` ＋ HNSW（`vector_cosine_ops`），`embedding_model` 欄位記錄模型名。
-**維度變更＝四步 migration 流程**（文件化為唯一合法路徑，G4）：
-1. migration 建新欄/新表（新維度）；
-2. 背景 `reindex-all` job 全量重嵌（批次＋斷點續跑＋進度回報，F-ADMIN-04 UI 承接）；
-3. 檢索切換至新欄；
-4. 清理舊欄與舊索引。
+**維度變更＝四步 migration 流程**（文件化為唯一合法路徑，G4；重嵌機制由 H-07 落地）：
+1. **建新結構**：drizzle migration 新增新維度的向量欄/表（如平行 `page_embeddings_v2` 或新欄），保留舊結構並存以供回滾。
+2. **全量重嵌**：org admin 於 `/admin/system` 觸發 `reindex-all` 背景 job（`enqueueReindexAll` → worker `runReindexAll`）。分批（100 頁/批，keyset 游標）遍歷未刪頁面，逐頁重用 `embedPage(force)`；進度／失敗清單寫 job output（`done`/`total`/`failed`）。job 冪等可續跑（以頁面當下內容為準），中斷後直接重新觸發即收斂。
+3. **切換檢索**：確認 job 完成且 golden question 評測通過後，將 retriever 的向量查詢改指向新結構。
+4. **清理舊結構**：移除舊向量欄/表與其 HNSW 索引，收斂為單一向量來源。
+
+> **同維度換模型**（不改維度）只需第 2 步：內容與 `content_hash` 不變，故 `reindex-all` 以 `force=true` 忽略 content_hash 增量、強制重算每個 chunk 的向量。
+> **AI 索引排除（NFR-COMP-03）**：同一個 `reindex-all` job 會對 `ai_indexing_enabled=false` 的空間徹底刪除既有 `page_embeddings`（含軟刪頁孤兒），確保被排除內容既不重嵌、亦不殘留任何向量。
 
 ### 取捨與後果
 
