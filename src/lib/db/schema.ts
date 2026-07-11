@@ -355,6 +355,34 @@ export const comments = pgTable(
   ],
 );
 
+// ── 站內通知（K-02；F-NOTIF-01，設計規範 §3.9 通知中心） ─────────────────────
+
+/**
+ * 站內通知（K-02，F-NOTIF-01）：使用者層級的事件收件匣。
+ * - `type`＝事件種類（如 comment_reply）；`payload` jsonb 帶顯示與跳轉所需欄位
+ *   （至少含 `url` 供點擊直達，其餘依 type 而定，如 actorName/pageTitle/excerpt）。
+ * - `read_at` null＝未讀；標為已讀寫入時間戳（不刪除，保留歷史）。
+ * - user_id cascade：使用者刪除時其通知一併清除。
+ * - `(user_id, read_at)` 複合索引：鈴鐺未讀計數與收件匣查詢皆以 user_id 起手、read_at 篩未讀。
+ */
+export const notifications = pgTable(
+  "notifications",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    userId: uuid("user_id")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    /** 事件種類（`<domain>_<verb>`），如 comment_reply */
+    type: text("type").notNull(),
+    /** 顯示與跳轉脈絡（jsonb，至少含 url）；禁止放密碼、token、文件全文 */
+    payload: jsonb("payload"),
+    /** 已讀時間；null＝未讀 */
+    readAt: timestamp("read_at", { withTimezone: true }),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (table) => [index("ix_notifications_user_read").on(table.userId, table.readAt)],
+);
+
 // ── 頁面嵌入向量（H-06；語意檢索索引，ADR-005 BGE-M3 1024 維） ────────────────
 
 /**
@@ -432,3 +460,4 @@ export type PageVersion = typeof pageVersions.$inferSelect;
 export type Attachment = typeof attachments.$inferSelect;
 export type PageEmbedding = typeof pageEmbeddings.$inferSelect;
 export type Comment = typeof comments.$inferSelect;
+export type Notification = typeof notifications.$inferSelect;

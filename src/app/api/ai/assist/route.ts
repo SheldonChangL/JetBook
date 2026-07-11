@@ -1,12 +1,14 @@
 import { NextResponse } from "next/server";
 import { getTranslations } from "next-intl/server";
 import { z } from "zod";
+import { ipFromHeaders } from "@/lib/audit";
+import { recordAiUsage } from "@/lib/ai/usage";
 import { getCurrentSession } from "@/lib/auth/current";
 import { canEditPage } from "@/lib/authz/permission";
 import { getLlmProvider, isLlmConfigured } from "@/lib/llm";
 import { logger } from "@/lib/logger";
 import { aiRateLimiter } from "@/lib/rate-limit";
-import { streamAssist } from "@/lib/ai/assist";
+import { streamAssist, type AssistSummary } from "@/lib/ai/assist";
 import { ASSIST_MAX_INPUT_CHARS, ASSIST_MODES } from "@/lib/ai/assist-modes";
 
 export const dynamic = "force-dynamic";
@@ -87,7 +89,7 @@ export async function POST(request: Request) {
 
   const provider = getLlmProvider();
   const encoder = new TextEncoder();
-  let usage = { inputTokens: 0, outputTokens: 0 };
+  const ip = ipFromHeaders(request.headers);
 
   const stream = new ReadableStream<Uint8Array>({
     async start(controller) {
@@ -99,28 +101,44 @@ export async function POST(request: Request) {
           // 已關閉／已取消
         }
       };
+      const startedAt = Date.now();
+      // 手動迭代以取得 generator 回傳的用量摘要（含 model；不進 SSE 幀，不外洩 client）。
+      const gen = streamAssist({ mode, text, provider, signal: request.signal });
       try {
-        for await (const evt of streamAssist({
-          mode,
-          text,
-          provider,
-          signal: request.signal,
-        })) {
-          if (evt.event === "done") usage = evt.data.usage;
+        let summary: AssistSummary | null = null;
+        for (;;) {
+          const step = await gen.next();
+          if (step.done) {
+            summary = step.value;
+            break;
+          }
+          const evt = step.value;
           controller.enqueue(encoder.encode(frame(evt.event, evt.data)));
         }
         safeClose();
-        // 用量入記錄（NFR-OBS；持久化 ai_usage 表待 I-06 migration 就緒後接手）。
-        logger.info(
-          {
+        // 用量記錄：每次 LLM 呼叫後記一筆 ai.query（I-06、NFR-OBS-04）。
+        if (summary) {
+          logger.info(
+            {
+              actorId: session.user.id,
+              pageId,
+              mode,
+              model: summary.model,
+              inputTokens: summary.usage.inputTokens,
+              outputTokens: summary.usage.outputTokens,
+            },
+            "ai assist",
+          );
+          await recordAiUsage({
             actorId: session.user.id,
-            pageId,
-            mode,
-            inputTokens: usage.inputTokens,
-            outputTokens: usage.outputTokens,
-          },
-          "ai assist",
-        );
+            model: summary.model,
+            inputTokens: summary.usage.inputTokens,
+            outputTokens: summary.usage.outputTokens,
+            latencyMs: Date.now() - startedAt,
+            mode: "assist",
+            ip,
+          });
+        }
       } catch (err) {
         // client 斷線：LLM 已依 signal 停止，安靜關閉，不視為錯誤。
         if (request.signal.aborted) {

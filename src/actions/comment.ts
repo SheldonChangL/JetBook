@@ -14,6 +14,7 @@ import {
   updateCommentBody,
   type CommentView,
 } from "@/lib/comments/service";
+import { notifyCommentReply } from "@/lib/notifications";
 import { logger } from "@/lib/logger";
 
 /**
@@ -74,6 +75,13 @@ export async function replyComment(input: z.infer<typeof replySchema>): Promise<
     { userId: user.id, pageId: found.comment.pageId, parentId, commentId: created.id },
     "comment reply added",
   );
+  // 通知討論串原作者（頂層留言作者）；notifyCommentReply 內部自行容錯、略過自我通知。
+  await notifyCommentReply({
+    topLevelCommentId: parentId,
+    replierId: user.id,
+    replierName: user.name,
+    replyBody: data.body,
+  });
   return created;
 }
 

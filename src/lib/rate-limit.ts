@@ -72,8 +72,8 @@ export const passwordResetRateLimiter: RateLimiter =
   }));
 
 /**
- * AI 端點：20 次/分/使用者，抑制濫用與成本失控（I-06 精神；以使用者 id 為 key）。
- * I-06（#82）落地持久化用量記錄後可改由其 limiter 統一接手，呼叫端不需更動介面。
+ * AI 端點：20 次/分/使用者（NFR-SEC-07、I-06）。key 為 user id，
+ * 涵蓋 /api/ai/chat 與語意／hybrid 搜尋，避免單一使用者濫用昂貴的 LLM／embedding 呼叫。
  */
 export const aiRateLimiter: RateLimiter =
   globalForRateLimit.jetbookAiLimiter ??

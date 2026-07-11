@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import type { ChatDelta, ChatParams, ChatResult, ChatUsage, LLMProvider } from "@/lib/llm";
+import type { ChatDelta, ChatParams, ChatResult, ChatStreamResult, ChatUsage, LLMProvider } from "@/lib/llm";
 import type { Actor } from "@/lib/authz/permission";
 import { slugifyHeadingText } from "@/lib/content/heading-slug";
 import {
@@ -9,6 +9,7 @@ import {
   buildUserPrompt,
   headingAnchor,
   streamChatAnswer,
+  type ChatAnswerSummary,
   type SseEvent,
 } from "./answer";
 import { HEADING_PATH_SEPARATOR } from "./chunker";
@@ -45,13 +46,14 @@ class FakeProvider implements LLMProvider {
   constructor(
     private deltas: string[] = ["答案"],
     private usage: ChatUsage = { inputTokens: 12, outputTokens: 8 },
+    private modelId = "fake-model",
   ) {}
 
-  async *chatStream(params: ChatParams): AsyncGenerator<ChatDelta, ChatUsage> {
+  async *chatStream(params: ChatParams): AsyncGenerator<ChatDelta, ChatStreamResult> {
     this.chatStreamCalls += 1;
     this.lastParams = params;
     for (const text of this.deltas) yield { type: "text", text };
-    return this.usage;
+    return { usage: this.usage, model: this.modelId };
   }
 
   async chat(): Promise<ChatResult> {
@@ -63,6 +65,16 @@ async function collect(gen: AsyncGenerator<SseEvent>): Promise<SseEvent[]> {
   const out: SseEvent[] = [];
   for await (const e of gen) out.push(e);
   return out;
+}
+
+/** 迭代到結束並回傳 generator 的 return 值（TReturn；I-06 用量摘要或 null）。 */
+async function drain(
+  gen: AsyncGenerator<SseEvent, ChatAnswerSummary | null>,
+): Promise<ChatAnswerSummary | null> {
+  for (;;) {
+    const step = await gen.next();
+    if (step.done) return step.value;
+  }
 }
 
 describe("buildSources", () => {
@@ -175,6 +187,19 @@ describe("streamChatAnswer — 有檢索結果", () => {
     expect(provider.lastParams?.messages[0]?.content).toContain("如何校準？");
   });
 
+  it("回傳本次用量摘要（usage + model），供 route 記錄 I-06 用量", async () => {
+    const summary = await drain(
+      streamChatAnswer({
+        actor,
+        question: "如何校準？",
+        noResultsMessage: "查無",
+        retrieveFn: async () => [chunk()],
+        provider: new FakeProvider(["答"], { inputTokens: 11, outputTokens: 3 }, "gpt-test"),
+      }),
+    );
+    expect(summary).toEqual({ usage: { inputTokens: 11, outputTokens: 3 }, model: "gpt-test" });
+  });
+
   it("AbortSignal 貫通至 LLM 串流", async () => {
     const provider = new FakeProvider();
     const ac = new AbortController();
@@ -212,5 +237,18 @@ describe("streamChatAnswer — 無檢索結果", () => {
     ]);
     // 出貨閘門精神：無依據不打 LLM（呼叫數 = 0）。
     expect(provider.chatStreamCalls).toBe(0);
+  });
+
+  it("無結果時回傳 null（route 據此不記 ai.query 用量）", async () => {
+    const summary = await drain(
+      streamChatAnswer({
+        actor,
+        question: "不存在的問題",
+        noResultsMessage: "查無",
+        retrieveFn: async () => [],
+        provider: new FakeProvider(),
+      }),
+    );
+    expect(summary).toBeNull();
   });
 });

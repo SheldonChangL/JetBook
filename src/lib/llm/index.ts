@@ -7,7 +7,7 @@ import type { LLMProvider } from "./provider";
 import { OpenAICompatEmbeddingProvider } from "./embedding";
 import type { EmbeddingProvider } from "./provider";
 
-export type { ChatDelta, ChatMessage, ChatParams, ChatResult, ChatUsage, EmbeddingProvider, LLMProvider } from "./provider";
+export type { ChatDelta, ChatMessage, ChatParams, ChatResult, ChatStreamResult, ChatUsage, EmbeddingProvider, LLMProvider } from "./provider";
 
 /** AI 功能是否已設定（UI 依此顯示/隱藏 AI 入口）。 */
 export function isLlmConfigured(): boolean {

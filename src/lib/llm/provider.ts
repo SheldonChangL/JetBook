@@ -29,6 +29,15 @@ export interface ChatUsage {
   outputTokens: number;
 }
 
+/**
+ * 串流結束時的彙總結果：本次用量 + 實際使用的 model id。
+ * model 供用量記錄（I-06 `ai.query` 稽核）分項統計，與 ChatResult.model 同義。
+ */
+export interface ChatStreamResult {
+  usage: ChatUsage;
+  model: string;
+}
+
 export interface ChatResult {
   text: string;
   usage: ChatUsage;
@@ -39,9 +48,9 @@ export interface LLMProvider {
   readonly name: string;
   /**
    * 串流輸出（SSE 直通）；逐 token yield 文字增量，generator 結束時
-   * `return` 本次用量（供 done 事件與用量記錄）。
+   * `return` 本次用量與 model（供 done 事件與用量記錄）。
    */
-  chatStream(params: ChatParams): AsyncGenerator<ChatDelta, ChatUsage>;
+  chatStream(params: ChatParams): AsyncGenerator<ChatDelta, ChatStreamResult>;
   /** 非串流（輕量任務）。 */
   chat(params: ChatParams): Promise<ChatResult>;
 }
