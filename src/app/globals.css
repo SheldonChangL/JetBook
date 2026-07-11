@@ -296,6 +296,94 @@ html.dark {
       box-shadow 0.4s ease;
   }
 
+  /* 圖片區塊（D-07；編輯器與閱讀渲染共用）：尺寸吸附至內容欄寬 */
+  .prose-editor :where(figure.content-image-figure) {
+    margin: 1.25rem 0;
+  }
+  .prose-editor :where(img.content-image) {
+    display: block;
+    max-width: 100%;
+    height: auto;
+    border-radius: var(--radius-md);
+    border: 1px solid var(--border-default);
+  }
+  .prose-editor :where(figure.content-image-figure.is-selected img.content-image) {
+    outline: 2px solid var(--primary);
+    outline-offset: 2px;
+  }
+  .prose-editor :where(figcaption.content-image-caption) {
+    margin-top: 0.5rem;
+    font-size: var(--text-caption);
+    color: var(--text-tertiary);
+    text-align: center;
+  }
+  .prose-editor :where(.content-image-caption-input) {
+    display: block;
+    width: 100%;
+    margin-top: 0.5rem;
+    border: none;
+    background: transparent;
+    text-align: center;
+    font-size: var(--text-caption);
+    color: var(--text-secondary);
+    outline: none;
+  }
+  .prose-editor :where(.content-image-caption-input)::placeholder {
+    color: var(--text-tertiary);
+  }
+  /* 閱讀端：點擊放大（lightbox）觸發鈕，去除按鈕預設樣式 */
+  .prose-editor :where(button.content-image-trigger) {
+    display: block;
+    width: 100%;
+    padding: 0;
+    border: none;
+    background: none;
+    cursor: zoom-in;
+  }
+  .content-image-lightbox-img {
+    max-width: 90vw;
+    max-height: 90vh;
+    object-fit: contain;
+    border-radius: var(--radius-md);
+  }
+  /* 上傳中佔位（不進文件節點；預覽縮圖 + 轉圈） */
+  .prose-editor :where(.image-upload-placeholder) {
+    position: relative;
+    margin: 1.25rem 0;
+    border-radius: var(--radius-md);
+    overflow: hidden;
+  }
+  .prose-editor :where(.image-upload-placeholder img) {
+    display: block;
+    max-width: 100%;
+    height: auto;
+    opacity: 0.5;
+  }
+  .prose-editor :where(.image-upload-placeholder__status) {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    color: #fff;
+    background: rgb(0 0 0 / 0.35);
+    font-size: var(--text-caption);
+  }
+  .image-upload-placeholder__spinner {
+    width: 1rem;
+    height: 1rem;
+    border: 2px solid rgb(255 255 255 / 0.4);
+    border-top-color: #fff;
+    border-radius: 9999px;
+    animation: image-upload-spin 0.7s linear infinite;
+  }
+  @keyframes image-upload-spin {
+    to {
+      transform: rotate(360deg);
+    }
+  }
+
   /* 動態偏好（§5.2） */
   @media (prefers-reduced-motion: reduce) {
     *,

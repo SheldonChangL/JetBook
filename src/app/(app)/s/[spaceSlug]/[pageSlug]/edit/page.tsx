@@ -43,6 +43,7 @@ export default async function EditPage({
   return (
     <PageEditor
       pageId={page.id}
+      spaceId={space.id}
       spaceSlug={spaceSlug}
       pageSlug={pageSlug}
       initialTitle={page.title}

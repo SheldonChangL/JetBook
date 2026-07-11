@@ -3,11 +3,17 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useTranslations } from "next-intl";
-import { EditorContent, useEditor } from "@tiptap/react";
+import { EditorContent, useEditor, type Editor } from "@tiptap/react";
 import { ArrowLeft } from "lucide-react";
 import { renamePage, savePage } from "@/actions/page";
 import { heartbeatLockAction, releaseLockAction } from "@/actions/lock";
 import { buildExtensions } from "./extensions";
+import { startImageUpload } from "./image/image-upload";
+import {
+  isRetryableUploadError,
+  uploadErrorMessageKey,
+  type UploadErrorCode,
+} from "./image/image-upload-utils";
 import type { ProseMirrorDoc } from "@/lib/content/types";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/components/ui/toast";
@@ -19,6 +25,7 @@ type SaveState = "idle" | "saving" | "saved" | "conflict" | "error";
 
 export interface PageEditorProps {
   pageId: string;
+  spaceId: string;
   spaceSlug: string;
   pageSlug: string;
   initialTitle: string;
@@ -32,6 +39,7 @@ export interface PageEditorProps {
  */
 export function PageEditor({
   pageId,
+  spaceId,
   spaceSlug,
   pageSlug,
   initialTitle,
@@ -57,6 +65,61 @@ export function PageEditor({
       },
     },
   });
+
+  // 圖片上傳（D-07）：retry 走 ref 打破 callback 循環相依
+  const editorRef = useRef<Editor | null>(null);
+  editorRef.current = editor;
+  const retryRef = useRef<(file: File) => void>(() => {});
+
+  const showUploadError = useCallback(
+    (file: File, code: UploadErrorCode) => {
+      toast({
+        variant: "error",
+        title: t(`image.${uploadErrorMessageKey(code)}`),
+        action: isRetryableUploadError(code) ? (
+          <button
+            type="button"
+            onClick={() => retryRef.current(file)}
+            className="text-body-ui font-medium text-primary hover:underline"
+          >
+            {t("image.retry")}
+          </button>
+        ) : undefined,
+      });
+    },
+    [toast, t],
+  );
+
+  const uploadImageAtSelection = useCallback(
+    (file: File) => {
+      const ed = editorRef.current;
+      if (!ed) return;
+      startImageUpload({
+        editor: ed,
+        file,
+        pos: ed.state.selection.from,
+        spaceId,
+        pageId,
+        uploadingLabel: t("image.uploading"),
+        onError: showUploadError,
+      });
+    },
+    [spaceId, pageId, t, showUploadError],
+  );
+
+  useEffect(() => {
+    retryRef.current = uploadImageAtSelection;
+  }, [uploadImageAtSelection]);
+
+  // 把上傳設定填入 image extension 的 storage，供 drop/貼上 plugin 於事件當下讀取
+  useEffect(() => {
+    if (!editor) return;
+    const storage = editor.storage.image;
+    storage.spaceId = spaceId;
+    storage.pageId = pageId;
+    storage.uploadingLabel = t("image.uploading");
+    storage.onError = showUploadError;
+  }, [editor, spaceId, pageId, t, showUploadError]);
 
   const doSave = useCallback(async () => {
     if (!editor) return;
