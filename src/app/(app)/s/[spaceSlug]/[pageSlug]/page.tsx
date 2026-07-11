@@ -11,11 +11,13 @@ import { can } from "@/lib/authz/permission";
 import { denyPageRead } from "@/lib/authz/deny";
 import { recordVisit } from "@/lib/pages/visits";
 import { resolvePageBySlug } from "@/lib/pages/slug";
+import { listPageComments } from "@/lib/comments/service";
 import { RenderContent } from "@/components/content/render-content";
 import { CopyLinkButton } from "@/components/content/copy-link-button";
 import { AnchorHighlight } from "@/components/content/anchor-highlight";
 import { Button } from "@/components/ui/button";
 import type { ProseMirrorDoc } from "@/lib/content/types";
+import { CommentsPanel } from "./comments-panel";
 
 export async function generateMetadata({
   params,
@@ -57,6 +59,10 @@ export default async function PageReadPage({
   await recordVisit(user.id, page.id);
 
   const canEdit = await can(user, "page.edit", { type: "page", spaceId: space.id });
+  // 留言區（K-01）：commenter+ 可留言、space admin 可刪除他人留言。
+  const canComment = await can(user, "page.comment", { type: "page", spaceId: space.id });
+  const canModerate = await can(user, "space.manage", { type: "space", spaceId: space.id });
+  const comments = await listPageComments(page.id);
   const updated = new Intl.DateTimeFormat("zh-TW", {
     dateStyle: "medium",
     timeStyle: "short",
@@ -99,6 +105,14 @@ export default async function PageReadPage({
 
       <RenderContent doc={(page.content as ProseMirrorDoc | null) ?? null} />
       <AnchorHighlight />
+
+      <CommentsPanel
+        pageId={page.id}
+        currentUser={{ id: user.id, name: user.name }}
+        canComment={canComment}
+        canModerate={canModerate}
+        initialComments={comments}
+      />
     </article>
   );
 }
