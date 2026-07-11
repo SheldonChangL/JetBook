@@ -96,8 +96,23 @@ export function useAiChat({ genericError, onRateLimited }: UseAiChatOptions): Us
           signal: controller.signal,
         });
 
-        // 限流（NFR-SEC-07）：交由元件層以 toast 提示（帶 Retry-After 秒數），不顯示 inline 錯誤。
+        // 429 有兩種：限流（RATE_LIMITED，帶 Retry-After）與每日配額用罄（QUOTA_EXCEEDED，I-09）。
+        // 以錯誤碼區分：配額用罄顯示 inline 訊息（非重試提示）；限流交元件層以 toast 提示。
         if (res.status === 429) {
+          let code: string | undefined;
+          let message: string | undefined;
+          try {
+            const body = (await res.json()) as { error?: { code?: string; message?: string } };
+            code = body?.error?.code;
+            message = body?.error?.message;
+          } catch {
+            // 非 JSON 回應：視為限流處理
+          }
+          if (code === "QUOTA_EXCEEDED") {
+            setError(message || genericError);
+            setStatus("idle");
+            return;
+          }
           const retryAfter = Number(res.headers.get("retry-after"));
           onRateLimited?.(Number.isFinite(retryAfter) && retryAfter > 0 ? retryAfter : 60);
           setStatus("idle");
