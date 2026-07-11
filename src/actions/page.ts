@@ -1,12 +1,14 @@
 "use server";
 
-import { and, desc, eq, isNull, sql } from "drizzle-orm";
+import { and, desc, eq, inArray, isNull, sql } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
 import { headers } from "next/headers";
 import { z } from "zod";
 import { db } from "@/lib/db";
-import { pages, pageVersions, spaces, users } from "@/lib/db/schema";
+import { pageEmbeddings, pages, pageVersions, spaces, users } from "@/lib/db/schema";
 import { requireSession } from "@/lib/auth/current";
+import { enqueueEmbedPage } from "@/lib/jobs/queue";
+import { isEmbeddingConfigured } from "@/lib/llm";
 import { assertCan } from "@/lib/authz/permission";
 import { positionBetween } from "@/lib/pages/position";
 import { movePageNode } from "@/lib/pages/move";
@@ -40,6 +42,23 @@ async function requireEditor(spaceId: string) {
   const { user } = await requireSession();
   await assertCan(user, "page.edit", { type: "page", spaceId });
   return user;
+}
+
+/**
+ * 觸發頁面嵌入索引（H-06）：存檔／刪除後 fire-and-forget enqueue。
+ * 未設定 embedding 端點時直接略過；enqueue 失敗只記錄不擲出——嵌入管線
+ * 絕不阻塞編輯（驗收：失敗重試與死信不阻塞編輯）。
+ */
+async function triggerEmbedPage(pageId: string): Promise<void> {
+  if (!isEmbeddingConfigured()) {
+    logger.debug({ pageId }, "embedding 未設定，略過索引 enqueue");
+    return;
+  }
+  try {
+    await enqueueEmbedPage(pageId);
+  } catch (error) {
+    logger.error({ err: error, pageId }, "enqueue embed-page 失敗（不阻塞編輯）");
+  }
 }
 
 const createSchema = z.object({
@@ -157,8 +176,8 @@ export async function deletePage(input: z.infer<typeof deleteSchema>) {
   const user = await requireEditor(page.spaceId);
 
   const now = new Date();
-  // recursive CTE 找出整支子樹並一次軟刪
-  await db.execute(sql`
+  // recursive CTE 找出整支子樹並一次軟刪；RETURNING 取受影響 id 供清除向量索引
+  const deleted = await db.execute<{ id: string }>(sql`
     WITH RECURSIVE subtree AS (
       SELECT id FROM ${pages} WHERE id = ${pageId}
       UNION ALL
@@ -166,9 +185,31 @@ export async function deletePage(input: z.infer<typeof deleteSchema>) {
     )
     UPDATE ${pages} SET deleted_at = ${now}
     WHERE id IN (SELECT id FROM subtree) AND deleted_at IS NULL
+    RETURNING id
   `);
 
   logger.info({ userId: user.id, pageId }, "page soft-deleted (subtree)");
+
+  // 軟刪清除向量（H-06）：重用 embed 管線——handler 見 deletedAt 即刪向量。
+  // 只對「確實有向量」的頁面 enqueue（避免整棵子樹空派工）。整段包 try/catch：
+  // 索引清除的任何失敗都不得阻塞刪除流程或後續稽核（驗收：不阻塞編輯）。
+  if (isEmbeddingConfigured()) {
+    try {
+      const deletedIds = deleted.rows.map((row) => row.id);
+      if (deletedIds.length > 0) {
+        const indexed = await db
+          .select({ pageId: pageEmbeddings.pageId })
+          .from(pageEmbeddings)
+          .where(inArray(pageEmbeddings.pageId, deletedIds))
+          .groupBy(pageEmbeddings.pageId);
+        for (const { pageId: indexedId } of indexed) {
+          await triggerEmbedPage(indexedId);
+        }
+      }
+    } catch (error) {
+      logger.error({ err: error, pageId }, "軟刪清除向量 enqueue 失敗（不阻塞刪除）");
+    }
+  }
   await writeAudit({
     actorId: user.id,
     action: "page.delete",
@@ -260,6 +301,8 @@ export async function savePage(input: z.infer<typeof saveSchema>): Promise<{ ver
   });
 
   logger.info({ userId: user.id, pageId: data.pageId, versionNo: nextVersion }, "page saved");
+  // 三欄同交易提交後才 enqueue 嵌入索引（架構鐵律 #5：儲存管線之後）。
+  await triggerEmbedPage(data.pageId);
   return { versionNo: nextVersion };
 }
 

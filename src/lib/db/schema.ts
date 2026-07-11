@@ -19,6 +19,7 @@ import {
   timestamp,
   uniqueIndex,
   uuid,
+  vector,
 } from "drizzle-orm/pg-core";
 
 /** 系統層級角色：admin 可管理使用者與全部空間；member 為一般成員。 */
@@ -317,6 +318,44 @@ export const attachments = pgTable(
   ],
 );
 
+// ── 頁面嵌入向量（H-06；語意檢索索引，ADR-005 BGE-M3 1024 維） ────────────────
+
+/**
+ * 頁面嵌入向量（H-06，架構 B.7）：每頁 chunk 一列，供語意／hybrid 檢索。
+ * - `embedding` 為 pgvector vector(1024)（day-1 local BGE-M3，維度固定；換模型走 reindex migration，ADR-005）。
+ * - `(page_id, chunk_index)` 唯一：增量重嵌以 upsert 更新既有 chunk。
+ * - `content_hash`＝chunk 原始內容 sha256：內容未變的 chunk 略過重算 embedding。
+ * - page_id FK cascade：頁面硬刪時向量一併消失；軟刪／關閉 AI 索引時由 embed job 清除。
+ * - HNSW 索引（vector_cosine_ops）無法由 drizzle schema 表達，於自訂 migration 建立。
+ */
+export const pageEmbeddings = pgTable(
+  "page_embeddings",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    pageId: uuid("page_id")
+      .notNull()
+      .references(() => pages.id, { onDelete: "cascade" }),
+    /** chunker 產生的 chunk 序號（0 起，同頁連續） */
+    chunkIndex: integer("chunk_index").notNull(),
+    /** chunk 原始內容 sha256 hex（增量重嵌比對鍵） */
+    contentHash: text("content_hash").notNull(),
+    /** heading 階層路徑（檢索結果定位／來源標註用） */
+    headingPath: text("heading_path").notNull().default(""),
+    /** 送嵌入的完整 chunk 文字（含 context header；檢索片段回填用） */
+    chunkText: text("chunk_text").notNull(),
+    /** chunk token 估算（觀測／容量用） */
+    tokenCount: integer("token_count").notNull().default(0),
+    /** 嵌入向量（1024 維，vector_cosine_ops HNSW 於自訂 migration 建索引） */
+    embedding: vector("embedding", { dimensions: 1024 }).notNull(),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+    updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (table) => [
+    uniqueIndex("ux_page_embeddings_page_chunk").on(table.pageId, table.chunkIndex),
+    index("ix_page_embeddings_page").on(table.pageId),
+  ],
+);
+
 // ── 稽核日誌（B-07；Must/P0，審查 C8） ──────────────────────────────────────
 
 /**
@@ -354,3 +393,4 @@ export type SpaceVisibility = (typeof spaceVisibilityEnum.enumValues)[number];
 export type Page = typeof pages.$inferSelect;
 export type PageVersion = typeof pageVersions.$inferSelect;
 export type Attachment = typeof attachments.$inferSelect;
+export type PageEmbedding = typeof pageEmbeddings.$inferSelect;
