@@ -113,6 +113,9 @@
     "errorInvalidCredentials": "信箱或密碼錯誤",
     "errorRateLimited": "嘗試次數過多，請稍後再試",
     "errorLockedFor": "登入失敗次數過多，請於 {seconds} 秒後再試",
+    "errorSso": "單一登入失敗，請改用帳號密碼或稍後再試",
+    "ssoDivider": "或",
+    "ssoButton": "使用單一登入（SSO）",
     "logout": "登出",
     "copyright": "© Jet Opto 捷揚光電"
   },
