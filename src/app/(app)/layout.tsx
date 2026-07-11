@@ -5,13 +5,18 @@ import { Home, Library, Trash2 } from "lucide-react";
 import { requireSession } from "@/lib/auth/current";
 import { isOrgAdmin } from "@/lib/authz/permission";
 import { isEmbeddingConfigured, isLlmConfigured } from "@/lib/llm";
+import { countUnread, listNotifications } from "@/lib/notifications";
 import { listAccessibleSpaces } from "@/lib/spaces/queries";
 import { AppShell } from "@/components/layout/app-shell";
 
 export default async function AppLayout({ children }: { children: ReactNode }) {
   const { user } = await requireSession();
   const t = await getTranslations("shell");
-  const spaces = await listAccessibleSpaces(user);
+  const [spaces, notifications, unreadNotifications] = await Promise.all([
+    listAccessibleSpaces(user),
+    listNotifications(user.id),
+    countUnread(user.id),
+  ]);
 
   const sidebar = (
     <nav className="flex flex-col gap-0.5 text-body-ui">
@@ -42,6 +47,8 @@ export default async function AppLayout({ children }: { children: ReactNode }) {
       sidebar={sidebar}
       llmConfigured={isLlmConfigured()}
       embeddingConfigured={isEmbeddingConfigured()}
+      notifications={notifications}
+      unreadNotifications={unreadNotifications}
     >
       {children}
     </AppShell>

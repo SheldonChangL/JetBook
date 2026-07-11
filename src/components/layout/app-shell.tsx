@@ -8,7 +8,9 @@ import { cn } from "@/lib/utils";
 import { IconButton } from "@/components/ui/icon-button";
 import { Kbd } from "@/components/ui/kbd";
 import { AiChatDrawer } from "@/components/ai/ai-chat-drawer";
+import type { NotificationView } from "@/lib/notifications";
 import { CommandPalette } from "./command-palette";
+import { NotificationBell } from "./notification-bell";
 import { OfflineBanner } from "./offline-banner";
 import { ThemeToggle } from "./theme-toggle";
 import { UserMenu } from "./user-menu";
@@ -23,6 +25,10 @@ export interface AppShellProps {
   llmConfigured?: boolean;
   /** 語意索引已設定（isEmbeddingConfigured）：Cmd+K 語意區據此渲染。 */
   embeddingConfigured?: boolean;
+  /** 站內通知（K-02）：由 RSC layout 查詢後注入鈴鐺初始資料。 */
+  notifications?: NotificationView[];
+  /** 未讀通知數（鈴鐺徽章初值）。 */
+  unreadNotifications?: number;
 }
 
 /**
@@ -36,6 +42,8 @@ export function AppShell({
   children,
   llmConfigured = false,
   embeddingConfigured = false,
+  notifications = [],
+  unreadNotifications = 0,
 }: AppShellProps) {
   const t = useTranslations("shell");
   const [collapsed, setCollapsed] = useState(false);
@@ -120,6 +128,7 @@ export function AppShell({
               <Sparkles className="size-4" />
             </IconButton>
           ) : null}
+          <NotificationBell initialItems={notifications} initialUnread={unreadNotifications} />
           <ThemeToggle />
           <UserMenu name={user.name} email={user.email} isAdmin={user.isAdmin} />
         </div>
