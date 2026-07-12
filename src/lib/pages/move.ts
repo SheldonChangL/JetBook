@@ -38,6 +38,8 @@ export async function movePageNode(input: MovePageNodeInput): Promise<{ position
       if (!parent || parent.deletedAt || parent.spaceId !== page.spaceId) {
         throw new Error("NOT_FOUND");
       }
+      // 外部連結為葉節點，不得作為父（C-11）。
+      if (parent.kind === "external_link") throw new Error("EXTERNAL_LINK_NO_CHILDREN");
       // 循環防護：newParent 不得位於 pageId 的子樹內
       const cycle = await tx.execute<{ id: string }>(sql`
         WITH RECURSIVE subtree AS (

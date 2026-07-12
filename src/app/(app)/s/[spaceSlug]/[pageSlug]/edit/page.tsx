@@ -25,6 +25,8 @@ export default async function EditPage({
     where: and(eq(pages.spaceId, space.id), eq(pages.slug, pageSlug), isNull(pages.deletedAt)),
   });
   if (!page) notFound();
+  // 群組／外部連結節點無內文，不進編輯器（C-11）。
+  if (page.kind !== "page") notFound();
 
   if (!(await can(user, "page.edit", { type: "page", spaceId: space.id }))) {
     notFound();

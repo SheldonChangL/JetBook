@@ -91,6 +91,120 @@ export async function createPage(input: z.infer<typeof createSchema>) {
   return { id: page.id, slug: page.slug };
 }
 
+/** external_link 目標 URL 驗證：僅允許 http/https 絕對網址（擋 javascript:／相對路徑等）。 */
+function isHttpUrl(value: string): boolean {
+  try {
+    const parsed = new URL(value);
+    return parsed.protocol === "http:" || parsed.protocol === "https:";
+  } catch {
+    return false;
+  }
+}
+
+const externalUrlSchema = z
+  .string()
+  .trim()
+  .min(1)
+  .max(2048)
+  .refine(isHttpUrl, { message: "EXTERNAL_URL_INVALID" });
+
+const createGroupSchema = z.object({
+  spaceId: z.uuid(),
+  parentId: z.uuid().nullable().default(null),
+  title: z.string().trim().min(1).max(200),
+});
+
+/**
+ * 建立群組分節節點（C-11，F-PAGE-04）：僅結構、無內文、不可開啟為頁面。
+ * 薄殼：驗 session → 驗 page.edit → createPageInTx(kind='group')。回傳新節點 id（不導頁）。
+ */
+export async function createGroupNode(input: z.infer<typeof createGroupSchema>) {
+  const data = createGroupSchema.parse(input);
+  const user = await requireEditor(data.spaceId);
+  const node = await db.transaction((tx) =>
+    createPageInTx(tx, {
+      spaceId: data.spaceId,
+      parentId: data.parentId,
+      title: data.title,
+      userId: user.id,
+      kind: "group",
+    }),
+  );
+  logger.info({ userId: user.id, pageId: node.id, spaceId: data.spaceId }, "group node created");
+  const space = await db.query.spaces.findFirst({ where: eq(spaces.id, data.spaceId) });
+  if (space) revalidatePath(`/s/${space.slug}`);
+  return { id: node.id };
+}
+
+const createExternalLinkSchema = z.object({
+  spaceId: z.uuid(),
+  parentId: z.uuid().nullable().default(null),
+  title: z.string().trim().min(1).max(200),
+  url: externalUrlSchema,
+});
+
+/**
+ * 建立外部連結節點（C-11，F-PAGE-04）：點擊以新分頁開啟目標 URL，無內文、無子節點。
+ * 薄殼：驗 session → 驗 page.edit → createPageInTx(kind='external_link', externalUrl)。
+ */
+export async function createExternalLinkNode(input: z.infer<typeof createExternalLinkSchema>) {
+  const data = createExternalLinkSchema.parse(input);
+  const user = await requireEditor(data.spaceId);
+  const node = await db.transaction((tx) =>
+    createPageInTx(tx, {
+      spaceId: data.spaceId,
+      parentId: data.parentId,
+      title: data.title,
+      userId: user.id,
+      kind: "external_link",
+      externalUrl: data.url,
+    }),
+  );
+  logger.info(
+    { userId: user.id, pageId: node.id, spaceId: data.spaceId },
+    "external link node created",
+  );
+  const space = await db.query.spaces.findFirst({ where: eq(spaces.id, data.spaceId) });
+  if (space) revalidatePath(`/s/${space.slug}`);
+  return { id: node.id };
+}
+
+const updateExternalLinkSchema = z.object({
+  pageId: z.uuid(),
+  title: z.string().trim().min(1).max(200),
+  url: externalUrlSchema,
+});
+
+/**
+ * 編輯外部連結節點（C-11）：更新標題與目標 URL。薄殼：驗 session → 驗 page.edit →
+ * 同交易內更新標題／slug／external_url。外部節點無內部 URL，故不寫 slug 301 歷史，
+ * 僅 reclaim 同名舊 slug 以維持唯一性。
+ */
+export async function updateExternalLink(input: z.infer<typeof updateExternalLinkSchema>) {
+  const data = updateExternalLinkSchema.parse(input);
+  const page = await db.query.pages.findFirst({ where: eq(pages.id, data.pageId) });
+  if (!page || page.deletedAt || page.kind !== "external_link") throw new Error("NOT_FOUND");
+  const user = await requireEditor(page.spaceId);
+
+  const newSlug = await uniquePageSlug(page.spaceId, data.title, { excludePageId: page.id });
+  await db.transaction(async (tx) => {
+    if (newSlug !== page.slug) await reclaimSlug(tx, page.spaceId, newSlug);
+    await tx
+      .update(pages)
+      .set({
+        title: data.title,
+        slug: newSlug,
+        externalUrl: data.url,
+        updatedBy: user.id,
+        updatedAt: new Date(),
+      })
+      .where(eq(pages.id, page.id));
+  });
+  const space = await db.query.spaces.findFirst({ where: eq(spaces.id, page.spaceId) });
+  if (space) revalidatePath(`/s/${space.slug}`);
+  return { id: page.id };
+}
+
 const renameSchema = z.object({
   pageId: z.uuid(),
   title: z.string().trim().min(1).max(200),
@@ -245,14 +359,15 @@ export async function copyPageToSpace(input: z.infer<typeof crossSpaceSchema>) {
   const targetSpace = await db.query.spaces.findFirst({ where: eq(spaces.id, data.targetSpaceId) });
   if (!targetSpace || targetSpace.deletedAt) throw new Error("NOT_FOUND");
 
-  const { newRootSlug, copiedPageIds } = await copyPageSubtreeToSpace({
+  const { newRootSlug, copiedPageIds, indexablePageIds } = await copyPageSubtreeToSpace({
     pageId: data.pageId,
     targetSpaceId: data.targetSpaceId,
     userId: user.id,
   });
 
-  // 交易提交後為每個新頁 enqueue 嵌入索引（fire-and-forget，不阻塞複製）。
-  for (const id of copiedPageIds) await triggerEmbedPage(id);
+  // 交易提交後為每個新內容頁 enqueue 嵌入索引（fire-and-forget，不阻塞複製）。
+  // 群組／外部連結節點無內文、不進 RAG，故不 enqueue（indexablePageIds 已排除）。
+  for (const id of indexablePageIds) await triggerEmbedPage(id);
 
   logger.info(
     { userId: user.id, pageId: data.pageId, toSpace: data.targetSpaceId, copiedCount: copiedPageIds.length },

@@ -1,7 +1,7 @@
 import "server-only";
 import { and, eq, inArray, sql } from "drizzle-orm";
 import { db, type Db } from "@/lib/db";
-import { attachments, pages } from "@/lib/db/schema";
+import { attachments, pages, type PageKind } from "@/lib/db/schema";
 import { EMPTY_DOC, type ProseMirrorDoc } from "@/lib/content/types";
 import { createPageInTx, lastChildPosition } from "@/lib/pages/create";
 import { writePageContentTx } from "@/lib/pages/content-write";
@@ -20,6 +20,9 @@ interface SubtreeRow {
   icon: string | null;
   content: ProseMirrorDoc | null;
   position: string;
+  /** 節點型別（C-11）：複製時原樣保留 group／external_link */
+  kind: PageKind;
+  externalUrl: string | null;
 }
 
 /**
@@ -37,16 +40,18 @@ async function fetchSubtree(tx: Tx, rootId: string): Promise<SubtreeRow[]> {
     icon: string | null;
     content: ProseMirrorDoc | null;
     position: string;
+    kind: PageKind;
+    external_url: string | null;
   }>(sql`
     WITH RECURSIVE subtree AS (
-      SELECT id, space_id, parent_id, slug, title, icon, content, position, 0 AS depth
+      SELECT id, space_id, parent_id, slug, title, icon, content, position, kind, external_url, 0 AS depth
       FROM ${pages} WHERE id = ${rootId} AND deleted_at IS NULL
       UNION ALL
-      SELECT p.id, p.space_id, p.parent_id, p.slug, p.title, p.icon, p.content, p.position, s.depth + 1
+      SELECT p.id, p.space_id, p.parent_id, p.slug, p.title, p.icon, p.content, p.position, p.kind, p.external_url, s.depth + 1
       FROM ${pages} p JOIN subtree s ON p.parent_id = s.id
       WHERE p.deleted_at IS NULL
     )
-    SELECT id, space_id, parent_id, slug, title, icon, content, position
+    SELECT id, space_id, parent_id, slug, title, icon, content, position, kind, external_url
     FROM subtree
     ORDER BY depth, position COLLATE "C"
   `);
@@ -59,6 +64,8 @@ async function fetchSubtree(tx: Tx, rootId: string): Promise<SubtreeRow[]> {
     icon: r.icon,
     content: r.content,
     position: r.position,
+    kind: r.kind,
+    externalUrl: r.external_url,
   }));
 }
 
@@ -163,8 +170,10 @@ export interface CopyPageToSpaceResult {
   /** 複製出的根頁面 id 與 slug */
   newRootId: string;
   newRootSlug: string;
-  /** 複製出的全部新頁面 id（供索引 enqueue） */
+  /** 複製出的全部新節點 id（含 group／external，供稽核計數） */
   copiedPageIds: string[];
+  /** 複製出的一般內容頁 id（僅 kind='page'，供嵌入索引 enqueue；群組／外部節點無內文不索引） */
+  indexablePageIds: string[];
 }
 
 /**
@@ -190,6 +199,7 @@ export async function copyPageSubtreeToSpace(
     if (rootOldId !== pageId) throw new Error("NOT_FOUND");
 
     const idMap = new Map<string, string>();
+    const indexablePageIds: string[] = [];
     for (const row of rows) {
       const newParentId = row.id === rootOldId ? null : idMap.get(row.parentId ?? "");
       // 父節點必先於子節點建立（fetchSubtree 依 depth 排序保證）；查不到對應＝資料異常。
@@ -200,6 +210,8 @@ export async function copyPageSubtreeToSpace(
         parentId: newParentId ?? null,
         title: row.title,
         userId,
+        kind: row.kind,
+        externalUrl: row.externalUrl,
       });
       idMap.set(row.id, created.id);
 
@@ -207,14 +219,18 @@ export async function copyPageSubtreeToSpace(
         await tx.update(pages).set({ icon: row.icon }).where(eq(pages.id, created.id));
       }
 
-      // 內容經儲存管線寫入：三欄同步 + 版本快照（新頁 currentVersionNo 由 0 起）。
-      await writePageContentTx(tx, {
-        pageId: created.id,
-        pageTitle: created.title,
-        expectedVersionNo: 0,
-        content: row.content ?? EMPTY_DOC,
-        userId,
-      });
+      // 群組／外部連結節點無內文，不走內容管線（避免產生空版本快照），亦不進嵌入索引。
+      if (row.kind === "page") {
+        indexablePageIds.push(created.id);
+        // 內容經儲存管線寫入：三欄同步 + 版本快照（新頁 currentVersionNo 由 0 起）。
+        await writePageContentTx(tx, {
+          pageId: created.id,
+          pageTitle: created.title,
+          expectedVersionNo: 0,
+          content: row.content ?? EMPTY_DOC,
+          userId,
+        });
+      }
     }
 
     const newRootId = idMap.get(rootOldId)!;
@@ -222,6 +238,7 @@ export async function copyPageSubtreeToSpace(
     return {
       newRootId,
       newRootSlug: newRoot?.slug ?? "",
+      indexablePageIds,
       copiedPageIds: [...idMap.values()],
     };
   });

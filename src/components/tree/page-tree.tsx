@@ -19,7 +19,9 @@ import {
   ChevronRight,
   Copy,
   Ellipsis,
+  ExternalLink,
   FileText,
+  Folder,
   FolderInput,
   GripVertical,
   Pencil,
@@ -31,6 +33,8 @@ import { cn } from "@/lib/utils";
 import {
   copyPageToSpace,
   countDescendants,
+  createExternalLinkNode,
+  createGroupNode,
   createPage,
   deletePage,
   importMarkdownPage,
@@ -38,11 +42,12 @@ import {
   movePage,
   movePageToSpace,
   renamePage,
+  updateExternalLink,
 } from "@/actions/page";
+import type { PageKind } from "@/lib/db/schema";
 import { Button } from "@/components/ui/button";
 import { Combobox } from "@/components/ui/combobox";
 import { EmptyState } from "@/components/ui/empty-state";
-import { IconButton } from "@/components/ui/icon-button";
 import { Input } from "@/components/ui/input";
 import { Modal, ModalClose, ModalContent } from "@/components/ui/modal";
 import { Popover, PopoverClose, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
@@ -55,10 +60,24 @@ export interface PageTreeNode {
   title: string;
   slug: string;
   icon: string | null;
+  /** 節點型別（C-11）：page＝內容頁；group＝分節標題；external_link＝外部連結 */
+  kind: PageKind;
+  /** external_link 節點目標 URL；其餘型別為 null */
+  externalUrl: string | null;
 }
 
 /** 前端匯入檔案大小上限（bytes），對齊 server 端 IMPORT_MARKDOWN_MAX_CHARS（2 MiB）。 */
 const MAX_IMPORT_BYTES = 2 * 1024 * 1024;
+
+/** 外部連結 URL 前端驗證：僅接受 http/https 絕對網址（與 server 端一致）。 */
+function isHttpUrl(value: string): boolean {
+  try {
+    const parsed = new URL(value);
+    return parsed.protocol === "http:" || parsed.protocol === "https:";
+  } catch {
+    return false;
+  }
+}
 
 export interface PageTreeProps {
   spaceId: string;
@@ -69,9 +88,11 @@ export interface PageTreeProps {
 }
 
 /**
- * 頁面樹側欄（C-03，設計規範 §4.4 Tree／§4.5）：
+ * 頁面樹側欄（C-03／C-11，設計規範 §4.4 Tree／§4.5）：
  * 列高 30px、縮排 16px/層、chevron 僅有子節點顯示、目前頁 primary 淡底＋左緣 2px 色條、
- * hover 浮現 [＋子頁][⋯選單]、WAI-ARIA 方向鍵導航（↑↓ 移動、←→ 收展）。
+ * hover 浮現 [＋新增][⋯選單]、WAI-ARIA 方向鍵導航（↑↓ 移動、←→ 收展）。
+ * 三種節點型別（F-PAGE-04）：page＝內部連結頁；group＝不可點的分節標題（可含子節點）；
+ * external_link＝以新分頁開啟目標 URL 的葉節點。
  */
 export function PageTree({ spaceId, spaceSlug, nodes, canEdit }: PageTreeProps) {
   const t = useTranslations("tree");
@@ -100,7 +121,7 @@ export function PageTree({ spaceId, spaceSlug, nodes, canEdit }: PageTreeProps) 
     return decoded.slice(prefix.length).split("/")[0] || null;
   }, [pathname, spaceSlug]);
   const currentId = useMemo(
-    () => nodes.find((n) => n.slug === currentSlug)?.id ?? null,
+    () => nodes.find((n) => n.slug === currentSlug && n.kind === "page")?.id ?? null,
     [nodes, currentSlug],
   );
 
@@ -151,7 +172,7 @@ export function PageTree({ spaceId, spaceSlug, nodes, canEdit }: PageTreeProps) 
     return out;
   }, [childrenOf, expanded]);
 
-  const itemRefs = useRef(new Map<string, HTMLAnchorElement>());
+  const itemRefs = useRef(new Map<string, HTMLElement>());
   const [focusedId, setFocusedId] = useState<string | null>(null);
   const tabbableId =
     (focusedId && visible.some((v) => v.node.id === focusedId) ? focusedId : null) ??
@@ -257,12 +278,22 @@ export function PageTree({ spaceId, spaceSlug, nodes, canEdit }: PageTreeProps) 
     e.dataTransfer.dropEffect = "move";
     const rect = e.currentTarget.getBoundingClientRect();
     const ratio = (e.clientY - rect.top) / rect.height;
-    const pos = ratio < 0.25 ? "before" : ratio > 0.75 ? "after" : "inside";
+    // 外部連結為葉節點，不接受「放入內部」：只允許前後排序（C-11）。
+    const canContain = node.kind !== "external_link";
+    const pos = !canContain
+      ? ratio < 0.5
+        ? "before"
+        : "after"
+      : ratio < 0.25
+        ? "before"
+        : ratio > 0.75
+          ? "after"
+          : "inside";
     setDropTarget((prev) => (prev?.id === node.id && prev.pos === pos ? prev : { id: node.id, pos }));
     // 停留 600ms 自動展開（收合且有子節點時），方便拖進深層
     if (hoverExpandRef.current && hoverExpandRef.current.id !== node.id) clearHoverExpand();
     const hasChildren = (childrenOf.get(node.id) ?? []).length > 0;
-    if (hasChildren && !expanded.has(node.id) && !hoverExpandRef.current) {
+    if (canContain && hasChildren && !expanded.has(node.id) && !hoverExpandRef.current) {
       hoverExpandRef.current = {
         id: node.id,
         timer: setTimeout(() => {
@@ -276,7 +307,9 @@ export function PageTree({ spaceId, spaceSlug, nodes, canEdit }: PageTreeProps) 
   function onRowDrop(e: DragEvent<HTMLDivElement>, node: PageTreeNode) {
     e.preventDefault();
     const sourceId = dragId ?? e.dataTransfer.getData("text/plain");
-    const pos = dropTarget?.id === node.id ? dropTarget.pos : "inside";
+    let pos = dropTarget?.id === node.id ? dropTarget.pos : "inside";
+    // 外部連結不可作為父：防禦性地把 inside 轉為 after（正常情況已於 dragOver 夾住）。
+    if (pos === "inside" && node.kind === "external_link") pos = "after";
     const blocked = !sourceId || sourceId === node.id || dragSubtree.has(node.id);
     resetDrag();
     if (blocked) return;
@@ -304,13 +337,66 @@ export function PageTree({ spaceId, spaceSlug, nodes, canEdit }: PageTreeProps) 
     clearHoverExpand();
   }
 
-  // --- 新增（根頁面/子頁面）→ createPage → 編輯頁 ---
-  function handleCreate(parentId: string | null) {
+  // --- 新增內容頁（根/子）→ createPage → 編輯頁 ---
+  function handleCreatePage(parentId: string | null) {
     startTransition(async () => {
       try {
         if (parentId) setExpanded((prev) => new Set(prev).add(parentId));
         const { slug } = await createPage({ spaceId, parentId, title: "" });
         router.push(`/s/${spaceSlug}/${slug}/edit`);
+      } catch {
+        toast({ variant: "error", title: t("actionError") });
+      }
+    });
+  }
+
+  // --- 新增群組分節（C-11）→ createGroupNode（停留於樹） ---
+  const [groupModal, setGroupModal] = useState<{ parentId: string | null } | null>(null);
+  function handleCreateGroup(formData: FormData) {
+    const modal = groupModal;
+    const title = String(formData.get("title") ?? "").trim();
+    if (!modal || !title) return;
+    startTransition(async () => {
+      try {
+        if (modal.parentId) setExpanded((prev) => new Set(prev).add(modal.parentId!));
+        await createGroupNode({ spaceId, parentId: modal.parentId, title });
+        setGroupModal(null);
+        toast({ variant: "success", title: t("createGroupSuccess") });
+        router.refresh();
+      } catch {
+        toast({ variant: "error", title: t("actionError") });
+      }
+    });
+  }
+
+  // --- 新增/編輯外部連結（C-11）→ createExternalLinkNode / updateExternalLink ---
+  const [externalModal, setExternalModal] = useState<
+    { mode: "create"; parentId: string | null } | { mode: "edit"; node: PageTreeNode } | null
+  >(null);
+  const [externalUrlError, setExternalUrlError] = useState<string | null>(null);
+  function handleExternalSubmit(formData: FormData) {
+    const modal = externalModal;
+    if (!modal) return;
+    const title = String(formData.get("title") ?? "").trim();
+    const url = String(formData.get("url") ?? "").trim();
+    if (!title) return;
+    if (!isHttpUrl(url)) {
+      setExternalUrlError(t("externalUrlInvalid"));
+      return;
+    }
+    setExternalUrlError(null);
+    startTransition(async () => {
+      try {
+        if (modal.mode === "create") {
+          if (modal.parentId) setExpanded((prev) => new Set(prev).add(modal.parentId!));
+          await createExternalLinkNode({ spaceId, parentId: modal.parentId, title, url });
+          toast({ variant: "success", title: t("createExternalSuccess") });
+        } else {
+          await updateExternalLink({ pageId: modal.node.id, title, url });
+          toast({ variant: "success", title: t("updateExternalSuccess") });
+        }
+        setExternalModal(null);
+        router.refresh();
       } catch {
         toast({ variant: "error", title: t("actionError") });
       }
@@ -345,7 +431,7 @@ export function PageTree({ spaceId, spaceSlug, nodes, canEdit }: PageTreeProps) 
     });
   }
 
-  // --- 重新命名 ---
+  // --- 重新命名（page / group；external 走「編輯連結」） ---
   const [renameTarget, setRenameTarget] = useState<PageTreeNode | null>(null);
   function handleRename(formData: FormData) {
     const target = renameTarget;
@@ -387,14 +473,7 @@ export function PageTree({ spaceId, spaceSlug, nodes, canEdit }: PageTreeProps) 
     startTransition(async () => {
       try {
         // 先以客端樹資料算出子樹 slug 集合，判斷目前頁是否隨之刪除
-        const subtreeSlugs = new Set<string>();
-        const collect = (id: string) => {
-          const n = byId.get(id);
-          if (!n) return;
-          subtreeSlugs.add(n.slug);
-          for (const c of childrenOf.get(id) ?? []) collect(c.id);
-        };
-        collect(target.id);
+        const subtreeSlugs = subtreeSlugsOf(target.id);
         await deletePage({ pageId: target.id });
         setDeleteTarget(null);
         if (currentSlug && subtreeSlugs.has(currentSlug)) router.push(`/s/${spaceSlug}`);
@@ -484,14 +563,44 @@ export function PageTree({ spaceId, spaceSlug, nodes, canEdit }: PageTreeProps) 
         <span className="text-caption font-medium text-fg-tertiary">{t("label")}</span>
         {canEdit ? (
           <div className="flex items-center gap-0.5">
-            <IconButton
-              label={t("newRootPage")}
-              className="size-6"
-              disabled={pending}
-              onClick={() => handleCreate(null)}
-            >
-              <Plus className="size-4" />
-            </IconButton>
+            <Popover>
+              <PopoverTrigger asChild>
+                <button
+                  type="button"
+                  aria-label={t("addNode")}
+                  title={t("addNode")}
+                  disabled={pending}
+                  className="inline-flex size-6 items-center justify-center rounded-sm text-fg-secondary transition-colors hover:bg-hover hover:text-fg disabled:pointer-events-none disabled:text-fg-disabled"
+                >
+                  <Plus className="size-4" />
+                </button>
+              </PopoverTrigger>
+              <PopoverContent align="end" sideOffset={4} className="w-44 p-1">
+                <PopoverClose asChild>
+                  <MenuItem onClick={() => handleCreatePage(null)}>
+                    <FileText aria-hidden className="size-4" />
+                    {t("newPage")}
+                  </MenuItem>
+                </PopoverClose>
+                <PopoverClose asChild>
+                  <MenuItem onClick={() => setGroupModal({ parentId: null })}>
+                    <Folder aria-hidden className="size-4" />
+                    {t("newGroup")}
+                  </MenuItem>
+                </PopoverClose>
+                <PopoverClose asChild>
+                  <MenuItem
+                    onClick={() => {
+                      setExternalUrlError(null);
+                      setExternalModal({ mode: "create", parentId: null });
+                    }}
+                  >
+                    <ExternalLink aria-hidden className="size-4" />
+                    {t("newExternalLink")}
+                  </MenuItem>
+                </PopoverClose>
+              </PopoverContent>
+            </Popover>
             <Popover>
               <PopoverTrigger asChild>
                 <button
@@ -533,7 +642,7 @@ export function PageTree({ spaceId, spaceSlug, nodes, canEdit }: PageTreeProps) 
           description={t("emptyDesc")}
           action={
             canEdit ? (
-              <Button size="sm" loading={pending} onClick={() => handleCreate(null)}>
+              <Button size="sm" loading={pending} onClick={() => handleCreatePage(null)}>
                 {t("createFirst")}
               </Button>
             ) : undefined
@@ -552,7 +661,15 @@ export function PageTree({ spaceId, spaceSlug, nodes, canEdit }: PageTreeProps) 
             const hasChildren = children.length > 0;
             const isExpanded = expanded.has(node.id);
             const isCurrent = node.id === currentId;
+            const isGroup = node.kind === "group";
+            const isExternal = node.kind === "external_link";
+            const canHaveChildren = node.kind !== "external_link";
             const isDropInside = dropTarget?.id === node.id && dropTarget.pos === "inside";
+            const isTabbable = node.id === tabbableId;
+            const setRef = (el: HTMLElement | null) => {
+              if (el) itemRefs.current.set(node.id, el);
+              else itemRefs.current.delete(node.id);
+            };
             return (
               <li key={node.id} role="none">
                 <div
@@ -598,33 +715,81 @@ export function PageTree({ spaceId, spaceSlug, nodes, canEdit }: PageTreeProps) 
                   ) : (
                     <span aria-hidden className="size-5 shrink-0" />
                   )}
-                  <Link
-                    href={`/s/${spaceSlug}/${node.slug}`}
-                    ref={(el) => {
-                      if (el) itemRefs.current.set(node.id, el);
-                      else itemRefs.current.delete(node.id);
-                    }}
-                    role="treeitem"
-                    aria-level={level + 1}
-                    aria-expanded={hasChildren ? isExpanded : undefined}
-                    aria-selected={isCurrent}
-                    aria-current={isCurrent ? "page" : undefined}
-                    tabIndex={node.id === tabbableId ? 0 : -1}
-                    onFocus={() => setFocusedId(node.id)}
-                    className={cn(
-                      "flex h-full min-w-0 flex-1 items-center gap-1.5 text-body-ui",
-                      isCurrent ? "font-medium text-fg" : "text-fg-secondary hover:text-fg",
-                    )}
-                  >
-                    {node.icon ? (
-                      <span aria-hidden className="shrink-0 text-sm leading-none">
-                        {node.icon}
-                      </span>
-                    ) : (
-                      <FileText aria-hidden className="size-3.5 shrink-0 text-fg-tertiary" />
-                    )}
-                    <span className="truncate">{node.title}</span>
-                  </Link>
+
+                  {isGroup ? (
+                    // 群組分節：不可開啟為頁面（C-11）；點整列僅收展。role=treeitem 供鍵盤導航。
+                    <button
+                      type="button"
+                      ref={setRef}
+                      role="treeitem"
+                      aria-level={level + 1}
+                      aria-expanded={hasChildren ? isExpanded : undefined}
+                      aria-selected={false}
+                      tabIndex={isTabbable ? 0 : -1}
+                      onFocus={() => setFocusedId(node.id)}
+                      onClick={() => hasChildren && toggle(node.id)}
+                      className="flex h-full min-w-0 flex-1 items-center gap-1.5 text-left text-caption font-semibold uppercase tracking-wide text-fg-tertiary"
+                    >
+                      {node.icon ? (
+                        <span aria-hidden className="shrink-0 text-sm leading-none">
+                          {node.icon}
+                        </span>
+                      ) : (
+                        <Folder aria-hidden className="size-3.5 shrink-0 text-fg-tertiary" />
+                      )}
+                      <span className="truncate">{node.title}</span>
+                    </button>
+                  ) : isExternal ? (
+                    // 外部連結：新分頁開啟目標 URL（C-11）。
+                    <a
+                      ref={setRef}
+                      href={node.externalUrl ?? "#"}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      role="treeitem"
+                      aria-level={level + 1}
+                      aria-selected={false}
+                      title={t("externalLinkHint")}
+                      tabIndex={isTabbable ? 0 : -1}
+                      onFocus={() => setFocusedId(node.id)}
+                      className="flex h-full min-w-0 flex-1 items-center gap-1.5 text-body-ui text-fg-secondary hover:text-fg"
+                    >
+                      {node.icon ? (
+                        <span aria-hidden className="shrink-0 text-sm leading-none">
+                          {node.icon}
+                        </span>
+                      ) : (
+                        <ExternalLink aria-hidden className="size-3.5 shrink-0 text-fg-tertiary" />
+                      )}
+                      <span className="truncate">{node.title}</span>
+                    </a>
+                  ) : (
+                    <Link
+                      href={`/s/${spaceSlug}/${node.slug}`}
+                      ref={setRef}
+                      role="treeitem"
+                      aria-level={level + 1}
+                      aria-expanded={hasChildren ? isExpanded : undefined}
+                      aria-selected={isCurrent}
+                      aria-current={isCurrent ? "page" : undefined}
+                      tabIndex={isTabbable ? 0 : -1}
+                      onFocus={() => setFocusedId(node.id)}
+                      className={cn(
+                        "flex h-full min-w-0 flex-1 items-center gap-1.5 text-body-ui",
+                        isCurrent ? "font-medium text-fg" : "text-fg-secondary hover:text-fg",
+                      )}
+                    >
+                      {node.icon ? (
+                        <span aria-hidden className="shrink-0 text-sm leading-none">
+                          {node.icon}
+                        </span>
+                      ) : (
+                        <FileText aria-hidden className="size-3.5 shrink-0 text-fg-tertiary" />
+                      )}
+                      <span className="truncate">{node.title}</span>
+                    </Link>
+                  )}
+
                   {canEdit ? (
                     <span className="ml-auto hidden shrink-0 items-center group-focus-within:flex group-hover:flex group-has-[[data-state=open]]:flex">
                       <span
@@ -638,9 +803,40 @@ export function PageTree({ spaceId, spaceSlug, nodes, canEdit }: PageTreeProps) 
                       >
                         <GripVertical aria-hidden className="size-3.5" />
                       </span>
-                      <RowActionButton label={t("addChild")} onClick={() => handleCreate(node.id)}>
-                        <Plus aria-hidden className="size-3.5" />
-                      </RowActionButton>
+                      {canHaveChildren ? (
+                        <Popover>
+                          <PopoverTrigger asChild>
+                            <RowActionButton label={t("addChildNode")}>
+                              <Plus aria-hidden className="size-3.5" />
+                            </RowActionButton>
+                          </PopoverTrigger>
+                          <PopoverContent align="start" sideOffset={4} className="w-44 p-1">
+                            <PopoverClose asChild>
+                              <MenuItem onClick={() => handleCreatePage(node.id)}>
+                                <FileText aria-hidden className="size-4" />
+                                {t("newPage")}
+                              </MenuItem>
+                            </PopoverClose>
+                            <PopoverClose asChild>
+                              <MenuItem onClick={() => setGroupModal({ parentId: node.id })}>
+                                <Folder aria-hidden className="size-4" />
+                                {t("newGroup")}
+                              </MenuItem>
+                            </PopoverClose>
+                            <PopoverClose asChild>
+                              <MenuItem
+                                onClick={() => {
+                                  setExternalUrlError(null);
+                                  setExternalModal({ mode: "create", parentId: node.id });
+                                }}
+                              >
+                                <ExternalLink aria-hidden className="size-4" />
+                                {t("newExternalLink")}
+                              </MenuItem>
+                            </PopoverClose>
+                          </PopoverContent>
+                        </Popover>
+                      ) : null}
                       <Popover>
                         <PopoverTrigger asChild>
                           <RowActionButton label={t("nodeMenu")}>
@@ -648,12 +844,26 @@ export function PageTree({ spaceId, spaceSlug, nodes, canEdit }: PageTreeProps) 
                           </RowActionButton>
                         </PopoverTrigger>
                         <PopoverContent align="start" sideOffset={4} className="w-44 p-1">
-                          <PopoverClose asChild>
-                            <MenuItem onClick={() => setRenameTarget(node)}>
-                              <Pencil aria-hidden className="size-4" />
-                              {t("rename")}
-                            </MenuItem>
-                          </PopoverClose>
+                          {isExternal ? (
+                            <PopoverClose asChild>
+                              <MenuItem
+                                onClick={() => {
+                                  setExternalUrlError(null);
+                                  setExternalModal({ mode: "edit", node });
+                                }}
+                              >
+                                <Pencil aria-hidden className="size-4" />
+                                {t("editExternalLink")}
+                              </MenuItem>
+                            </PopoverClose>
+                          ) : (
+                            <PopoverClose asChild>
+                              <MenuItem onClick={() => setRenameTarget(node)}>
+                                <Pencil aria-hidden className="size-4" />
+                                {t("rename")}
+                              </MenuItem>
+                            </PopoverClose>
+                          )}
                           <PopoverClose asChild>
                             <MenuItem onClick={() => openCrossSpace(node, "move")}>
                               <FolderInput aria-hidden className="size-4" />
@@ -683,13 +893,17 @@ export function PageTree({ spaceId, spaceSlug, nodes, canEdit }: PageTreeProps) 
         </ul>
       )}
 
-      {/* 重新命名 modal */}
+      {/* 重新命名 modal（page / group） */}
       <Modal open={renameTarget !== null} onOpenChange={(open) => !open && setRenameTarget(null)}>
-        <ModalContent size="sm" title={t("renameTitle")} closeLabel={t("cancel")}>
+        <ModalContent
+          size="sm"
+          title={renameTarget?.kind === "group" ? t("renameGroupTitle") : t("renameTitle")}
+          closeLabel={t("cancel")}
+        >
           <form action={handleRename} className="flex flex-col gap-4">
             <Input
               name="title"
-              label={t("titleLabel")}
+              label={renameTarget?.kind === "group" ? t("groupNameLabel") : t("titleLabel")}
               defaultValue={renameTarget?.title ?? ""}
               required
               maxLength={200}
@@ -703,6 +917,75 @@ export function PageTree({ spaceId, spaceSlug, nodes, canEdit }: PageTreeProps) 
               </ModalClose>
               <Button type="submit" loading={pending}>
                 {t("save")}
+              </Button>
+            </div>
+          </form>
+        </ModalContent>
+      </Modal>
+
+      {/* 新增群組 modal */}
+      <Modal open={groupModal !== null} onOpenChange={(open) => !open && setGroupModal(null)}>
+        <ModalContent size="sm" title={t("createGroupTitle")} closeLabel={t("cancel")}>
+          <form action={handleCreateGroup} className="flex flex-col gap-4">
+            <Input name="title" label={t("groupNameLabel")} required maxLength={200} autoFocus />
+            <div className="flex justify-end gap-2">
+              <ModalClose asChild>
+                <Button type="button" variant="secondary">
+                  {t("cancel")}
+                </Button>
+              </ModalClose>
+              <Button type="submit" loading={pending}>
+                {t("create")}
+              </Button>
+            </div>
+          </form>
+        </ModalContent>
+      </Modal>
+
+      {/* 新增／編輯外部連結 modal */}
+      <Modal
+        open={externalModal !== null}
+        onOpenChange={(open) => {
+          if (!open) {
+            setExternalModal(null);
+            setExternalUrlError(null);
+          }
+        }}
+      >
+        <ModalContent
+          size="sm"
+          title={externalModal?.mode === "edit" ? t("editExternalTitle") : t("createExternalTitle")}
+          closeLabel={t("cancel")}
+        >
+          <form action={handleExternalSubmit} className="flex flex-col gap-4">
+            <Input
+              name="title"
+              label={t("externalNameLabel")}
+              defaultValue={externalModal?.mode === "edit" ? externalModal.node.title : ""}
+              required
+              maxLength={200}
+              autoFocus
+            />
+            <Input
+              name="url"
+              type="url"
+              inputMode="url"
+              label={t("externalUrlLabel")}
+              placeholder={t("externalUrlPlaceholder")}
+              defaultValue={externalModal?.mode === "edit" ? (externalModal.node.externalUrl ?? "") : ""}
+              error={externalUrlError ?? undefined}
+              onChange={() => externalUrlError && setExternalUrlError(null)}
+              required
+              maxLength={2048}
+            />
+            <div className="flex justify-end gap-2">
+              <ModalClose asChild>
+                <Button type="button" variant="secondary">
+                  {t("cancel")}
+                </Button>
+              </ModalClose>
+              <Button type="submit" loading={pending}>
+                {externalModal?.mode === "edit" ? t("save") : t("create")}
               </Button>
             </div>
           </form>
