@@ -7,6 +7,7 @@ import { getCurrentSession } from "@/lib/auth/current";
 import { canEditPage } from "@/lib/authz/permission";
 import { getLlmProvider, isLlmConfigured } from "@/lib/llm";
 import { logger } from "@/lib/logger";
+import { withMetrics } from "@/lib/metrics/http";
 import { aiRateLimiter } from "@/lib/rate-limit";
 import { streamAssist, type AssistSummary } from "@/lib/ai/assist";
 import { ASSIST_MAX_INPUT_CHARS, ASSIST_MODES } from "@/lib/ai/assist-modes";
@@ -33,7 +34,7 @@ function frame(event: string, data: unknown): string {
   return `event: ${event}\ndata: ${JSON.stringify(data)}\n\n`;
 }
 
-export async function POST(request: Request) {
+async function handlePOST(request: Request) {
   const t = await getTranslations("ai");
 
   const session = await getCurrentSession();
@@ -170,3 +171,5 @@ export async function POST(request: Request) {
     },
   });
 }
+
+export const POST = withMetrics("/api/ai/assist", handlePOST);

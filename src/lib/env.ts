@@ -14,6 +14,13 @@ const envSchema = z.object({
   /** PostgreSQL 連線字串 */
   DATABASE_URL: z.string().startsWith("postgresql://"),
 
+  // ── 維運指標（N-05，NFR-OBS-03/04） ──
+  /**
+   * `/api/metrics`（Prometheus）的 optional bearer token。端點限內網、無 session：
+   * 設定後未帶正確 `Authorization: Bearer <token>` 一律 401；未設定則不驗（信任內網／代理層）。
+   */
+  METRICS_TOKEN: z.string().optional(),
+
   // ── 檔案儲存（M-01） ──
   /** 附件儲存根目錄（LocalStorageProvider；換路徑即換儲存根，未來 S3/MinIO 另加實作切換） */
   UPLOAD_DIR: z.string().default("./data/uploads"),

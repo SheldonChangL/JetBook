@@ -4,6 +4,7 @@ import { recordAiUsage, type AiQueryMode } from "@/lib/ai/usage";
 import { ipFromHeaders } from "@/lib/audit";
 import { getCurrentSession } from "@/lib/auth/current";
 import { getEmbeddingProvider, isEmbeddingConfigured } from "@/lib/llm";
+import { withMetrics } from "@/lib/metrics/http";
 import { aiRateLimiter } from "@/lib/rate-limit";
 import { fullTextSearch } from "@/lib/search/fulltext";
 import { semanticSearch } from "@/lib/search/semantic";
@@ -20,7 +21,7 @@ export const dynamic = "force-dynamic";
  * Retry-After），並在實際發生 embedding 呼叫時記一筆 ai.query 用量（NFR-OBS-04）。
  * 未設定 embedding 時 semanticSearch 回空 hits（不 500；不計用量）。
  */
-export async function GET(request: Request) {
+async function handleGET(request: Request) {
   const session = await getCurrentSession();
   if (!session) {
     return NextResponse.json({ error: { code: "UNAUTHORIZED", message: "需登入" } }, { status: 401 });
@@ -69,3 +70,5 @@ export async function GET(request: Request) {
   const hits = await fullTextSearch(session.user, q, { spaceId, authorId, updatedWithinDays });
   return NextResponse.json({ data: { hits } });
 }
+
+export const GET = withMetrics("/api/search", handleGET);

@@ -12,6 +12,7 @@ import {
 import { getCurrentSession } from "@/lib/auth/current";
 import { getLlmProvider, isLlmConfigured } from "@/lib/llm";
 import { logger } from "@/lib/logger";
+import { withMetrics } from "@/lib/metrics/http";
 import { retrieve } from "@/lib/rag/retriever";
 import { aiRateLimiter } from "@/lib/rate-limit";
 
@@ -37,7 +38,7 @@ function frame(event: string, data: unknown): string {
   return `event: ${event}\ndata: ${JSON.stringify(data)}\n\n`;
 }
 
-export async function POST(request: Request) {
+async function handlePOST(request: Request) {
   const t = await getTranslations("ai");
 
   const session = await getCurrentSession();
@@ -204,3 +205,5 @@ export async function POST(request: Request) {
     },
   });
 }
+
+export const POST = withMetrics("/api/ai/chat", handlePOST);
