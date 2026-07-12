@@ -1,5 +1,7 @@
 import "server-only";
 import { writeAudit } from "@/lib/audit";
+import { logger } from "@/lib/logger";
+import { metrics } from "@/lib/metrics/registry";
 
 /**
  * AI 用量記錄（I-06，NFR-OBS-04／NFR-SEC-06）。
@@ -40,8 +42,19 @@ export interface AiUsageRecord {
   ip?: string | null;
 }
 
-/** 寫入一筆 AI 用量稽核（action=`ai.query`，targetType=`ai`）。 */
+/** 寫入一筆 AI 用量稽核（action=`ai.query`，targetType=`ai`）並同步 Prometheus 即時指標。 */
 export async function recordAiUsage(record: AiUsageRecord): Promise<void> {
+  // 即時指標（NFR-OBS-03/04）：與稽核同源，供成本／濫用監控在抓取端聚合（不含 user label，避免高基數）。
+  // best-effort：指標更新失敗不得破壞「本函式不擲出」契約，亦不得擋下稽核寫入。
+  try {
+    metrics.llmRequestsTotal.inc({ mode: record.mode, model: record.model });
+    metrics.llmTokensTotal.inc({ direction: "input", model: record.model }, record.inputTokens);
+    metrics.llmTokensTotal.inc({ direction: "output", model: record.model }, record.outputTokens);
+    metrics.llmRequestDuration.observe({ mode: record.mode, model: record.model }, record.latencyMs / 1000);
+  } catch (error) {
+    logger.warn({ err: error, model: record.model }, "llm metrics 更新失敗（不中斷用量記錄）");
+  }
+
   await writeAudit({
     actorId: record.actorId,
     action: AI_QUERY_AUDIT_ACTION,

@@ -6,6 +6,7 @@ import { pages } from "@/lib/db/schema";
 import { getCurrentSession } from "@/lib/auth/current";
 import { can } from "@/lib/authz/permission";
 import { ipFromHeaders, writeAudit } from "@/lib/audit";
+import { withMetrics } from "@/lib/metrics/http";
 import { maxUploadBytes, saveAttachment, UploadValidationError } from "@/lib/storage/upload";
 import type { UploadValidationErrorCode } from "@/lib/storage/validate";
 
@@ -26,7 +27,7 @@ const VALIDATION_HTTP: Record<UploadValidationErrorCode, { status: number; messa
  * 附件上傳 API（M-01）。薄殼：驗 session → 驗 page.edit 權限 → 呼叫 lib 儲存管線。
  * POST /api/upload（multipart/form-data：file、spaceId、pageId?）
  */
-export async function POST(request: Request) {
+async function handlePOST(request: Request) {
   const session = await getCurrentSession();
   if (!session) {
     return NextResponse.json({ error: { code: "UNAUTHORIZED", message: "需登入" } }, { status: 401 });
@@ -114,3 +115,5 @@ export async function POST(request: Request) {
     throw error;
   }
 }
+
+export const POST = withMetrics("/api/upload", handlePOST);

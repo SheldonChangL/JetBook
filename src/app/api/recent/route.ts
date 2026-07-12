@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { getCurrentSession } from "@/lib/auth/current";
+import { withMetrics } from "@/lib/metrics/http";
 import { listRecentVisits } from "@/lib/pages/recent";
 
 export const dynamic = "force-dynamic";
@@ -10,7 +11,7 @@ export const dynamic = "force-dynamic";
  * 不做「先取回再過濾」。回傳本人最近瀏覽（page_visits）前 5 筆。
  * GET /api/recent
  */
-export async function GET() {
+async function handleGET() {
   const session = await getCurrentSession();
   if (!session) {
     return NextResponse.json({ error: { code: "UNAUTHORIZED", message: "需登入" } }, { status: 401 });
@@ -19,3 +20,5 @@ export async function GET() {
   const items = await listRecentVisits(session.user, 5);
   return NextResponse.json({ data: { items } });
 }
+
+export const GET = withMetrics("/api/recent", handleGET);

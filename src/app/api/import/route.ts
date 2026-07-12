@@ -7,6 +7,7 @@ import { pages } from "@/lib/db/schema";
 import { getCurrentSession } from "@/lib/auth/current";
 import { can } from "@/lib/authz/permission";
 import { ipFromHeaders, writeAudit } from "@/lib/audit";
+import { withMetrics } from "@/lib/metrics/http";
 import { getStorageProvider } from "@/lib/storage/provider";
 import { fileExtension } from "@/lib/storage/validate";
 import { MAX_TOTAL_BYTES } from "@/lib/content/import-zip";
@@ -30,7 +31,7 @@ const fieldsSchema = z.object({
  * StorageProvider → enqueue import-zip job（實際解壓／建頁在 worker）。回傳 jobId 供輪詢。
  * POST /api/import（multipart/form-data：file(zip)、spaceId、parentId?）
  */
-export async function POST(request: Request) {
+async function handlePOST(request: Request) {
   const session = await getCurrentSession();
   if (!session) {
     return NextResponse.json({ error: { code: "UNAUTHORIZED", message: "需登入" } }, { status: 401 });
@@ -139,3 +140,5 @@ export async function POST(request: Request) {
 
   return NextResponse.json({ data: { jobId } }, { status: 202 });
 }
+
+export const POST = withMetrics("/api/import", handlePOST);

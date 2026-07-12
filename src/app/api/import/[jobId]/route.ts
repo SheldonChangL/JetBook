@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { z } from "zod";
 import { getCurrentSession } from "@/lib/auth/current";
 import { can } from "@/lib/authz/permission";
+import { withMetrics } from "@/lib/metrics/http";
 import { getImportZipStatus } from "@/lib/jobs/queue";
 
 export const dynamic = "force-dynamic";
@@ -15,7 +16,7 @@ function notFound(): NextResponse {
  * 或該空間可編輯者）→ 回傳 state 與進度／結果報告。
  * GET /api/import/[jobId]；未登入 401、無權限 403、不存在 404。
  */
-export async function GET(_request: Request, context: { params: Promise<{ jobId: string }> }) {
+async function handleGET(_request: Request, context: { params: Promise<{ jobId: string }> }) {
   const session = await getCurrentSession();
   if (!session) {
     return NextResponse.json({ error: { code: "UNAUTHORIZED", message: "需登入" } }, { status: 401 });
@@ -37,3 +38,5 @@ export async function GET(_request: Request, context: { params: Promise<{ jobId:
 
   return NextResponse.json({ data: { state: status.state, progress: status.output } }, { status: 200 });
 }
+
+export const GET = withMetrics("/api/import/[jobId]", handleGET);

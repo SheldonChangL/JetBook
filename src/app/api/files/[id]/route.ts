@@ -6,6 +6,7 @@ import { db } from "@/lib/db";
 import { attachments } from "@/lib/db/schema";
 import { getCurrentSession } from "@/lib/auth/current";
 import { can } from "@/lib/authz/permission";
+import { withMetrics } from "@/lib/metrics/http";
 import { getStorageProvider } from "@/lib/storage/provider";
 import { ALLOWED_FILE_TYPES, fileExtension } from "@/lib/storage/validate";
 
@@ -39,7 +40,7 @@ function contentDisposition(fileName: string): string {
  * StorageProvider streaming 回應（不整檔載入記憶體）。
  * GET /api/files/[id]；未登入 401、無權限 403、不存在（含非 UUID）404。
  */
-export async function GET(_request: Request, context: { params: Promise<{ id: string }> }) {
+async function handleGET(_request: Request, context: { params: Promise<{ id: string }> }) {
   const session = await getCurrentSession();
   if (!session) {
     return NextResponse.json({ error: { code: "UNAUTHORIZED", message: "需登入" } }, { status: 401 });
@@ -77,3 +78,5 @@ export async function GET(_request: Request, context: { params: Promise<{ id: st
     },
   });
 }
+
+export const GET = withMetrics("/api/files/[id]", handleGET);
