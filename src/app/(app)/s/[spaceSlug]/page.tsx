@@ -2,7 +2,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { eq } from "drizzle-orm";
 import { getTranslations } from "next-intl/server";
-import { Settings } from "lucide-react";
+import { ExternalLink, Settings } from "lucide-react";
 import { db } from "@/lib/db";
 import { spaces } from "@/lib/db/schema";
 import { requireSession } from "@/lib/auth/current";
@@ -63,21 +63,61 @@ export default async function SpaceHomePage({
           <p className="text-body-ui text-fg-tertiary">{t("noPages")}</p>
         ) : (
           <div className="grid gap-3 sm:grid-cols-2">
-            {topLevel.map((n) => (
-              <Link
-                key={n.id}
-                href={`/s/${space.slug}/${n.slug}`}
-                className="flex flex-col gap-1 rounded-md border border-edge bg-raised p-4 transition-colors hover:border-edge-strong hover:bg-hover"
-              >
-                <span className="truncate text-body-ui font-medium text-fg">
-                  {n.icon ? `${n.icon} ` : ""}
-                  {n.title}
-                </span>
-                <span className="text-caption text-fg-tertiary">
-                  {t("childCount", { count: childCount.get(n.id) ?? 0 })}
-                </span>
-              </Link>
-            ))}
+            {topLevel.map((n) => {
+              // 外部連結卡片：新分頁開啟目標 URL（C-11）。
+              if (n.kind === "external_link") {
+                return (
+                  <a
+                    key={n.id}
+                    href={n.externalUrl ?? "#"}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="flex flex-col gap-1 rounded-md border border-edge bg-raised p-4 transition-colors hover:border-edge-strong hover:bg-hover"
+                  >
+                    <span className="flex min-w-0 items-center gap-1.5 text-body-ui font-medium text-fg">
+                      <span className="truncate">
+                        {n.icon ? `${n.icon} ` : ""}
+                        {n.title}
+                      </span>
+                      <ExternalLink aria-hidden className="size-3.5 shrink-0 text-fg-tertiary" />
+                    </span>
+                    <span className="truncate text-caption text-fg-tertiary">{n.externalUrl}</span>
+                  </a>
+                );
+              }
+              // 群組分節：不可開啟，僅顯示為分節卡片（C-11）。
+              if (n.kind === "group") {
+                return (
+                  <div
+                    key={n.id}
+                    className="flex flex-col gap-1 rounded-md border border-dashed border-edge bg-base p-4"
+                  >
+                    <span className="truncate text-body-ui font-semibold text-fg-secondary">
+                      {n.icon ? `${n.icon} ` : ""}
+                      {n.title}
+                    </span>
+                    <span className="text-caption text-fg-tertiary">
+                      {t("childCount", { count: childCount.get(n.id) ?? 0 })}
+                    </span>
+                  </div>
+                );
+              }
+              return (
+                <Link
+                  key={n.id}
+                  href={`/s/${space.slug}/${n.slug}`}
+                  className="flex flex-col gap-1 rounded-md border border-edge bg-raised p-4 transition-colors hover:border-edge-strong hover:bg-hover"
+                >
+                  <span className="truncate text-body-ui font-medium text-fg">
+                    {n.icon ? `${n.icon} ` : ""}
+                    {n.title}
+                  </span>
+                  <span className="text-caption text-fg-tertiary">
+                    {t("childCount", { count: childCount.get(n.id) ?? 0 })}
+                  </span>
+                </Link>
+              );
+            })}
           </div>
         )}
       </section>

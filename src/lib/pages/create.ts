@@ -1,7 +1,7 @@
 import "server-only";
 import { and, desc, eq, isNull, sql } from "drizzle-orm";
 import { db, type Db } from "@/lib/db";
-import { pages } from "@/lib/db/schema";
+import { pages, type PageKind } from "@/lib/db/schema";
 import { positionBetween } from "@/lib/pages/position";
 import { reclaimSlug, uniquePageSlug } from "@/lib/pages/slug";
 
@@ -42,18 +42,43 @@ export interface CreatePageInput {
   title: string;
   /** 建立者（created_by/updated_by） */
   userId: string;
+  /** 節點型別（C-11）；預設 page。group／external_link 無內文。 */
+  kind?: PageKind;
+  /** external_link 節點的目標 URL（kind='external_link' 時必填，其餘忽略）。 */
+  externalUrl?: string | null;
 }
 
 /**
- * 建立頁面核心（C-02）：於呼叫端交易內配置唯一 slug、末尾 position、插入頁面列，
+ * 確認父節點可接受子節點（C-11）：external_link 為葉節點，不得作為任何節點的父。
+ * 呼叫端（建立／搬移）在同一交易內先驗；違反即擲 EXTERNAL_LINK_NO_CHILDREN。
+ */
+export async function assertParentAcceptsChildren(
+  client: DbOrTx,
+  parentId: string,
+): Promise<void> {
+  const parent = await client
+    .select({ kind: pages.kind })
+    .from(pages)
+    .where(eq(pages.id, parentId))
+    .limit(1);
+  if (parent[0]?.kind === "external_link") throw new Error("EXTERNAL_LINK_NO_CHILDREN");
+}
+
+/**
+ * 建立頁面核心（C-02／C-11）：於呼叫端交易內配置唯一 slug、末尾 position、插入節點列，
  * 並清除同名舊 slug 歷史（避免陳舊 301）。回傳建立的頁面列。
  *
  * `createPage` 薄殼（Server Action）與匯入 worker（無 session）皆呼叫本函式，
- * 確保建頁邏輯單一來源。權限與 session 由呼叫端薄殼先行驗證。
+ * 確保建節點邏輯單一來源。權限與 session 由呼叫端薄殼先行驗證。
  * slug／position 皆於同一交易內計算（client: tx），批次連續建頁時能看見前一頁已提交結果。
+ * kind＝group/external_link 時無內文（content 留空）；external_link 記錄 external_url。
+ * 父節點若為 external_link（葉節點）一律拒絕（assertParentAcceptsChildren）。
  */
 export async function createPageInTx(tx: Tx, input: CreatePageInput): Promise<typeof pages.$inferSelect> {
+  const kind: PageKind = input.kind ?? "page";
   const title = input.title.trim() || DEFAULT_PAGE_TITLE;
+  const externalUrl = kind === "external_link" ? (input.externalUrl ?? null) : null;
+  if (input.parentId) await assertParentAcceptsChildren(tx, input.parentId);
   const slug = await uniquePageSlug(input.spaceId, title, { client: tx });
   const last = await lastChildPosition(tx, input.spaceId, input.parentId);
   const position = positionBetween(last, null);
@@ -65,6 +90,8 @@ export async function createPageInTx(tx: Tx, input: CreatePageInput): Promise<ty
       parentId: input.parentId,
       title,
       slug,
+      kind,
+      externalUrl,
       position,
       createdBy: input.userId,
       updatedBy: input.userId,

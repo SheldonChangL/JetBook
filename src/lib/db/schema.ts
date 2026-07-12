@@ -123,6 +123,15 @@ export const spaceVisibilityEnum = pgEnum("space_visibility", [
 /** Space 成員角色四級（C3）：admin 管理；editor 編輯；commenter 讀+留言；viewer 唯讀。 */
 export const spaceRoleEnum = pgEnum("space_role", ["admin", "editor", "commenter", "viewer"]);
 
+/**
+ * 頁面樹節點型別（C-11，F-PAGE-04）：
+ * - `page`＝一般內容頁（有內文、可編輯、進搜尋/RAG，預設值）；
+ * - `group`＝群組分節標題（僅結構、無內文，不可開啟為頁面）；
+ * - `external_link`＝外部連結節點（點擊以新分頁開啟 `external_url`，無內文、無子節點）。
+ * 僅 `page` 進全文檢索與 RAG（getAccessiblePageIds 於 SQL 層以 kind='page' 收斂）。
+ */
+export const pageKindEnum = pgEnum("page_kind", ["page", "group", "external_link"]);
+
 /** 單列組織設定（F-ORG-01）。 */
 export const orgSettings = pgTable("org_settings", {
   id: integer("id").primaryKey().default(1),
@@ -227,6 +236,13 @@ export const pages = pgTable(
       .references(() => spaces.id, { onDelete: "cascade" }),
     /** 鄰接表：父頁；根層為 null（ADR-001） */
     parentId: uuid("parent_id"),
+    /**
+     * 節點型別（C-11，F-PAGE-04）：page＝一般內容頁；group＝群組分節標題（無內文、不可開啟）；
+     * external_link＝外部連結（新分頁開 external_url）。預設 page。
+     */
+    kind: pageKindEnum("kind").notNull().default("page"),
+    /** external_link 節點的目標 URL（僅 kind='external_link' 有值；http/https）。 */
+    externalUrl: text("external_url"),
     /** fractional index 排序鍵（同層相對順序；插入取中值免重排） */
     position: text("position").notNull().default("a0"),
     slug: text("slug").notNull(),
@@ -535,6 +551,7 @@ export type GroupMember = typeof groupMembers.$inferSelect;
 export type SpaceRole = (typeof spaceRoleEnum.enumValues)[number];
 export type SpaceVisibility = (typeof spaceVisibilityEnum.enumValues)[number];
 export type Page = typeof pages.$inferSelect;
+export type PageKind = (typeof pageKindEnum.enumValues)[number];
 export type PageVersion = typeof pageVersions.$inferSelect;
 export type Attachment = typeof attachments.$inferSelect;
 export type PageEmbedding = typeof pageEmbeddings.$inferSelect;

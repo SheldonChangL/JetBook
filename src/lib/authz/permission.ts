@@ -85,6 +85,8 @@ export async function getAccessiblePageIds(
 
   const conditions = [
     isNull(pages.deletedAt),
+    // 僅一般內容頁進搜尋／RAG：群組分節與外部連結節點無內文，不得成為檢索目標（C-11，F-PAGE-04）。
+    eq(pages.kind, "page"),
     sql`${pages.spaceId} in (${accessibleSpaceIds})`,
   ];
   if (spaceId) conditions.push(eq(pages.spaceId, spaceId));

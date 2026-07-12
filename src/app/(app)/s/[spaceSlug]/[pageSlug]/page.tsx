@@ -36,7 +36,9 @@ export async function generateMetadata({
   if (!space) return {};
   if (!(await can(session.user, "page.read", { type: "page", spaceId: space.id }))) return {};
   const { page } = await resolvePageBySlug(space.id, pageSlug);
-  return { title: page?.title };
+  // 群組／外部連結節點不可作為內部頁面開啟（C-11）：不暴露 <title>。
+  if (!page || page.kind !== "page") return {};
+  return { title: page.title };
 }
 
 /** 文件閱讀頁（G-02，設計規範 §3.4）。 */
@@ -55,6 +57,8 @@ export default async function PageReadPage({
   const { page, redirectToSlug } = await resolvePageBySlug(space.id, pageSlug);
   if (redirectToSlug) redirect(`/s/${spaceSlug}/${redirectToSlug}`);
   if (!page) notFound();
+  // 群組分節與外部連結節點無內文、不可開啟為頁面（C-11，F-PAGE-04）。
+  if (page.kind !== "page") notFound();
 
   // 無權限但頁面存在：private Space 一律 404（不洩漏存在性）；org 可見 Space 導 403（§3.12）。
   if (!(await can(user, "page.read", { type: "page", spaceId: space.id }))) {

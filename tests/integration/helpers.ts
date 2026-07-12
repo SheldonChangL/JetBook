@@ -9,6 +9,7 @@ import {
   spaceMembers,
   spaces,
   users,
+  type PageKind,
   type SpaceRole,
   type SpaceVisibility,
 } from "@/lib/db/schema";
@@ -91,6 +92,10 @@ export async function seedPage(
     parentId?: string | null;
     createdBy?: string;
     updatedAt?: Date;
+    /** 節點型別（C-11）；預設 page。 */
+    kind?: PageKind;
+    /** external_link 目標 URL。 */
+    externalUrl?: string | null;
   } = {},
 ) {
   const suffix = randomUUID().slice(0, 8);
@@ -103,6 +108,8 @@ export async function seedPage(
       title: overrides.title ?? `測試頁面 ${suffix}`,
       contentText: overrides.contentText ?? "",
       position: "a0",
+      ...(overrides.kind ? { kind: overrides.kind } : {}),
+      ...(overrides.externalUrl !== undefined ? { externalUrl: overrides.externalUrl } : {}),
       ...(overrides.createdBy ? { createdBy: overrides.createdBy } : {}),
       ...(overrides.updatedAt ? { updatedAt: overrides.updatedAt } : {}),
     })

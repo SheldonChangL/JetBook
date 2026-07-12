@@ -2,7 +2,7 @@ import "server-only";
 import { cache } from "react";
 import { and, asc, eq, isNull, sql } from "drizzle-orm";
 import { db } from "@/lib/db";
-import { pages } from "@/lib/db/schema";
+import { pages, type PageKind } from "@/lib/db/schema";
 
 export interface SpaceTreeNode {
   id: string;
@@ -10,6 +10,10 @@ export interface SpaceTreeNode {
   title: string;
   slug: string;
   icon: string | null;
+  /** 節點型別（C-11）：page／group／external_link */
+  kind: PageKind;
+  /** external_link 節點的目標 URL；其餘型別為 null */
+  externalUrl: string | null;
 }
 
 /**
@@ -26,6 +30,8 @@ export const listSpaceTreeNodes = cache(async (spaceId: string): Promise<SpaceTr
       title: pages.title,
       slug: pages.slug,
       icon: pages.icon,
+      kind: pages.kind,
+      externalUrl: pages.externalUrl,
     })
     .from(pages)
     .where(and(eq(pages.spaceId, spaceId), isNull(pages.deletedAt)))

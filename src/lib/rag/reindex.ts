@@ -79,22 +79,26 @@ export async function runReindexAll(
     // 1. NFR-COMP-03：先徹底清除關閉 AI 索引空間的向量。
     progress.purgedDisabledSpaces = await purgeDisabledSpaceEmbeddings();
 
-    // 2. 未刪頁面總數（進度分母）。
+    // 2. 未刪內容頁總數（進度分母）。群組／外部連結節點無內文，不進索引（C-11）。
     const [countRow] = await db
       .select({ count: sql<number>`count(*)::int` })
       .from(pages)
-      .where(isNull(pages.deletedAt));
+      .where(and(isNull(pages.deletedAt), eq(pages.kind, "page")));
     progress.total = countRow?.count ?? 0;
     progress.phase = "indexing";
     await report();
 
-    // 3. keyset 分批遍歷未刪頁面（id 升序游標），逐頁重用 embedPage。
+    // 3. keyset 分批遍歷未刪內容頁（id 升序游標），逐頁重用 embedPage。
     let cursor: string | null = null;
     for (;;) {
       const batch: { id: string }[] = await db
         .select({ id: pages.id })
         .from(pages)
-        .where(cursor ? and(isNull(pages.deletedAt), gt(pages.id, cursor)) : isNull(pages.deletedAt))
+        .where(
+          cursor
+            ? and(isNull(pages.deletedAt), eq(pages.kind, "page"), gt(pages.id, cursor))
+            : and(isNull(pages.deletedAt), eq(pages.kind, "page")),
+        )
         .orderBy(asc(pages.id))
         .limit(batchSize);
       if (batch.length === 0) break;
