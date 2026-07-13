@@ -94,12 +94,19 @@ export async function deleteExpiredSessions(): Promise<void> {
   await db.delete(sessions).where(lt(sessions.expiresAt, new Date()));
 }
 
+/**
+ * cookie 是否標記 Secure：由對外 BASE_URL 是否為 https 判定，而非 NODE_ENV。
+ * 綁 NODE_ENV 會使「production 但走純 HTTP（內網尚未上 TLS）」的部署無法登入——
+ * Secure cookie 不會被瀏覽器經 HTTP 送出，登入後每個請求都被視為未登入而導回 /login。
+ */
+export const cookieSecure = env.BASE_URL.startsWith("https://");
+
 /** expiresAt 省略時為 session cookie（關閉瀏覽器即失效；「記住我」未勾選）。 */
 export async function setSessionCookie(token: string, expiresAt?: Date): Promise<void> {
   const store = await cookies();
   store.set(SESSION_COOKIE, token, {
     httpOnly: true,
-    secure: env.NODE_ENV === "production",
+    secure: cookieSecure,
     sameSite: "lax",
     path: "/",
     ...(expiresAt ? { expires: expiresAt } : {}),
@@ -110,7 +117,7 @@ export async function deleteSessionCookie(): Promise<void> {
   const store = await cookies();
   store.set(SESSION_COOKIE, "", {
     httpOnly: true,
-    secure: env.NODE_ENV === "production",
+    secure: cookieSecure,
     sameSite: "lax",
     path: "/",
     maxAge: 0,

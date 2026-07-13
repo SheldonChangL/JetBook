@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
-import { env } from "@/lib/env";
 import { requestLogger } from "@/lib/logger";
+import { cookieSecure } from "@/lib/auth/session";
 import {
   OIDC_BASE_PATH,
   OIDC_NONCE_COOKIE,
@@ -33,7 +33,7 @@ export async function GET(request: Request) {
     const response = NextResponse.redirect(authorizationUrl);
     const cookieOptions = {
       httpOnly: true,
-      secure: env.NODE_ENV === "production",
+      secure: cookieSecure,
       sameSite: "lax" as const,
       path: OIDC_BASE_PATH,
       maxAge: TX_COOKIE_MAX_AGE,
