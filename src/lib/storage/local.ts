@@ -1,4 +1,5 @@
 import "server-only";
+import { once } from "node:events";
 import { createReadStream } from "node:fs";
 import { access, mkdir, readdir, stat, unlink, writeFile } from "node:fs/promises";
 import path from "node:path";
@@ -35,7 +36,13 @@ export class LocalStorageProvider implements StorageProvider {
   async getStream(key: string): Promise<Readable> {
     const target = this.resolveKey(key);
     await access(target); // 不存在時在此擲錯（createReadStream 的錯誤只在事件裡冒出）
-    return createReadStream(target);
+    const stream = createReadStream(target);
+    // 等底層 fd 實際開啟後才回傳。access 與 open 之間若檔案被清理／GC 刪除（如匯出 zip
+    // 逾期 purge 或測試 teardown 刪暫存目錄），開檔會以非同步 'error' 事件失敗；此刻尚無
+    // 消費者掛載 error handler，未捕捉的 'error' 事件將使行程崩潰。once 同時掛 open/error，
+    // 把此競態轉為 promise 拒絕，交由呼叫端既有處理（下載 route→404、匯入／匯出 job→記錄略過）。
+    await once(stream, "open");
+    return stream;
   }
 
   async delete(key: string): Promise<void> {
