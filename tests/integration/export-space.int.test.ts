@@ -72,7 +72,7 @@ function collectImages(node: ProseMirrorNode | ProseMirrorDoc): ProseMirrorNode[
 describe("runExportSpace（整個 Space 匯出 · 真 PG）", () => {
   it("巢狀頁面樹＋圖片：zip 結構正確，且以 J-02 re-import 後標題／結構／圖片保留", async () => {
     const user = await seedUser();
-    const space = await seedSpace(user.id, { name: "捷揚文件庫" });
+    const space = await seedSpace(user.id, { name: "凱銳文件庫" });
 
     // 站內圖片附件（供內容引用）。
     const att = await saveAttachment({
@@ -103,7 +103,7 @@ describe("runExportSpace（整個 Space 匯出 · 真 PG）", () => {
     expect(report.phase).toBe("completed");
     expect(report.exportedPages).toBe(3);
     expect(report.includedAssets).toBe(1);
-    expect(report.fileName).toBe("捷揚文件庫.zip");
+    expect(report.fileName).toBe("凱銳文件庫.zip");
     expect(report.storageKey).toBe(`${EXPORT_STORAGE_PREFIX}${exportJobId}.zip`);
 
     // 讀回暫存 zip 並解開，驗證目錄結構。

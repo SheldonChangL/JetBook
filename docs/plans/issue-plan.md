@@ -74,7 +74,7 @@ Task 總數：**91**（M0：10、M1：42、M2：16、M3：23）＋ M4 Backlog �
 
 **A-10｜spike: 中文全文檢索選型驗證（zhparser vs pgroonga）**
 - 摘要：以 50–100 份真實文件＋20 條驗收查詢實測斷詞品質、highlight、維運成本（R2；審查傾向 pgroonga），產出 ADR 定案，回寫 db image。
-- 驗收：ADR 完成；db image 內建選定 extension；「捷揚光電」查得「捷揚」相關內容測試通過。
+- 驗收：ADR 完成；db image 內建選定 extension；「凱銳光電」查得「凱銳」相關內容測試通過。
 - 依賴：A-02｜Labels：`spike` `search` `db`｜Milestone：M0
 
 ---

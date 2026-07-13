@@ -1,6 +1,6 @@
 # JetBook 功能需求規格書（Functional Requirements Specification）
 
-- 專案：JetBook — 捷揚光電內部知識管理系統（功能對標 GitBook，程式碼與視覺設計全數原創）
+- 專案：JetBook — 凱銳光電內部知識管理系統（功能對標 GitBook，程式碼與視覺設計全數原創）
 - 版本：v1.1（套用完整性審查修正之修訂版）
 - 日期：2026-07-06
 - 優先級方法：MoSCoW（Must / Should / Could / Won't-for-v1），以「內部知識庫最快可用」為判斷基準

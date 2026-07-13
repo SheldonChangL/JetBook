@@ -135,7 +135,7 @@ export const pageKindEnum = pgEnum("page_kind", ["page", "group", "external_link
 /** 單列組織設定（F-ORG-01）。 */
 export const orgSettings = pgTable("org_settings", {
   id: integer("id").primaryKey().default(1),
-  name: text("name").notNull().default("Jet Opto 捷揚光電"),
+  name: text("name").notNull().default("Jet Opto 凱銳光電"),
   logoUrl: text("logo_url"),
   defaultLocale: text("default_locale").notNull().default("zh-TW"),
   aiEnabled: boolean("ai_enabled").notNull().default(true),
