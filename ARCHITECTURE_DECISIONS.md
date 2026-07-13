@@ -205,14 +205,14 @@ CRDT/Yjs 即時共編留待 v2（ADR-002 的 ProseMirror JSON canonical 已為�
 ### 背景
 
 PostgreSQL 內建 text search parser 不支援中文斷詞，繁中全文檢索必須外掛 extension。候選：
-- **zhparser**：基於 SCWS 詞庫斷詞，輕量、與 tsvector 生態直接相容；但詞庫以簡體中文為主，zh-TW 斷詞品質（含公司專有名詞如「捷揚光電」、料號、中英混排）未經驗證（R2）。
+- **zhparser**：基於 SCWS 詞庫斷詞，輕量、與 tsvector 生態直接相容；但詞庫以簡體中文為主，zh-TW 斷詞品質（含公司專有名詞如「凱銳光電」、料號、中英混排）未經驗證（R2）。
 - **pgroonga**：n-gram 為主，對繁中魯棒、免詞庫維護；代價是自建 DB image 較重（LGPL，內部部署無散布義務）。
 
 審查另發現文件間出現過 pg_jieba 的殘留說法（C12），已統一為上述二選一。此選型「有品質陷阱且未定案」被評為高風險（R2）。
 
 ### 決策
 
-**選型由 M0 spike 定案**（1–2 天）：以 50–100 份真實公司文件＋ 20 條驗收查詢（含「捷揚光電→捷揚」、料號、中英混排）比較 zhparser（＋自訂繁中詞庫）vs pgroonga，**審查傾向 pgroonga 作為 zh-TW 預設**。
+**選型由 M0 spike 定案**（1–2 天）：以 50–100 份真實公司文件＋ 20 條驗收查詢（含「凱銳光電→凱銳」、料號、中英混排）比較 zhparser（＋自訂繁中詞庫）vs pgroonga，**審查傾向 pgroonga 作為 zh-TW 預設**。
 在定案前，程式介面**先以 tsvector 抽象**：schema 保留 `pages.search_tsv`（tsvector, GIN index）與搜尋 lib 的單一查詢入口，
 兩候選皆可掛入（zhparser 直接產 tsvector；pgroonga 則以自有 index 替換該查詢路徑），
 確保 M0 定案時只改 DB image 與該查詢入口，不動呼叫端。
@@ -220,7 +220,7 @@ PostgreSQL 內建 text search parser 不支援中文斷詞，繁中全文檢索�
 ### 定案結果（A-10 spike，2026-07-06）
 
 **採用 pgroonga 4.0.6（TokenBigram）**：
-- 14/14 驗收查詢全數通過，含「捷揚」→「捷揚光電」子字串命中、料號、中英混排、多詞 AND。
+- 14/14 驗收查詢全數通過，含「凱銳」→「凱銳光電」子字串命中、料號、中英混排、多詞 AND。
 - zhparser 對照組 build 失敗（SCWS 上游 xunsearch.com 不可達；無官方套件）——維運成本實證偏高。
 - 安裝方式：db image 以官方 groonga/pgroonga:latest-debian-16 為 base 疊裝 pgvector（groonga APT repo 對 postgres:16 新 base（trixie/arm64）無 pg16 套件）。
 - 實作影響：pages 不需要 search_tsv tsvector 欄位，pgroonga 索引直接建在 content_text/title 上；查詢入口用 &@~ + pgroonga_score。

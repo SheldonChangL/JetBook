@@ -100,8 +100,8 @@ describe("diffChars（字級中文 diff）", () => {
   });
 
   it("重建性：equal+delete 還原舊字串、equal+insert 還原新字串", () => {
-    const oldText = "捷揚光電內部知識庫";
-    const newText = "捷揚光電內部維基系統";
+    const oldText = "凱銳光電內部知識庫";
+    const newText = "凱銳光電內部維基系統";
     const tokens = diffChars(oldText, newText);
     const rebuiltOld = tokens
       .filter((t) => t.type !== "insert")

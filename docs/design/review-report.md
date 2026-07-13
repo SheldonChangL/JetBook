@@ -169,7 +169,7 @@ Dashboard「繼續閱讀」與 Cmd+K 空狀態都用最近瀏覽，schema 無 pa
 
 ### R2.【高】繁體中文全文檢索選型未定且有品質陷阱
 zhparser 基於 SCWS，詞庫以簡體中文為主，zh-TW 斷詞品質（含公司專有名詞）未經驗證；Doc 1 說「架構階段定案」但 Doc 2 實際上選了 zhparser（pgroonga 備選），Doc 3 又出現 pg_jieba——等於沒定案。
-- **降險**：Phase 1 開工前做 1~2 天 spike：拿 50~100 份真實公司文件＋20 條驗收查詢（含「捷揚光電→捷揚」、料號、中英混排），比較 zhparser（＋自訂繁中詞庫）vs pgroonga。**傾向 pgroonga 作為 zh-TW 預設**（n-gram 對繁中魯棒、免詞庫維護），代價是自建 DB image 較重。定案後同步三份文件。
+- **降險**：Phase 1 開工前做 1~2 天 spike：拿 50~100 份真實公司文件＋20 條驗收查詢（含「凱銳光電→凱銳」、料號、中英混排），比較 zhparser（＋自訂繁中詞庫）vs pgroonga。**傾向 pgroonga 作為 zh-TW 預設**（n-gram 對繁中魯棒、免詞庫維護），代價是自建 DB image 較重。定案後同步三份文件。
 
 ### R3.【中】中文 embedding 品質＋day-1 自架推論的維運負擔
 B.8 建議從 local BGE-M3 起步（合規上正確），但這把「自架推論服務」提前到 Phase 2 就是硬依賴；且 10 萬頁/百萬 chunk 的全量重嵌在 CPU 上可能以天計。

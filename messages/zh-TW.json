@@ -102,7 +102,7 @@
   },
   "auth": {
     "loginTitle": "登入",
-    "tagline": "捷揚光電內部知識庫",
+    "tagline": "凱銳光電內部知識庫",
     "email": "公司信箱",
     "password": "密碼",
     "showPassword": "顯示密碼",
@@ -117,7 +117,7 @@
     "ssoDivider": "或",
     "ssoButton": "使用單一登入（SSO）",
     "logout": "登出",
-    "copyright": "© Jet Opto 捷揚光電",
+    "copyright": "© Jet Opto 凱銳光電",
     "forgotPasswordLink": "忘記密碼？",
     "forgotTitle": "重設密碼",
     "forgotDescription": "輸入你的公司信箱，我們會寄送重設密碼的連結給你。",
@@ -139,7 +139,7 @@
   },
   "email": {
     "resetSubject": "重設你的 JetBook 密碼",
-    "resetBody": "{name} 您好，\n\n我們收到重設 JetBook 密碼的請求。請點擊以下連結設定新密碼（30 分鐘內有效，僅能使用一次）：\n\n{url}\n\n若你沒有提出此請求，請忽略本信，你的密碼不會有任何變動。\n\n— JetBook（捷揚光電內部知識庫）"
+    "resetBody": "{name} 您好，\n\n我們收到重設 JetBook 密碼的請求。請點擊以下連結設定新密碼（30 分鐘內有效，僅能使用一次）：\n\n{url}\n\n若你沒有提出此請求，請忽略本信，你的密碼不會有任何變動。\n\n— JetBook（凱銳光電內部知識庫）"
   },
   "spaces": {
     "title": "所有空間",

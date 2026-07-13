@@ -22,22 +22,22 @@ function daysAgo(n: number) {
 const titlesOf = (hits: { title: string }[]) => hits.map((h) => h.title).sort();
 
 describe("fullTextSearch（pgroonga 中文分詞）", () => {
-  it("「捷揚」子字串命中「捷揚光電」；標題加權高於內文", async () => {
+  it("「凱銳」子字串命中「凱銳光電」；標題加權高於內文", async () => {
     const owner = await seedUser();
     const space = await seedSpace(owner.id, { visibility: "org_read" });
     await seedPage(space.id, {
-      title: "捷揚光電員工手冊",
+      title: "凱銳光電員工手冊",
       contentText: "本手冊說明出勤與福利規定。",
     });
     await seedPage(space.id, {
       title: "無關標題",
-      contentText: "內文提到捷揚的產品線。",
+      contentText: "內文提到凱銳的產品線。",
     });
 
-    const hits = await fullTextSearch(owner, "捷揚");
+    const hits = await fullTextSearch(owner, "凱銳");
     expect(hits.length).toBeGreaterThanOrEqual(2);
     // 標題命中者分數較高排前
-    expect(hits[0]?.title).toBe("捷揚光電員工手冊");
+    expect(hits[0]?.title).toBe("凱銳光電員工手冊");
     expect(hits[0]!.score).toBeGreaterThan(hits[1]!.score);
   });
 

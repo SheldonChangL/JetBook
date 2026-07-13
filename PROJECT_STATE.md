@@ -4,7 +4,7 @@
 
 ## 專案
 
-**JetBook** — 捷揚光電（Jet Opto）內部知識管理系統（類 GitBook）。
+**JetBook** — 凱銳光電（Jet Opto）內部知識管理系統（類 GitBook）。
 Next.js（App Router、TS strict）全端 + PostgreSQL 16/pgvector/pgroonga + Docker Compose；AI RAG 問答（前期 Claude API → 後期 Local LLM，經 Provider 抽象層以 env 切換）；繁體中文預設。
 
 ## 目前階段

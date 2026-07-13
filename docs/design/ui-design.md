@@ -1,6 +1,6 @@
 # JetBook UI/UX 設計規格書 v1.1
 
-> 適用範圍：JetBook（捷揚光電內部知識管理系統）全產品 UI/UX。視覺系統為原創設計，互動慣例沿用業界成熟模式。預設語言：繁體中文。
+> 適用範圍：JetBook（凱銳光電內部知識管理系統）全產品 UI/UX。視覺系統為原創設計，互動慣例沿用業界成熟模式。預設語言：繁體中文。
 > 功能需求編號（F-XXX-nn）對照 `docs/specs/functional-requirements.md` v1.1；效能數字以 `docs/specs/non-functional-requirements.md` NFR 表為唯一來源（C10）。
 
 ## 修訂紀錄
@@ -133,7 +133,7 @@ Organization（單一，即公司）
 
 ┌────────── 卡片（寬 400px，圓角 12px，陰影 lg）──────────┐
 │  [JetBook Logo ＋ 產品名]（置中）                        │
-│  「捷揚光電內部知識庫」caption（neutral-500）              │
+│  「凱銳光電內部知識庫」caption（neutral-500）              │
 │                                                        │
 │  Email 輸入框（label：公司信箱）                          │
 │  密碼輸入框（label：密碼；右側顯示/隱藏眼睛 icon）           │
@@ -524,7 +524,7 @@ Step 4 — 完成：
 
 啟用頁（/invite?token=…）：
   版面：同 §3.1 置中單卡片。
-  「歡迎加入 JetBook」標題＋「捷揚光電內部知識庫」caption
+  「歡迎加入 JetBook」標題＋「凱銳光電內部知識庫」caption
   受邀信箱（唯讀顯示，帳號識別）
   姓名輸入框（預填管理者建立時的姓名，可修改）
   設定密碼＋確認密碼（即時強度指示，依密碼原則）
