@@ -1,6 +1,6 @@
 import "server-only";
 import { randomBytes } from "crypto";
-import { and, eq, max, ne } from "drizzle-orm";
+import { and, count, eq, ilike, max, ne, or, type SQL } from "drizzle-orm";
 import { db, type Db } from "@/lib/db";
 import { sessions, users, type User } from "@/lib/db/schema";
 import { hashPassword, isPasswordAcceptable } from "@/lib/auth/password";
@@ -26,22 +26,66 @@ export interface AdminUserRow {
   lastLoginAt: Date | null;
 }
 
-export async function listUsers(): Promise<AdminUserRow[]> {
-  return db
-    .select({
-      id: users.id,
-      name: users.name,
-      email: users.email,
-      orgRole: users.orgRole,
-      authProvider: users.authProvider,
-      isActive: users.isActive,
-      createdAt: users.createdAt,
-      lastLoginAt: max(sessions.lastActiveAt),
-    })
-    .from(users)
-    .leftJoin(sessions, eq(sessions.userId, users.id))
-    .groupBy(users.id)
-    .orderBy(users.createdAt);
+export interface ListUsersOptions {
+  /** name/email 子字串過濾（不分大小寫；LIKE 萬用字元會被跳脫成字面值） */
+  query?: string;
+  /** 啟用狀態過濾；未給＝全部 */
+  status?: "active" | "inactive";
+  /** 1-based 頁碼，預設 1 */
+  page?: number;
+  /** 每頁筆數，預設 50 */
+  pageSize?: number;
+}
+
+export interface ListUsersResult {
+  rows: AdminUserRow[];
+  /** 符合過濾條件的總筆數（分頁前） */
+  total: number;
+}
+
+/** 使用者輸入進 LIKE pattern 前跳脫萬用字元（PG 預設 escape 為反斜線）。 */
+function escapeLikePattern(input: string): string {
+  return input.replace(/[\\%_]/g, (m) => `\\${m}`);
+}
+
+export async function listUsers(options: ListUsersOptions = {}): Promise<ListUsersResult> {
+  const page = Math.max(1, options.page ?? 1);
+  const pageSize = Math.max(1, options.pageSize ?? 50);
+
+  const conditions: SQL[] = [];
+  const query = options.query?.trim();
+  if (query) {
+    const pattern = `%${escapeLikePattern(query)}%`;
+    const match = or(ilike(users.name, pattern), ilike(users.email, pattern));
+    if (match) conditions.push(match);
+  }
+  if (options.status) conditions.push(eq(users.isActive, options.status === "active"));
+  const where = conditions.length > 0 ? and(...conditions) : undefined;
+
+  const [rows, totalRows] = await Promise.all([
+    db
+      .select({
+        id: users.id,
+        name: users.name,
+        email: users.email,
+        orgRole: users.orgRole,
+        authProvider: users.authProvider,
+        isActive: users.isActive,
+        createdAt: users.createdAt,
+        lastLoginAt: max(sessions.lastActiveAt),
+      })
+      .from(users)
+      .leftJoin(sessions, eq(sessions.userId, users.id))
+      .where(where)
+      .groupBy(users.id)
+      // id 為 tie-break：同時間建立（批次匯入）時分頁順序仍穩定
+      .orderBy(users.createdAt, users.id)
+      .limit(pageSize)
+      .offset((page - 1) * pageSize),
+    db.select({ value: count() }).from(users).where(where),
+  ]);
+
+  return { rows, total: totalRows[0]?.value ?? 0 };
 }
 
 /** PG unique violation（23505）；drizzle 會包一層 DrizzleQueryError，原始錯誤在 cause 鏈。 */
