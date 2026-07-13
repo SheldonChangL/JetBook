@@ -10,6 +10,13 @@ WORKDIR /app
 COPY --from=deps /app/node_modules ./node_modules
 COPY . .
 ENV NEXT_TELEMETRY_DISABLED=1
+# ── 僅供 next build 靜態收集用的 build-time placeholder env ──
+# next build 收集 page data 時會 evaluate route 模組，觸發 module-scope 的
+# `import { env } from "@/lib/env"`（Zod fail-fast）。build 階段刻意無 .env（.dockerignore 排除），
+# 故在此注入 env.ts 僅有的兩個必填欄位佔位值，讓靜態收集通過即可。
+# 這些值不進 runtime：compose 以 env_file(.env) 與 environment 覆寫（見 docker-compose.yml web/worker）。
+ENV DATABASE_URL=postgresql://build:build@build-placeholder:5432/build \
+    BASE_URL=http://build-placeholder
 RUN npm run build && npm run build:worker
 
 FROM node:22-alpine AS runner
