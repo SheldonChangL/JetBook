@@ -16,6 +16,7 @@ import {
 } from "@/lib/spaces/manage";
 import { listGroups } from "@/lib/admin/groups";
 import { Badge } from "@/components/ui/badge";
+import { GeneralSection } from "./general-section";
 import { VisibilitySection } from "./visibility-section";
 import { MemberSection } from "./member-section";
 import { GroupSection } from "./group-section";
@@ -82,6 +83,13 @@ export default async function SpaceSettingsPage({
           {t("archivedNotice")}
         </p>
       ) : null}
+
+      <GeneralSection
+        spaceId={space.id}
+        initialName={space.name}
+        initialDescription={space.description}
+        initialIcon={space.icon}
+      />
 
       <VisibilitySection spaceId={space.id} visibility={space.visibility} />
 
