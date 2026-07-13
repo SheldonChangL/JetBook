@@ -139,7 +139,9 @@
   },
   "email": {
     "resetSubject": "重設你的 JetBook 密碼",
-    "resetBody": "{name} 您好，\n\n我們收到重設 JetBook 密碼的請求。請點擊以下連結設定新密碼（30 分鐘內有效，僅能使用一次）：\n\n{url}\n\n若你沒有提出此請求，請忽略本信，你的密碼不會有任何變動。\n\n— JetBook（凱銳光電內部知識庫）"
+    "resetBody": "{name} 您好，\n\n我們收到重設 JetBook 密碼的請求。請點擊以下連結設定新密碼（30 分鐘內有效，僅能使用一次）：\n\n{url}\n\n若你沒有提出此請求，請忽略本信，你的密碼不會有任何變動。\n\n— JetBook（凱銳光電內部知識庫）",
+    "welcomeSubject": "你的 JetBook 帳號已建立",
+    "welcomeBody": "{name} 您好，\n\n管理者已為你建立 JetBook 帳號（登入信箱：{email}）。請點擊以下連結設定你的密碼（30 分鐘內有效）：\n\n{url}\n\n連結逾期時，可在登入頁點「忘記密碼」重新申請。\n\n— JetBook（凱銳光電內部知識庫）"
   },
   "spaces": {
     "title": "所有空間",
@@ -261,6 +263,38 @@
     },
     "statusActive": "啟用",
     "statusInactive": "停用",
+    "import": {
+      "button": "匯入 CSV",
+      "title": "CSV 批次建立使用者",
+      "fileHelper": "CSV 需含標題列。欄位：email（必填）、name（缺漏時以信箱帳號代替）、org_role（admin／管理員 → 管理員，其餘為成員）。相容 Redmine 匯出欄名（First name／Last name）。一次最多 200 列。",
+      "selectFile": "選擇 CSV 檔",
+      "previewSummary": "可建立 {valid} 筆，略過 {invalid} 筆",
+      "colLine": "列",
+      "colEmail": "Email",
+      "colName": "姓名",
+      "colRole": "系統角色",
+      "colStatus": "狀態",
+      "colPassword": "初始密碼",
+      "rowOk": "可建立",
+      "rowError": {
+        "INVALID_EMAIL": "Email 格式錯誤",
+        "DUPLICATE_IN_FILE": "檔內重複",
+        "EMAIL_TAKEN": "帳號已存在"
+      },
+      "fileError": {
+        "NO_EMAIL_COLUMN": "找不到 email 欄位（CSV 需含標題列）",
+        "EMPTY_FILE": "檔案沒有資料列",
+        "TOO_MANY_ROWS": "一次最多匯入 200 列，請分批"
+      },
+      "importConfirm": "建立 {count} 個帳號",
+      "resultSummary": "已建立 {created} 筆、略過 {skipped} 筆",
+      "passwordOnce": "初始密碼僅顯示這一次，關閉視窗後無法再取得。系統已同時寄出設定密碼連結（未設定 SMTP 時不寄送）。",
+      "statusCreated": "已建立",
+      "statusSkipped": "略過",
+      "back": "重新選擇",
+      "close": "關閉",
+      "actionError": "操作失敗，請稍後再試"
+    },
     "searchPlaceholder": "搜尋名稱或 Email…",
     "statusFilterAll": "全部狀態",
     "usersEmptyFiltered": "沒有符合條件的使用者",
