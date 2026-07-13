@@ -507,6 +507,9 @@
     "title": "搜尋",
     "searchPlaceholder": "搜尋…",
     "noResults": "找不到符合的結果",
+    "attachmentsHeading": "附件（{count}）",
+    "attachmentPageLocation": "{space}／{page}",
+    "untitledPage": "未命名頁面",
     "filters": {
       "spaceLabel": "空間",
       "allSpaces": "全部空間",
