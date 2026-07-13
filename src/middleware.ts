@@ -15,6 +15,8 @@ const PUBLIC_PATHS = [
   // REST API v1（M4-06）：Bearer token 認證在 handler 層（requireApiAuth）強制，
   // 不走 session cookie；openapi.json 刻意公開
   "/api/v1",
+  // MCP Server（M4-07）：Bearer token 認證在 handler 層（withMcpAuth）強制
+  "/api/mcp",
 ];
 
 function isPublicPath(pathname: string): boolean {
