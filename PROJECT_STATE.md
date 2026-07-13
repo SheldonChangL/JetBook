@@ -9,7 +9,7 @@ Next.js（App Router、TS strict）全端 + PostgreSQL 16/pgvector/pgroonga + Do
 
 ## 目前階段
 
-**v1 商品化完成 ✅（2026-07-13）。** M0–M3 全部 92 個 issue 關閉並合併（#93 為刻意保留的 M4 backlog 追蹤）。
+**v1 商品化完成 ✅（2026-07-13）。** M0–M3 全部 91 個 issue 關閉並合併（唯一開放 issue 為 #93 M4 backlog 追蹤；全 repo 共 92 issues）。
 
 ### 出貨閘門與終驗證據（全數實測通過）
 - **N-02 MVP E2E 冒煙**：Playwright 全旅程（登入→建空間→建頁→編輯→閱讀→搜尋→私有隔離→登出），CI 綠（PR #151、#186 head run）
@@ -30,9 +30,9 @@ Next.js（App Router、TS strict）全端 + PostgreSQL 16/pgvector/pgroonga + Do
 ## GitHub 執行狀態
 
 - Repo：https://github.com/SheldonChangL/JetBook（private）
-- Issues：#1–#93（92 個 task + M4 backlog；task ID ↔ issue 編號對照見 docs/plans/issue-plan.md）
-- Milestones：M0（已全數完成）／M1／M2／M3／M4
-- 工作流：branch `feature/issue-<n>-<slug>` → PR（Fixes #n）→ squash merge（使用者已授權 self-merge）
+- Issues：共 92（91 已關閉＋#93 M4 backlog；task ID ↔ issue 編號對照見 docs/plans/issue-plan.md）
+- Milestones：M0 10/10 ✅／M1 42/42 ✅／M2 16/16 ✅／M3 23/23 ✅／M4（backlog，僅 #93）
+- 工作流：branch `feature/issue-<n>-<slug>` → PR（Fixes #n）→ squash merge（使用者已授權 self-merge）；PR #89–#188
 
 ## 已完成
 
@@ -53,7 +53,7 @@ Next.js（App Router、TS strict）全端 + PostgreSQL 16/pgvector/pgroonga + Do
 - [x] A-09 next-intl 單語系 zh-TW＋ESLint 禁 JSX 硬編碼字串
 - [x] A-10 **中文分詞 spike 定案 pgroonga**（14/14 驗收查詢；db image = pgroonga base + pgvector，實建實測）
 
-### M1 MVP（30/30 ✅）
+### M1 MVP（42/42 ✅，含後期拆分掛入的細項 issue）
 
 認證（本地帳號 Argon2id/DB session/防暴力破解/忘記密碼/OIDC 預留）、Space 與頁面樹（visibility 三態、
 角色四級、拖曳搬移、slug/301）、TipTap 編輯器全套區塊（slash/程式碼/表格/callout/圖片/附件/Markdown 貼上）、
