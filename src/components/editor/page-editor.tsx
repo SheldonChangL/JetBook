@@ -183,24 +183,27 @@ export function PageEditor({
   }, [uploadAttachmentAtSelection]);
 
   // slash「檔案」→ 開檔案選擇器（隱藏 input，click 於使用者手勢中觸發原生對話框）
+  // M4-04：支援一次選取多檔，逐檔獨立上傳與錯誤回報（單檔失敗不影響其他檔）
   const openAttachmentPicker = useCallback(
     (pos: number) => {
       const input = document.createElement("input");
       input.type = "file";
+      input.multiple = true;
       input.accept = attachmentAcceptAttr();
       input.addEventListener("change", () => {
-        const file = input.files?.[0];
-        if (!file) return;
+        const files = input.files;
         const ed = editorRef.current;
-        if (!ed) return;
-        startAttachmentUpload({
-          editor: ed,
-          file,
-          pos,
-          spaceId,
-          pageId,
-          onError: showAttachmentError,
-        });
+        if (!files || files.length === 0 || !ed) return;
+        for (const file of files) {
+          startAttachmentUpload({
+            editor: ed,
+            file,
+            pos,
+            spaceId,
+            pageId,
+            onError: showAttachmentError,
+          });
+        }
       });
       input.click();
     },

@@ -28,7 +28,7 @@ Next.js（App Router、TS strict）全端 + PostgreSQL 16/pgvector/pgroonga + Do
 - [x] #192 M4-01 使用者搜尋與篩選（搜尋/狀態/分頁，整合測試 6 條）
 - [x] #193 M4-02 CSV 批次建立使用者（Redmine 欄名相容、預覽驗證、單交易批次、歡迎信走重設連結）
 - [x] #194 M4-03 emoji 圖示選擇器（emoji-mart core、編輯器/Space 設定/建立 Modal、Cmd+K 全文結果補 icon；瀏覽器實測）
-- [ ] #195 M4-04 附件批次上傳與檔名搜尋
+- [x] #195 M4-04 附件批次上傳與檔名搜尋（多檔選取/拖放、搜尋頁附件區塊、權限 SQL join）
 - [ ] #196 M4-05 Email 通知（F-NOTIF-02）
 - [ ] #197 M4-06 REST API v1 + API Token（F-API-01/02）
 - [ ] #198 M4-07 MCP Server（F-API-04，依賴 #197）
