@@ -32,7 +32,7 @@ Next.js（App Router、TS strict）全端 + PostgreSQL 16/pgvector/pgroonga + Do
 - [x] #196 M4-05 Email 通知（notify 鏡射 → pg-boss job → SMTP；個人設定逐類開關，預設全開）
 - [x] #197 M4-06 REST API v1 + API Token（api_tokens 表、Bearer 驗證、4 個唯讀端點、OpenAPI 文件頁、token 管理 UI；curl 實測）
 - [x] #198 M4-07 MCP Server（/api/mcp streamable HTTP、Bearer token、3 工具；真 MCP client 實測搜尋→讀取）
-- [ ] #199 M4-08 Word (.docx) 匯入（F-IE-03 子集）
+- [x] #199 M4-08 Word (.docx) 匯入（mammoth+turndown → 既有 savePage 管線；圖片轉附件；瀏覽器 E2E 實測。附帶發現既有 Unicode slug 404 → #207）
 
 ### 尚未完成（v1 之後）
 - **#93 M4 backlog**：變更請求、行內評論、webhooks（暫停）、PDF 匯出、KaTeX、多欄、snippets、內容分析等——其餘候選項依回饋再拆

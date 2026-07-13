@@ -37,6 +37,7 @@ import {
   createGroupNode,
   createPage,
   deletePage,
+  importDocxPage,
   importMarkdownPage,
   listMoveTargetSpaces,
   movePage,
@@ -68,6 +69,8 @@ export interface PageTreeNode {
 
 /** 前端匯入檔案大小上限（bytes），對齊 server 端 IMPORT_MARKDOWN_MAX_CHARS（2 MiB）。 */
 const MAX_IMPORT_BYTES = 2 * 1024 * 1024;
+/** .docx 前端大小保護（server 端 IMPORT_DOCX_MAX_BYTES 對齊） */
+const MAX_IMPORT_DOCX_BYTES = 50 * 1024 * 1024;
 
 /** 外部連結 URL 前端驗證：僅接受 http/https 絕對網址（與 server 端一致）。 */
 function isHttpUrl(value: string): boolean {
@@ -431,6 +434,45 @@ export function PageTree({ spaceId, spaceSlug, nodes, canEdit }: PageTreeProps) 
     });
   }
 
+  // --- 匯入單檔 Word .docx（M4-08，F-IE-03 子集）→ importDocxPage → 閱讀頁 ---
+  const docxInputRef = useRef<HTMLInputElement>(null);
+  function handleImportDocx(e: ChangeEvent<HTMLInputElement>) {
+    const input = e.currentTarget;
+    const file = input.files?.[0];
+    input.value = "";
+    if (!file) return;
+    if (file.size === 0) {
+      toast({ variant: "error", title: t("importEmpty") });
+      return;
+    }
+    if (file.size > MAX_IMPORT_DOCX_BYTES) {
+      toast({ variant: "error", title: t("importTooLarge") });
+      return;
+    }
+    startTransition(async () => {
+      try {
+        const form = new FormData();
+        form.set("file", file);
+        form.set("spaceId", spaceId);
+        const result = await importDocxPage(form);
+        if (!result.ok) {
+          toast({ variant: "error", title: t(`importDocxError.${result.error}`) });
+          return;
+        }
+        toast({
+          variant: "success",
+          title:
+            result.skippedImages > 0
+              ? t("importDocxSuccessSkipped", { skipped: result.skippedImages })
+              : t("importDocxSuccess"),
+        });
+        router.push(`/s/${spaceSlug}/${result.slug}`);
+      } catch {
+        toast({ variant: "error", title: t("importError") });
+      }
+    });
+  }
+
   // --- 重新命名（page / group；external 走「編輯連結」） ---
   const [renameTarget, setRenameTarget] = useState<PageTreeNode | null>(null);
   function handleRename(formData: FormData) {
@@ -620,6 +662,12 @@ export function PageTree({ spaceId, spaceSlug, nodes, canEdit }: PageTreeProps) 
                     {t("importMarkdown")}
                   </MenuItem>
                 </PopoverClose>
+                <PopoverClose asChild>
+                  <MenuItem onClick={() => docxInputRef.current?.click()}>
+                    <Upload aria-hidden className="size-4" />
+                    {t("importDocx")}
+                  </MenuItem>
+                </PopoverClose>
               </PopoverContent>
             </Popover>
             {/* 隱藏 file input：由匯入選單觸發；只接受 Markdown 副檔名 */}
@@ -629,6 +677,14 @@ export function PageTree({ spaceId, spaceSlug, nodes, canEdit }: PageTreeProps) 
               accept=".md,.markdown,.mdown,.mkd,.mkdn,text/markdown"
               className="hidden"
               onChange={handleImportFile}
+            />
+            {/* 隱藏 file input：Word 匯入（M4-08） */}
+            <input
+              ref={docxInputRef}
+              type="file"
+              accept=".docx,application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+              className="hidden"
+              onChange={handleImportDocx}
             />
           </div>
         ) : null}

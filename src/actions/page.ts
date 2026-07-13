@@ -17,6 +17,8 @@ import { recordSlugHistory, reclaimSlug, uniquePageSlug } from "@/lib/pages/slug
 import { createPageInTx } from "@/lib/pages/create";
 import { writePageContentTx } from "@/lib/pages/content-write";
 import { buildMarkdownImport } from "@/lib/content/import-markdown";
+import { docxToMarkdown, imageFileName, DOCX_IMAGE_SCHEME } from "@/lib/content/import-docx";
+import { saveAttachment, UploadValidationError } from "@/lib/storage/upload";
 import { newlyMentionedUserIds } from "@/lib/content/mentions";
 import { notifyPageMention } from "@/lib/notifications";
 import { EMPTY_DOC, type ProseMirrorDoc } from "@/lib/content/types";
@@ -548,6 +550,89 @@ export async function importMarkdownPage(
     "markdown page imported",
   );
   return { id, slug };
+}
+
+/** 單檔 .docx 匯入大小上限（與附件上傳上限一致由 maxUploadBytes 控制，此為請求防護）。 */
+const IMPORT_DOCX_MAX_BYTES = 50 * 1024 * 1024;
+
+export type ImportDocxResult =
+  | { ok: true; id: string; slug: string; skippedImages: number }
+  | { ok: false; error: "INVALID_FILE" | "INVALID_DOCX" | "EMPTY_DOCX" | "TOO_LARGE" };
+
+/**
+ * 單檔 Word (.docx) 匯入（M4-08，F-IE-03 子集）：
+ * docx → HTML（mammoth）→ Markdown（turndown+gfm）→ 既有 markdown-to-doc → savePage 管線
+ * （三欄同交易同步＋版本快照＋enqueue embedding，鐵律 5 不旁路）。
+ * 圖片抽出後經 saveAttachment（白名單驗證）存為附件並改寫引用；單張被拒僅略過（同 J-02）。
+ * 轉換失敗發生在建頁之前——損壞檔不產生半成品頁面。
+ */
+export async function importDocxPage(formData: FormData): Promise<ImportDocxResult> {
+  const { user } = await requireSession();
+  const file = formData.get("file");
+  const spaceId = z.uuid().parse(formData.get("spaceId"));
+  const parentRaw = formData.get("parentId");
+  const parentId = parentRaw ? z.uuid().parse(parentRaw) : null;
+
+  if (!(file instanceof File) || file.size === 0) return { ok: false, error: "INVALID_FILE" };
+  if (file.size > IMPORT_DOCX_MAX_BYTES) return { ok: false, error: "TOO_LARGE" };
+  const lowerName = file.name.toLowerCase();
+  if (!lowerName.endsWith(".docx")) return { ok: false, error: "INVALID_FILE" };
+
+  // 轉換先於建頁：損壞/非 docx 在此擲出 → 明確錯誤、零資料列
+  let conversion: Awaited<ReturnType<typeof docxToMarkdown>>;
+  try {
+    conversion = await docxToMarkdown(Buffer.from(await file.arrayBuffer()));
+  } catch (error) {
+    logger.warn({ err: error, fileName: file.name }, "docx 轉換失敗");
+    return { ok: false, error: "INVALID_DOCX" };
+  }
+  if (!conversion.markdown.trim() && conversion.images.length === 0) {
+    return { ok: false, error: "EMPTY_DOCX" };
+  }
+  if (conversion.warnings.length > 0) {
+    logger.info({ fileName: file.name, warnings: conversion.warnings }, "docx 轉換警告");
+  }
+
+  // 先以無 resolver 建置取得標題（首個 H1 或檔名）
+  const { title } = buildMarkdownImport(conversion.markdown, file.name);
+
+  // createPage 內含 requireEditor（page.edit 授權）與 slug 配置
+  const { id, slug } = await createPage({ spaceId, parentId, title });
+
+  // 圖片 → 附件（白名單/大小驗證在 saveAttachment）；單張被拒略過、引用降級為連結
+  const srcByPlaceholder = new Map<string, string>();
+  let skippedImages = 0;
+  for (const image of conversion.images) {
+    try {
+      const attachment = await saveAttachment({
+        spaceId,
+        pageId: id,
+        uploaderId: user.id,
+        fileName: imageFileName(image.index, image.contentType),
+        mimeType: image.contentType,
+        data: image.data,
+      });
+      srcByPlaceholder.set(`${DOCX_IMAGE_SCHEME}${image.index}`, `/api/files/${attachment.id}`);
+    } catch (error) {
+      if (error instanceof UploadValidationError) {
+        skippedImages += 1;
+        logger.warn({ index: image.index, code: error.code }, "docx 圖片被拒（略過）");
+      } else {
+        throw error;
+      }
+    }
+  }
+
+  const { doc } = buildMarkdownImport(conversion.markdown, file.name, {
+    resolveImageSrc: (href) => srcByPlaceholder.get(href) ?? null,
+  });
+  await savePage({ pageId: id, expectedVersionNo: 0, content: doc });
+
+  logger.info(
+    { pageId: id, spaceId, fileName: file.name, images: conversion.images.length, skippedImages },
+    "docx page imported",
+  );
+  return { ok: true, id, slug, skippedImages };
 }
 
 /** 計算某頁的後代數量（刪除前顯示影響範圍用）。需 space 讀取權。 */

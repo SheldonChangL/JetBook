@@ -848,6 +848,15 @@
     "dragHandle": "拖曳排序",
     "spaceMenu": "空間動作",
     "importMarkdown": "匯入 Markdown",
+    "importDocx": "匯入 Word (.docx)",
+    "importDocxSuccess": "已匯入 Word 頁面",
+    "importDocxSuccessSkipped": "已匯入 Word 頁面（{skipped} 張圖片因驗證未通過而略過）",
+    "importDocxError": {
+      "INVALID_FILE": "請選擇 .docx 檔案",
+      "INVALID_DOCX": "檔案損壞或不是有效的 Word (.docx) 文件",
+      "EMPTY_DOCX": "文件沒有可匯入的內容",
+      "TOO_LARGE": "檔案過大（上限 50 MB）"
+    },
     "importSuccess": "已匯入 Markdown 頁面",
     "importError": "匯入失敗，請確認檔案格式後再試",
     "importTooLarge": "檔案過大，無法匯入（上限 2 MB）",
