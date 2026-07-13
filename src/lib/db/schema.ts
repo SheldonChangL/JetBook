@@ -408,6 +408,33 @@ export const comments = pgTable(
 // ── 站內通知（K-02；F-NOTIF-01，設計規範 §3.9 通知中心） ─────────────────────
 
 /**
+ * API Token（M4-06，F-API-02）：個人 token 供 REST API Bearer 認證。
+ * 明文只在建立當下回傳一次；DB 僅存 sha256 hash（同 session token 策略）。
+ * 權限完全繼承 token 擁有者（lib/authz），scopes 僅限縮 API 面（v1：read）。
+ */
+export const apiTokens = pgTable(
+  "api_tokens",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    userId: uuid("user_id")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    name: text("name").notNull(),
+    /** sha256(token) hex；明文不落 DB */
+    tokenHash: text("token_hash").notNull().unique(),
+    /** 授權範圍；v1 僅 "read"（欄位預留未來 write） */
+    scopes: jsonb("scopes").$type<string[]>().notNull().default(["read"]),
+    /** 到期時間；null＝永不過期 */
+    expiresAt: timestamp("expires_at", { withTimezone: true }),
+    lastUsedAt: timestamp("last_used_at", { withTimezone: true }),
+    /** 撤銷時間；非 null 即立即失效 */
+    revokedAt: timestamp("revoked_at", { withTimezone: true }),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (table) => [index("ix_api_tokens_user").on(table.userId)],
+);
+
+/**
  * 站內通知（K-02，F-NOTIF-01）：使用者層級的事件收件匣。
  * - `type`＝事件種類（如 comment_reply）；`payload` jsonb 帶顯示與跳轉所需欄位
  *   （至少含 `url` 供點擊直達，其餘依 type 而定，如 actorName/pageTitle/excerpt）。
@@ -565,5 +592,6 @@ export type Attachment = typeof attachments.$inferSelect;
 export type PageEmbedding = typeof pageEmbeddings.$inferSelect;
 export type Comment = typeof comments.$inferSelect;
 export type Notification = typeof notifications.$inferSelect;
+export type ApiToken = typeof apiTokens.$inferSelect;
 export type AiConversation = typeof aiConversations.$inferSelect;
 export type AiMessage = typeof aiMessages.$inferSelect;

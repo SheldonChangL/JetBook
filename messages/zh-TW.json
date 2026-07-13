@@ -147,6 +147,15 @@
     "welcomeSubject": "你的 JetBook 帳號已建立",
     "welcomeBody": "{name} 您好，\n\n管理者已為你建立 JetBook 帳號（登入信箱：{email}）。請點擊以下連結設定你的密碼（30 分鐘內有效）：\n\n{url}\n\n連結逾期時，可在登入頁點「忘記密碼」重新申請。\n\n— JetBook（凱銳光電內部知識庫）"
   },
+  "apiDocs": {
+    "title": "API 文件",
+    "backToSettings": "返回個人設定",
+    "rawSpec": "下載 OpenAPI 規格（openapi.json）",
+    "params": "參數：{list}",
+    "paramRequired": "{name}（{location}）",
+    "paramOptional": "{name}（{location}，選填）",
+    "paramSeparator": "、"
+  },
   "emojiPicker": {
     "search": "搜尋 emoji（英文）",
     "searchNoResults1": "喔不！",
@@ -1130,6 +1139,32 @@
     "emailNotif": {
       "comment_reply": "留言回覆",
       "page_mention": "頁面提及（@我）"
+    },
+    "apiTokens": {
+      "heading": "API Token",
+      "desc": "供 REST API 與 MCP 使用的個人存取權杖；權限與你的帳號一致。",
+      "docsLink": "查看 API 文件",
+      "create": "建立 Token",
+      "createTitle": "建立 API Token",
+      "nameLabel": "名稱（用途）",
+      "expiryLabel": "有效期限",
+      "expiry": {
+        "30": "30 天",
+        "90": "90 天",
+        "365": "365 天",
+        "0": "永不過期"
+      },
+      "createdFor": "「{name}」已建立，請立即複製：",
+      "shownOnce": "此 token 僅顯示這一次，關閉後無法再取得。請妥善保管，切勿分享給他人。",
+      "close": "關閉",
+      "empty": "尚未建立任何 API token。",
+      "meta": "建立於 {created} · 到期 {expires} · 最後使用 {lastUsed}",
+      "never": "永不",
+      "neverUsed": "從未使用",
+      "expired": "已過期",
+      "revoke": "撤銷",
+      "revoked": "Token 已撤銷，立即失效",
+      "actionError": "操作失敗，請稍後再試"
     },
     "backToApp": "返回",
     "save": "儲存",
