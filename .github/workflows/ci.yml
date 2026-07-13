@@ -46,6 +46,13 @@ jobs:
 
       - name: Build
         run: npm run build
+        env:
+          # ── 僅供 next build 靜態收集用的 build-time placeholder env（與 Dockerfile build stage 相同）──
+          # next build 收集 page data 時會 evaluate route 模組，觸發 module-scope 的
+          # `import { env } from "@/lib/env"`（Zod fail-fast）；CI 無 .env，故注入
+          # env.ts 僅有的兩個必填欄位佔位值，讓靜態收集通過即可。值不進任何 runtime。
+          DATABASE_URL: postgresql://build:build@build-placeholder:5432/build
+          BASE_URL: http://build-placeholder
 
   e2e:
     name: E2E smoke（Playwright，MVP 出貨閘門 N-02）
