@@ -26,7 +26,7 @@ Next.js（App Router、TS strict）全端 + PostgreSQL 16/pgvector/pgroonga + Do
 使用者需求 8 項評估後拆為 8 issues；決策：Redmine 匯入走 CSV 匯出、Word→MD 轉頁面優先、Webhooks（F-API-03）暫停。
 
 - [x] #192 M4-01 使用者搜尋與篩選（搜尋/狀態/分頁，整合測試 6 條）
-- [ ] #193 M4-02 CSV 批次建立使用者
+- [x] #193 M4-02 CSV 批次建立使用者（Redmine 欄名相容、預覽驗證、單交易批次、歡迎信走重設連結）
 - [ ] #194 M4-03 emoji 圖示選擇器
 - [ ] #195 M4-04 附件批次上傳與檔名搜尋
 - [ ] #196 M4-05 Email 通知（F-NOTIF-02）

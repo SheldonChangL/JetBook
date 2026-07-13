@@ -10,6 +10,19 @@ import {
   setUserActive,
   setUserOrgRole,
 } from "@/lib/admin/users";
+import {
+  importUsers,
+  markExistingEmails,
+  parseUsersCsv,
+  type ImportedUserResult,
+  type ParsedUserRow,
+} from "@/lib/admin/user-import";
+import { createPasswordResetToken } from "@/lib/auth/password-reset";
+import { sendEmail } from "@/lib/email";
+import { ipFromHeaders, writeAudit } from "@/lib/audit";
+import { headers } from "next/headers";
+import { getTranslations } from "next-intl/server";
+import { env } from "@/lib/env";
 import { isEmbeddingConfigured } from "@/lib/llm";
 import { setAiDailyQuotaPerUser } from "@/lib/ai/quota";
 import {
@@ -211,4 +224,87 @@ export async function setAiDailyQuotaAction(input: {
   logger.info({ adminId: admin.id, quota: parsed.data.quota }, "admin: ai daily quota set");
   revalidatePath("/admin/ai");
   return { ok: true };
+}
+
+// ── M4-02 CSV 批次建立使用者（issue #193） ──
+
+const importCsvSchema = z.object({ csv: z.string().min(1).max(1_000_000) });
+
+/** schema 擋下時給正確的錯誤碼：超長＝請分批（TOO_MANY_ROWS），其餘視為空檔。 */
+function importSchemaError(csv: unknown): string {
+  return typeof csv === "string" && csv.length > 1_000_000 ? "TOO_MANY_ROWS" : "EMPTY_FILE";
+}
+
+export type UserImportPreviewResult =
+  | { ok: true; rows: ParsedUserRow[] }
+  | { ok: false; error: string };
+
+/** 預覽：解析 CSV 並比對 DB 既有 email，不改動任何資料。 */
+export async function previewUserImportAction(input: {
+  csv: string;
+}): Promise<UserImportPreviewResult> {
+  await requireOrgAdmin();
+  const parsed = importCsvSchema.safeParse(input);
+  if (!parsed.success) return { ok: false, error: importSchemaError(input.csv) };
+  const result = parseUsersCsv(parsed.data.csv);
+  if (!result.ok) return { ok: false, error: result.error };
+  return { ok: true, rows: await markExistingEmails(result.rows) };
+}
+
+export type UserImportOutcome =
+  | { ok: true; results: ImportedUserResult[]; created: number; skipped: number }
+  | { ok: false; error: string };
+
+/**
+ * 執行匯入：重新解析（不信任 client 預覽）→ 批次建立（單交易）→ 稽核
+ * → 歡迎信（重設密碼連結；寄送失敗不影響建立結果）。初始密碼僅此一次回傳。
+ */
+export async function importUsersAction(input: { csv: string }): Promise<UserImportOutcome> {
+  const admin = await requireOrgAdmin();
+  const parsed = importCsvSchema.safeParse(input);
+  if (!parsed.success) return { ok: false, error: importSchemaError(input.csv) };
+  const parseResult = parseUsersCsv(parsed.data.csv);
+  if (!parseResult.ok) return { ok: false, error: parseResult.error };
+
+  const results = await importUsers(parseResult.rows);
+  const created = results.filter((r) => r.status === "created");
+
+  await writeAudit({
+    actorId: admin.id,
+    action: "admin.user_import",
+    targetType: "user",
+    metadata: { total: results.length, created: created.length },
+    ip: ipFromHeaders(await headers()),
+  });
+  logger.info(
+    { adminId: admin.id, total: results.length, created: created.length },
+    "admin: users imported from csv",
+  );
+
+  // 歡迎信：初始密碼不進信件，改寄重設連結（逾期可走忘記密碼）。失敗僅記 log。
+  const t = await getTranslations("email");
+  await Promise.allSettled(
+    created.map(async (r) => {
+      if (!r.userId) return;
+      try {
+        const { token } = await createPasswordResetToken(r.userId);
+        const url = `${env.BASE_URL}/reset-password?token=${encodeURIComponent(token)}`;
+        await sendEmail({
+          to: r.email,
+          subject: t("welcomeSubject"),
+          text: t("welcomeBody", { name: r.name, email: r.email, url }),
+        });
+      } catch (err) {
+        logger.warn({ err, email: r.email }, "welcome email failed");
+      }
+    }),
+  );
+
+  revalidatePath("/admin/users");
+  return {
+    ok: true,
+    results,
+    created: created.length,
+    skipped: results.length - created.length,
+  };
 }
