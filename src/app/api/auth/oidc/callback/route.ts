@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { createSession, SESSION_COOKIE } from "@/lib/auth/session";
+import { cookieSecure, createSession, SESSION_COOKIE } from "@/lib/auth/session";
 import {
   OIDC_BASE_PATH,
   OIDC_NONCE_COOKIE,
@@ -9,7 +9,6 @@ import {
   oidcProvider,
   upsertOidcUser,
 } from "@/lib/auth/oidc";
-import { env } from "@/lib/env";
 import { ipFromHeaders, writeAudit } from "@/lib/audit";
 import { requestLogger } from "@/lib/logger";
 
@@ -91,7 +90,7 @@ export async function GET(request: Request) {
     clearTxCookies(response);
     response.cookies.set(SESSION_COOKIE, token, {
       httpOnly: true,
-      secure: env.NODE_ENV === "production",
+      secure: cookieSecure,
       sameSite: "lax",
       path: "/",
       expires: session.expiresAt,
