@@ -22,8 +22,20 @@ Next.js（App Router、TS strict）全端 + PostgreSQL 16/pgvector/pgroonga + Do
 ### 部署摘要
 `cp .env.example .env` 填實值 → `docker compose up -d --build`。AI 功能以 env 開關（LLM_PROVIDER=anthropic|openai-compat + EMBEDDING_BASE_URL 指向 local BGE-M3）；未設定時 AI 入口自動隱藏、其餘功能不受影響。SSO 以 AUTH_OIDC_* 啟用。
 
+### M4 第一批（2026-07-13 依使用回饋拆解，#192–#199）
+使用者需求 8 項評估後拆為 8 issues；決策：Redmine 匯入走 CSV 匯出、Word→MD 轉頁面優先、Webhooks（F-API-03）暫停。
+
+- [x] #192 M4-01 使用者搜尋與篩選（搜尋/狀態/分頁，整合測試 6 條）
+- [ ] #193 M4-02 CSV 批次建立使用者
+- [ ] #194 M4-03 emoji 圖示選擇器
+- [ ] #195 M4-04 附件批次上傳與檔名搜尋
+- [ ] #196 M4-05 Email 通知（F-NOTIF-02）
+- [ ] #197 M4-06 REST API v1 + API Token（F-API-01/02）
+- [ ] #198 M4-07 MCP Server（F-API-04，依賴 #197）
+- [ ] #199 M4-08 Word (.docx) 匯入（F-IE-03 子集）
+
 ### 尚未完成（v1 之後）
-- **#93 M4 backlog**：變更請求、行內評論、REST API/token、webhooks、MCP server、Word/PDF 匯出入、KaTeX、多欄、snippets、Email 通知、內容分析等——依實際使用回饋於 M4 拆解
+- **#93 M4 backlog**：變更請求、行內評論、webhooks（暫停）、PDF 匯出、KaTeX、多欄、snippets、內容分析等——其餘候選項依回饋再拆
 - 真實 LLM/Embedding 端點串接為部署設定（本機開發以 mock 驗證介面）；上線時以 /admin/ai 測試連線驗證
 
 
