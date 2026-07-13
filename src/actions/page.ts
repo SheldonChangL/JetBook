@@ -235,6 +235,29 @@ export async function renamePage(input: z.infer<typeof renameSchema>) {
   return { slug: newSlug };
 }
 
+const iconSchema = z.object({
+  pageId: z.uuid(),
+  /** native emoji 字串；null＝清除 */
+  icon: z.string().trim().min(1).max(16).nullable(),
+});
+
+/** 設定頁面 emoji 圖示（M4-03，issue #194）：編輯權即可，不動 slug/內容/版本。 */
+export async function setPageIcon(input: z.infer<typeof iconSchema>) {
+  const data = iconSchema.parse(input);
+  const page = await db.query.pages.findFirst({ where: eq(pages.id, data.pageId) });
+  if (!page || page.deletedAt) throw new Error("NOT_FOUND");
+  const user = await requireEditor(page.spaceId);
+
+  await db
+    .update(pages)
+    .set({ icon: data.icon, updatedBy: user.id, updatedAt: new Date() })
+    .where(eq(pages.id, page.id));
+
+  const space = await db.query.spaces.findFirst({ where: eq(spaces.id, page.spaceId) });
+  if (space) revalidatePath(`/s/${space.slug}`);
+  return { icon: data.icon };
+}
+
 const moveSchema = z.object({
   pageId: z.uuid(),
   /** 新父節點；null＝根層 */

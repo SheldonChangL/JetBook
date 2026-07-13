@@ -9,6 +9,8 @@ export interface SearchHit {
   spaceName: string;
   slug: string;
   title: string;
+  /** 頁面 emoji 圖示（M4-03）；null＝未設定 */
+  icon: string | null;
   /** 命中內文片段（HTML，已 pgroonga 高亮 <mark>） */
   snippet: string;
   score: number;
@@ -63,6 +65,7 @@ export async function fullTextSearch(
     space_name: string;
     slug: string;
     title: string;
+    icon: string | null;
     snippet: string;
     score: number;
   }>(sql`
@@ -72,6 +75,7 @@ export async function fullTextSearch(
       s.name AS space_name,
       p.slug AS slug,
       p.title AS title,
+      p.icon AS icon,
       COALESCE(
         (pgroonga_snippet_html(p.content_text, pgroonga_query_extract_keywords(${q})))[1],
         left(p.content_text, 120)
@@ -96,6 +100,7 @@ export async function fullTextSearch(
     spaceName: r.space_name,
     slug: r.slug,
     title: r.title,
+    icon: r.icon,
     snippet: r.snippet ?? "",
     score: Number(r.score),
   }));

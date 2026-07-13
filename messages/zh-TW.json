@@ -143,6 +143,36 @@
     "welcomeSubject": "你的 JetBook 帳號已建立",
     "welcomeBody": "{name} 您好，\n\n管理者已為你建立 JetBook 帳號（登入信箱：{email}）。請點擊以下連結設定你的密碼（30 分鐘內有效）：\n\n{url}\n\n連結逾期時，可在登入頁點「忘記密碼」重新申請。\n\n— JetBook（凱銳光電內部知識庫）"
   },
+  "emojiPicker": {
+    "search": "搜尋 emoji（英文）",
+    "searchNoResults1": "喔不！",
+    "searchNoResults2": "找不到符合的 emoji",
+    "pick": "選一個 emoji…",
+    "addCustom": "新增自訂 emoji",
+    "clear": "清除圖示",
+    "categories": {
+      "activity": "活動",
+      "custom": "自訂",
+      "flags": "旗幟",
+      "foods": "飲食",
+      "frequent": "常用",
+      "nature": "動物與自然",
+      "objects": "物品",
+      "people": "表情與人物",
+      "places": "旅遊與地點",
+      "search": "搜尋結果",
+      "symbols": "符號"
+    },
+    "skins": {
+      "choose": "選擇預設膚色",
+      "default": "預設",
+      "light": "淺膚色",
+      "mediumLight": "中淺膚色",
+      "medium": "中膚色",
+      "mediumDark": "中深膚色",
+      "dark": "深膚色"
+    }
+  },
   "spaces": {
     "title": "所有空間",
     "create": "建立 Space",
@@ -512,6 +542,8 @@
     "back": "返回",
     "done": "完成編輯",
     "titlePlaceholder": "輸入標題…",
+    "iconPicker": "設定頁面圖示",
+    "iconError": "圖示更新失敗，請稍後再試",
     "saving": "儲存中…",
     "saved": "已自動儲存",
     "conflict": "版本衝突",
@@ -931,6 +963,14 @@
   },
   "spaceSettings": {
     "title": "空間設定",
+    "generalTitle": "一般資訊",
+    "generalDesc": "空間的名稱、描述與圖示。",
+    "generalIcon": "圖示",
+    "generalName": "名稱",
+    "generalDescription": "描述",
+    "generalSave": "儲存變更",
+    "generalUpdated": "空間資訊已更新",
+    "generalUpdateError": "更新失敗，請稍後再試",
     "backToSpace": "返回空間",
     "cancel": "取消",
     "visibilityHeading": "空間可見性",
