@@ -18,6 +18,7 @@
     "db:migrate": "drizzle-kit migrate",
     "db:check": "drizzle-kit check",
     "db:studio": "drizzle-kit studio",
+    "db:seed-admin": "node scripts/seed-admin.mjs",
     "test": "vitest run",
     "test:watch": "vitest",
     "build:worker": "node scripts/build-worker.mjs",
