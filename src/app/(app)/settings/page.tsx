@@ -7,6 +7,7 @@ import type { Theme } from "@/lib/theme";
 import { ProfileSection } from "./profile-section";
 import { PasswordSection } from "./password-section";
 import { AppearanceSection } from "./appearance-section";
+import { NotificationsSection } from "./notifications-section";
 
 export async function generateMetadata(): Promise<Metadata> {
   const t = await getTranslations("settings");
@@ -45,6 +46,8 @@ export default async function SettingsPage() {
       <PasswordSection isLocal={user.authProvider === "local" && user.passwordHash !== null} />
 
       <AppearanceSection initialTheme={currentTheme} />
+
+      <NotificationsSection initialPrefs={user.emailNotificationPrefs ?? null} />
     </main>
   );
 }
