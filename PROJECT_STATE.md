@@ -98,8 +98,9 @@ Space 封存/軟刪、跨 Space 移動複製、死鏈標示、附件 GC、Tabs/�
 
 無。
 
-## 下一步（v1 之後）
+## 下一步
 
-1. 部署到公司內部伺服器：`.env` 填正式值（含 HTTPS/內部 CA 於 proxy）、`docker compose up -d --build`、依 docs/ops/backup-restore-runbook.md 排一次還原演練
-2. 串接真實 AI 端點：先 `ANTHROPIC_API_KEY`（chat）＋ local BGE-M3（embedding，day-1 即不外流），之後 chat 亦切 local（改兩個 env）；上線後跑 /admin/ai 測試連線與全庫重嵌
-3. 收集使用回饋 → 於 #93 評估 M4 backlog 拆解（變更請求、REST API、Email 通知等）
+1. **Merge M4 第一批 stacked PRs（依序）**：#200 → #201 → #202 → #203 → #204 → #205 → #206 → #208（squash；每合一個 GitHub 會自動 retarget 下一個）。含兩個 migration（0018、0019），部署時跑 `db:migrate`
+2. 修 #207（既有 Unicode slug 404，非本批引入）
+3. 部署到公司內部伺服器：`.env` 填正式值（含 SMTP_* 讓 Email 通知/歡迎信生效）、`docker compose up -d --build`
+4. 串接真實 AI 端點（ANTHROPIC_API_KEY + local BGE-M3）；MCP 依 docs/guides/mcp-server.md 讓 Claude 接上知識庫（每人自建 API token）
