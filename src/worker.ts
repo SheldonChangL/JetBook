@@ -5,6 +5,7 @@ import { deleteExpiredSessions } from "@/lib/auth/session";
 import { purgeExpiredTrash } from "@/lib/pages/trash";
 import { purgeExpiredSpaces } from "@/lib/spaces/manage";
 import { collectOrphanAttachments } from "@/lib/storage/gc";
+import { sendEmail } from "@/lib/email";
 import {
   ensureEmbedQueues,
   ensureExportSpaceQueue,
@@ -15,6 +16,7 @@ import {
   updateImportZipProgress,
   updateReindexAllProgress,
   type EmbedPageJob,
+  type NotificationEmailJob,
   type ExportSpaceJob,
   type ImportZipJob,
   type ReindexAllProgress,
@@ -43,6 +45,16 @@ async function main() {
   await boss.work(JOBS.cleanupSessions, async () => {
     await deleteExpiredSessions();
     logger.info("expired sessions cleaned");
+  });
+
+  // 通知 Email 寄送（M4-05，F-NOTIF-02）：內容已於 enqueue 端組好；
+  // 寄送失敗擲出 → pg-boss 重試（enqueue 預設 retry 3 次指數退避）。
+  await boss.createQueue(JOBS.notificationEmail);
+  await boss.work(JOBS.notificationEmail, async (jobs: Job<NotificationEmailJob>[]) => {
+    for (const job of jobs) {
+      await sendEmail(job.data);
+      logger.info({ to: job.data.to }, "notification email sent");
+    }
   });
 
   // 回收桶逾期永久清除（C-08，F-PAGE-06 / C-12 F-ORG-04）：每日清除 deleted_at 逾 30 天的

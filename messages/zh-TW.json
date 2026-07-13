@@ -140,6 +140,10 @@
   "email": {
     "resetSubject": "重設你的 JetBook 密碼",
     "resetBody": "{name} 您好，\n\n我們收到重設 JetBook 密碼的請求。請點擊以下連結設定新密碼（30 分鐘內有效，僅能使用一次）：\n\n{url}\n\n若你沒有提出此請求，請忽略本信，你的密碼不會有任何變動。\n\n— JetBook（凱銳光電內部知識庫）",
+    "notifyReplySubject": "「{pageTitle}」有新回覆",
+    "notifyReplyBody": "{actorName} 回覆了你在「{pageTitle}」的討論串：\n\n{excerpt}\n\n前往查看：{url}\n\n（可於 JetBook 個人設定停用此類 Email 通知）\n— JetBook（凱銳光電內部知識庫）",
+    "notifyMentionSubject": "{actorName} 在「{pageTitle}」提及了你",
+    "notifyMentionBody": "{actorName} 在「{pageTitle}」提及了你。\n\n前往查看：{url}\n\n（可於 JetBook 個人設定停用此類 Email 通知）\n— JetBook（凱銳光電內部知識庫）",
     "welcomeSubject": "你的 JetBook 帳號已建立",
     "welcomeBody": "{name} 您好，\n\n管理者已為你建立 JetBook 帳號（登入信箱：{email}）。請點擊以下連結設定你的密碼（30 分鐘內有效）：\n\n{url}\n\n連結逾期時，可在登入頁點「忘記密碼」重新申請。\n\n— JetBook（凱銳光電內部知識庫）"
   },
@@ -1120,6 +1124,13 @@
   "settings": {
     "title": "個人設定",
     "subtitle": "管理你的基本資料、密碼與外觀偏好",
+    "notificationsHeading": "Email 通知",
+    "notificationsDesc": "站內通知同時寄送 Email 提醒（需系統已設定 SMTP）。",
+    "emailNotifEnabled": "寄送",
+    "emailNotif": {
+      "comment_reply": "留言回覆",
+      "page_mention": "頁面提及（@我）"
+    },
     "backToApp": "返回",
     "save": "儲存",
     "actionError": "操作失敗，請稍後再試",

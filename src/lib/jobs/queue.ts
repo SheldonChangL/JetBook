@@ -25,6 +25,8 @@ export const JOBS = {
   purgeTrash: "purge-trash",
   /** 孤兒附件回收（M-03，cron）：回收未被引用且逾寬限期的附件（storage 檔＋metadata 列） */
   gcOrphanAttachments: "gc-orphan-attachments",
+  /** 通知 Email 寄送（M4-05，F-NOTIF-02）：NotificationEmailJob */
+  notificationEmail: "notification-email",
   /** Zip 批次匯入（J-02）：{ storageKey, fileName, spaceId, parentId, userId } */
   importZip: "import-zip",
   /** 整個 Space Markdown 匯出（J-03）：{ spaceId, spaceName, userId } */
@@ -51,6 +53,13 @@ export interface ImportZipJob {
   parentId: string | null;
   /** 匯入發起者（enqueue 時已驗 page.edit 權限；worker 據此建頁） */
   userId: string;
+}
+
+/** 通知 Email job payload（M4-05）：內容於 enqueue 端組好，worker 只負責寄送＋重試。 */
+export interface NotificationEmailJob {
+  to: string;
+  subject: string;
+  text: string;
 }
 
 const globalForBoss = globalThis as unknown as { jetbookBoss?: PgBoss };
@@ -379,4 +388,11 @@ export async function getReindexAllStatus(jobId: string): Promise<ReindexAllStat
   if (!job) return null;
   const output = job.output as ReindexAllProgress | null;
   return { state: job.state, output: output ?? null };
+}
+
+/** enqueue 通知 Email（M4-05）：retry 3 次指數退避；寄送失敗由 worker 重試。 */
+export async function enqueueNotificationEmail(
+  data: NotificationEmailJob,
+): Promise<string | null> {
+  return enqueue(JOBS.notificationEmail, data);
 }
