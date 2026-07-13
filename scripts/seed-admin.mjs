@@ -18,6 +18,14 @@
 import { hash } from "@node-rs/argon2";
 import pg from "pg";
 
+// 純 node 腳本不像 Next.js 會自動載入 .env（同 drizzle.config.ts）。
+// CI／正式環境以環境變數直接注入，缺 .env 不視為錯誤。
+try {
+  process.loadEnvFile(".env");
+} catch {
+  // .env 不存在時走既有環境變數
+}
+
 // Argon2id 參數必須與 src/lib/auth/password.ts 的 ARGON2_OPTIONS 一致，
 // 否則登入時 verify 會失敗（@node-rs/argon2 的 verify 會讀 hash 內嵌參數，
 // 但顯式帶入的 options 需相容）。
