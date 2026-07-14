@@ -6,9 +6,11 @@ import { fullTextSearch } from "@/lib/search/fulltext";
 import { searchAttachmentsByName } from "@/lib/search/attachments";
 import { listSearchAuthors } from "@/lib/search/filters";
 import { listAccessibleSpaces } from "@/lib/spaces/queries";
+import { isPreviewConverterConfigured } from "@/lib/storage/office-preview";
 import {
   attachmentFileUrl,
   formatFileSize,
+  isOfficePreviewCandidate,
   isPreviewableAttachment,
 } from "@/components/editor/attachment/attachment-utils";
 import { AttachmentPreviewButton } from "@/components/content/attachment-preview";
@@ -103,7 +105,8 @@ export default async function SearchPage({
                     </Link>
                   </p>
                 </div>
-                {isPreviewableAttachment(hit.fileName) ? (
+                {isPreviewableAttachment(hit.fileName) ||
+                (isPreviewConverterConfigured() && isOfficePreviewCandidate(hit.fileName)) ? (
                   <AttachmentPreviewButton attachmentId={hit.id} fileName={hit.fileName} />
                 ) : null}
               </li>

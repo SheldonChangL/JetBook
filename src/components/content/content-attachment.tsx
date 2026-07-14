@@ -5,9 +5,13 @@ import { useTranslations } from "next-intl";
 import {
   attachmentFileUrl,
   formatFileSize,
+  isOfficePreviewCandidate,
   isPreviewableAttachment,
 } from "@/components/editor/attachment/attachment-utils";
-import { AttachmentPreviewButton } from "@/components/content/attachment-preview";
+import {
+  AttachmentPreviewButton,
+  useOfficePreviewEnabled,
+} from "@/components/content/attachment-preview";
 
 /**
  * 附件卡片（D-08，F-EDIT-10）：檔名／大小／下載連結。
@@ -24,9 +28,13 @@ export function ContentAttachment({
   sizeBytes: number;
 }) {
   const t = useTranslations("content.attachment");
+  const officePreviewEnabled = useOfficePreviewEnabled();
   const href = attachmentFileUrl(attachmentId);
   const size = formatFileSize(sizeBytes);
   const displayName = fileName || t("unnamed");
+  const canPreview =
+    isPreviewableAttachment(fileName) ||
+    (officePreviewEnabled && isOfficePreviewCandidate(fileName));
 
   return (
     <div className="content-attachment" data-type="attachment">
@@ -35,7 +43,7 @@ export function ContentAttachment({
         <span className="content-attachment__name">{displayName}</span>
         {size ? <span className="content-attachment__size">{size}</span> : null}
       </span>
-      {isPreviewableAttachment(fileName) ? (
+      {canPreview ? (
         <AttachmentPreviewButton attachmentId={attachmentId} fileName={fileName} />
       ) : null}
       <a

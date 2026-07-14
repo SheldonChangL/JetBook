@@ -27,6 +27,16 @@ export const ALLOWED_FILE_TYPES: Readonly<Record<string, readonly string[]>> = {
   ".zip": ["application/zip", "application/x-zip-compressed"],
 };
 
+/** 可轉 PDF 預覽的 Office 副檔名（M4-12；上傳白名單的子集，client/server 共用）。 */
+export const OFFICE_PREVIEW_EXTENSIONS: ReadonlySet<string> = new Set([
+  ".doc",
+  ".docx",
+  ".xls",
+  ".xlsx",
+  ".ppt",
+  ".pptx",
+]);
+
 export type UploadValidationErrorCode = "FILE_EMPTY" | "FILE_TOO_LARGE" | "INVALID_FILE_TYPE";
 
 /** 取檔名副檔名（小寫、含點）；無副檔名或隱藏檔（.gitignore）回空字串。 */
