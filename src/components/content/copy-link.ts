@@ -1,16 +1,13 @@
 /**
- * 複製當前頁面連結（G-05）。
- * 以瀏覽器目前的 origin + pathname 組出完整 URL，可選帶錨點；
- * 優先用 Clipboard API，非安全內容或舊瀏覽器回退到 execCommand。
+ * 複製任意文字到剪貼簿。
+ * 優先用 Clipboard API，非安全內容（純 HTTP 內網）或舊瀏覽器回退到 execCommand。
  */
-export async function copyPageLink(hashId?: string): Promise<boolean> {
+export async function copyText(text: string): Promise<boolean> {
   if (typeof window === "undefined") return false;
-  const { origin, pathname } = window.location;
-  const url = `${origin}${pathname}${hashId ? `#${encodeURIComponent(hashId)}` : ""}`;
 
   try {
     if (navigator.clipboard?.writeText) {
-      await navigator.clipboard.writeText(url);
+      await navigator.clipboard.writeText(text);
       return true;
     }
   } catch {
@@ -19,7 +16,7 @@ export async function copyPageLink(hashId?: string): Promise<boolean> {
 
   try {
     const el = document.createElement("textarea");
-    el.value = url;
+    el.value = text;
     el.setAttribute("readonly", "");
     el.style.position = "absolute";
     el.style.left = "-9999px";
@@ -31,4 +28,14 @@ export async function copyPageLink(hashId?: string): Promise<boolean> {
   } catch {
     return false;
   }
+}
+
+/**
+ * 複製當前頁面連結（G-05）。
+ * 以瀏覽器目前的 origin + pathname 組出完整 URL，可選帶錨點。
+ */
+export async function copyPageLink(hashId?: string): Promise<boolean> {
+  if (typeof window === "undefined") return false;
+  const { origin, pathname } = window.location;
+  return copyText(`${origin}${pathname}${hashId ? `#${encodeURIComponent(hashId)}` : ""}`);
 }

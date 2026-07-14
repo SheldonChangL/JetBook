@@ -4,7 +4,9 @@ import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { useTranslations } from "next-intl";
+import { Copy } from "lucide-react";
 import { createApiTokenAction, revokeApiTokenAction } from "@/actions/api-tokens";
+import { copyText } from "@/components/content/copy-link";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
@@ -76,6 +78,16 @@ export function ApiTokensSection({ tokens }: { tokens: ApiTokenRow[] }) {
     });
   }
 
+  // token 明文僅顯示這一次（F-API-02），一鍵複製為關鍵路徑（issue #212）
+  async function onCopyToken(token: string) {
+    const ok = await copyText(token);
+    toast(
+      ok
+        ? { variant: "success", title: t("copied") }
+        : { variant: "error", title: t("copyFailed") },
+    );
+  }
+
   function onOpenChange(next: boolean) {
     setOpen(next);
     if (next) {
@@ -131,9 +143,20 @@ export function ApiTokensSection({ tokens }: { tokens: ApiTokenRow[] }) {
             ) : (
               <div className="flex flex-col gap-3">
                 <p className="text-body-ui text-fg">{t("createdFor", { name: created.name })}</p>
-                <code className="break-all rounded-md bg-sidebar px-3 py-2 font-mono text-body-ui text-fg">
-                  {created.token}
-                </code>
+                <div className="flex items-start gap-2">
+                  <code className="min-w-0 flex-1 break-all rounded-md bg-sidebar px-3 py-2 font-mono text-body-ui text-fg">
+                    {created.token}
+                  </code>
+                  <Button
+                    variant="secondary"
+                    size="sm"
+                    className="shrink-0"
+                    onClick={() => onCopyToken(created.token)}
+                  >
+                    <Copy aria-hidden className="size-4" />
+                    {t("copy")}
+                  </Button>
+                </div>
                 <p className="rounded-md bg-warning-tint px-3 py-2 text-body-ui text-warning">
                   {t("shownOnce")}
                 </p>
