@@ -114,6 +114,7 @@ export const openApiSpec = {
             "application/json": {
               schema: {
                 type: "object",
+                anyOf: [{ required: ["markdown"] }, { required: ["title"] }],
                 properties: {
                   markdown: {
                     type: "string",

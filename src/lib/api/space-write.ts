@@ -13,6 +13,10 @@ import { logger } from "@/lib/logger";
  *   scope 檢查（write）由呼叫端薄殼負責。
  */
 
+/** 對齊 web createSchema 的長度上限（MCP 與 REST 薄殼共用，避免各寫一份漂移）。 */
+export const SPACE_NAME_MAX_CHARS = 100;
+export const SPACE_DESCRIPTION_MAX_CHARS = 500;
+
 export interface ApiCreateSpaceInput {
   name: string;
   description?: string;

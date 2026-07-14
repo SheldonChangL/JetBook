@@ -8,7 +8,7 @@ import { createPageInTx } from "@/lib/pages/create";
 import { writePageContentTx } from "@/lib/pages/content-write";
 import { VersionConflictError } from "@/lib/pages/errors";
 import { acquireLock, getLockState, releaseLock } from "@/lib/pages/lock";
-import { recordSlugHistory, reclaimSlug, uniquePageSlug } from "@/lib/pages/slug";
+import { renamePageTx } from "@/lib/pages/rename";
 import { triggerEmbedPage } from "@/lib/jobs/queue";
 import { writeAudit } from "@/lib/audit";
 import { logger } from "@/lib/logger";
@@ -28,6 +28,9 @@ import { logger } from "@/lib/logger";
 
 /** 單次 API 寫入的 Markdown 大小上限（請求安全防護，對齊匯入管線）。 */
 export const API_WRITE_MARKDOWN_MAX_CHARS = 2 * 1024 * 1024;
+
+/** 頁面標題長度上限（對齊 web schema 的 max(200)；MCP 與 REST 薄殼共用，避免各寫一份漂移）。 */
+export const API_PAGE_TITLE_MAX_CHARS = 200;
 
 export type ApiWriteFailure =
   | { ok: false; error: "NOT_FOUND" }
@@ -163,49 +166,51 @@ export async function apiUpdatePage(user: Actor, input: ApiUpdatePageInput): Pro
   const shouldRelease = !before.lockedByMe;
 
   const doc = input.markdown !== undefined ? markdownToDoc(input.markdown) : null;
-  let versionNo: number;
-  let finalTitle: string;
-  let finalSlug: string;
+  let result: { versionNo: number; title: string; slug: string; titleChanged: boolean };
   try {
-    ({ versionNo, finalTitle, finalSlug } = await db.transaction(async (tx) => {
+    result = await db.transaction(async (tx) => {
       const fresh = await tx.query.pages.findFirst({ where: eq(pages.id, page.id) });
       if (!fresh || fresh.deletedAt) throw new PageGoneError();
-      // 呼叫端帶 expectedVersion 時先行比對；內容寫入時 writePageContentTx 的
-      // 原子 WHERE 是第二道防線（title-only 更新則以此比對為唯一防線）
+      // 呼叫端帶 expectedVersion 時先行比對（不符早退）；實際防線是下方兩個
+      // 原子 WHERE：renamePageTx 的 guardVersionNo 與 writePageContentTx 的樂觀鎖，
+      // 皆以交易內讀到的 baseVersion 為基準，堵住「比對後、更新前」的並發時窗。
       if (input.expectedVersion !== undefined && fresh.currentVersionNo !== input.expectedVersion) {
         throw new VersionConflictError(fresh.currentVersionNo);
       }
+      const baseVersion = fresh.currentVersionNo;
 
       let title = fresh.title;
       let slug = fresh.slug;
-      if (input.title !== undefined && input.title !== fresh.title) {
-        title = input.title;
-        // 改名規則同 web renamePage：排除自身避免自撞尾碼；slug 變更時記 301 歷史並回收新 slug 的陳舊指向
-        slug = await uniquePageSlug(fresh.spaceId, title, { excludePageId: fresh.id, client: tx });
-        if (slug !== fresh.slug) {
-          await recordSlugHistory(tx, fresh.spaceId, fresh.slug, fresh.id);
-          await reclaimSlug(tx, fresh.spaceId, slug);
+      const titleChanged = input.title !== undefined && input.title !== fresh.title;
+      if (titleChanged) {
+        title = input.title!;
+        const renamed = await renamePageTx(tx, {
+          page: { id: fresh.id, spaceId: fresh.spaceId, slug: fresh.slug },
+          title,
+          userId: user.id,
+          guardVersionNo: baseVersion,
+        });
+        if (!renamed) {
+          const now = await tx.query.pages.findFirst({ where: eq(pages.id, fresh.id) });
+          throw new VersionConflictError(now?.currentVersionNo ?? 0);
         }
-        await tx
-          .update(pages)
-          .set({ title, slug, updatedBy: user.id, updatedAt: new Date() })
-          .where(eq(pages.id, fresh.id));
+        slug = renamed.slug;
       }
 
-      // title-only 更新不動內容也不遞增版本（與 web renamePage 一致）
-      let v = fresh.currentVersionNo;
+      // title-only 更新不動內容也不遞增版本（renamePageTx 語意，與 web renamePage 一致）
+      let v = baseVersion;
       if (doc) {
         v = await writePageContentTx(tx, {
           pageId: fresh.id,
           pageTitle: title,
-          expectedVersionNo: input.expectedVersion ?? fresh.currentVersionNo,
+          expectedVersionNo: baseVersion,
           content: doc,
           userId: user.id,
           snapshotMergeMs: 0,
         });
       }
-      return { versionNo: v, finalTitle: title, finalSlug: slug };
-    }));
+      return { versionNo: v, title, slug, titleChanged };
+    });
   } catch (error) {
     if (error instanceof PageGoneError) return { ok: false, error: "NOT_FOUND" };
     if (error instanceof VersionConflictError) {
@@ -216,9 +221,11 @@ export async function apiUpdatePage(user: Actor, input: ApiUpdatePageInput): Pro
     if (shouldRelease) await releaseLock(page.id, user.id);
   }
 
-  // 標題也在 embedding chunk 內（chunkMarkdown(title, …)），故 title-only 變更同樣重嵌
-  await triggerEmbedPage(page.id);
-  logger.info({ userId: user.id, pageId: page.id, versionNo }, "page updated via api");
+  const contentChanged = doc !== null;
+  // 標題也在 embedding chunk 內（chunkMarkdown(title, …)），故改名同樣重嵌；
+  // no-op（title 與現值相同且無內容）不 enqueue，避免冪等重送打爆 embedding worker
+  if (contentChanged || result.titleChanged) await triggerEmbedPage(page.id);
+  logger.info({ userId: user.id, pageId: page.id, versionNo: result.versionNo }, "page updated via api");
   await writeAudit({
     actorId: user.id,
     action: "page.api_update",
@@ -226,10 +233,10 @@ export async function apiUpdatePage(user: Actor, input: ApiUpdatePageInput): Pro
     targetId: page.id,
     metadata: {
       spaceId: page.spaceId,
-      versionNo,
+      versionNo: result.versionNo,
       via: "api",
-      titleChanged: finalTitle !== page.title,
-      contentChanged: doc !== null,
+      titleChanged: result.titleChanged,
+      contentChanged,
     },
     ip: null,
   });
@@ -238,10 +245,10 @@ export async function apiUpdatePage(user: Actor, input: ApiUpdatePageInput): Pro
     ok: true,
     page: {
       id: page.id,
-      slug: finalSlug,
-      title: finalTitle,
+      slug: result.slug,
+      title: result.title,
       spaceSlug: space.slug,
-      versionNo,
+      versionNo: result.versionNo,
     },
   };
 }

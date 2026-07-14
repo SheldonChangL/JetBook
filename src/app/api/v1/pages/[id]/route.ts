@@ -5,7 +5,11 @@ import { db } from "@/lib/db";
 import { pages, spaces } from "@/lib/db/schema";
 import { requireApiAuth } from "@/lib/api-tokens/bearer";
 import { canReadPage } from "@/lib/authz/permission";
-import { API_WRITE_MARKDOWN_MAX_CHARS, apiUpdatePage } from "@/lib/api/page-write";
+import {
+  API_PAGE_TITLE_MAX_CHARS,
+  API_WRITE_MARKDOWN_MAX_CHARS,
+  apiUpdatePage,
+} from "@/lib/api/page-write";
 
 export const dynamic = "force-dynamic";
 
@@ -50,7 +54,7 @@ export async function GET(request: Request, ctx: { params: Promise<{ id: string 
 const patchSchema = z
   .object({
     markdown: z.string().min(1).max(API_WRITE_MARKDOWN_MAX_CHARS).optional(),
-    title: z.string().trim().min(1).max(200).optional(),
+    title: z.string().trim().min(1).max(API_PAGE_TITLE_MAX_CHARS).optional(),
     // 0 合法：從未寫入內容的頁面 currentVersionNo 為 0
     expectedVersion: z.number().int().min(0).optional(),
   })
@@ -76,7 +80,8 @@ export async function PATCH(request: Request, ctx: { params: Promise<{ id: strin
       {
         error: {
           code: "INVALID_BODY",
-          message: "body 需含 markdown 或 title 至少一項（非空字串）；expectedVersion 為選填正整數",
+          message:
+            "body 需含 markdown 或 title 至少一項（非空字串）；expectedVersion 為選填整數（≥0，未寫入過內容的頁面版本為 0）",
         },
       },
       { status: 400 },

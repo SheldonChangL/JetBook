@@ -1,7 +1,11 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
 import { requireApiAuth } from "@/lib/api-tokens/bearer";
-import { apiCreateSpace } from "@/lib/api/space-write";
+import {
+  SPACE_DESCRIPTION_MAX_CHARS,
+  SPACE_NAME_MAX_CHARS,
+  apiCreateSpace,
+} from "@/lib/api/space-write";
 import { listAccessibleSpaces } from "@/lib/spaces/queries";
 
 export const dynamic = "force-dynamic";
@@ -25,8 +29,8 @@ export async function GET(request: Request) {
 }
 
 const postSchema = z.object({
-  name: z.string().trim().min(1).max(100),
-  description: z.string().trim().max(500).optional(),
+  name: z.string().trim().min(1).max(SPACE_NAME_MAX_CHARS),
+  description: z.string().trim().max(SPACE_DESCRIPTION_MAX_CHARS).optional(),
 });
 
 /**

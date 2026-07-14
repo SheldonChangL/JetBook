@@ -328,6 +328,27 @@ describe("API 寫入（M4-09，issue #211）", () => {
     expect(snapshot?.contentMd).toContain("同時更新的內容");
   });
 
+  it("PATCH title 與現值相同（no-op）→ 200 但版本/slug/快照皆不變", async () => {
+    const owner = await seedUser();
+    const space = await seedSpace(owner.id, { visibility: "org_write" });
+    const page = await seedPage(space.id, { title: "same title page" });
+    const writer = await seedUser();
+    const token = await makeToken(writer.id, ["read", "write"]);
+
+    const res = await patchPage(
+      jsonReq(`/api/v1/pages/${page.id}`, token, "PATCH", { title: "same title page" }),
+      { params: Promise.resolve({ id: page.id }) },
+    );
+    expect(res.status).toBe(200);
+    const body = (await res.json()) as { data: { slug: string; versionNo: number } };
+    expect(body.data.slug).toBe(page.slug);
+    expect(body.data.versionNo).toBe(page.currentVersionNo);
+    const history = await db.query.pageSlugHistory.findFirst({
+      where: eq(pageSlugHistory.oldSlug, page.slug),
+    });
+    expect(history).toBeUndefined();
+  });
+
   it("PATCH 空 body（markdown 與 title 皆缺）→ 400", async () => {
     const owner = await seedUser();
     const space = await seedSpace(owner.id, { visibility: "org_write" });

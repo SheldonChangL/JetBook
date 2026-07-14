@@ -3,8 +3,17 @@ import { z } from "zod";
 import { verifyApiToken } from "@/lib/api-tokens";
 import { checkApiTokenRate } from "@/lib/api-tokens/bearer";
 import type { Actor } from "@/lib/authz/permission";
-import { API_WRITE_MARKDOWN_MAX_CHARS, apiCreatePage, apiUpdatePage } from "@/lib/api/page-write";
-import { apiCreateSpace } from "@/lib/api/space-write";
+import {
+  API_PAGE_TITLE_MAX_CHARS,
+  API_WRITE_MARKDOWN_MAX_CHARS,
+  apiCreatePage,
+  apiUpdatePage,
+} from "@/lib/api/page-write";
+import {
+  SPACE_DESCRIPTION_MAX_CHARS,
+  SPACE_NAME_MAX_CHARS,
+  apiCreateSpace,
+} from "@/lib/api/space-write";
 import { mcpListSpaces, mcpReadPage, mcpSearchPages } from "@/lib/mcp/tools";
 
 /**
@@ -92,7 +101,7 @@ const handler = createMcpHandler(
             isError: true,
           };
         }
-        const text = `# ${page.title}\n（空間：${page.spaceName}；更新：${page.updatedAt.toISOString()}）\n\n${page.contentMd}`;
+        const text = `# ${page.title}\n（空間：${page.spaceName}；版本：${page.versionNo}；更新：${page.updatedAt.toISOString()}）\n\n${page.contentMd}`;
         return { content: [{ type: "text" as const, text }] };
       },
     );
@@ -102,7 +111,7 @@ const handler = createMcpHandler(
       "在指定空間建立新頁面（Markdown 內容）。spaceId 取自 list_spaces；需要 write scope 的 token。回傳新頁面的 pageId 與網址路徑。",
       {
         spaceId: z.string().uuid().describe("目標空間 id（UUID，取自 list_spaces）"),
-        title: z.string().min(1).max(200).describe("頁面標題"),
+        title: z.string().trim().min(1).max(API_PAGE_TITLE_MAX_CHARS).describe("頁面標題"),
         markdown: z.string().min(1).max(API_WRITE_MARKDOWN_MAX_CHARS).describe("頁面內容（Markdown）"),
         parentId: z.string().uuid().optional().describe("父頁面 id（省略＝根層）"),
       },
@@ -139,7 +148,13 @@ const handler = createMcpHandler(
           .max(API_WRITE_MARKDOWN_MAX_CHARS)
           .optional()
           .describe("新的頁面內容（Markdown，全量取代）；省略＝僅改標題"),
-        title: z.string().trim().min(1).max(200).optional().describe("新標題；省略＝不變"),
+        title: z
+          .string()
+          .trim()
+          .min(1)
+          .max(API_PAGE_TITLE_MAX_CHARS)
+          .optional()
+          .describe("新標題；省略＝不變"),
         expectedVersion: z
           .number()
           .int()
@@ -184,8 +199,13 @@ const handler = createMcpHandler(
       "create_space",
       "建立新的知識空間。slug 由系統自動產生（重名自動加尾碼）；建立者自動成為該空間管理員。需要 write scope 的 token。",
       {
-        name: z.string().trim().min(1).max(100).describe("空間名稱"),
-        description: z.string().trim().max(500).optional().describe("空間描述（選填）"),
+        name: z.string().trim().min(1).max(SPACE_NAME_MAX_CHARS).describe("空間名稱"),
+        description: z
+          .string()
+          .trim()
+          .max(SPACE_DESCRIPTION_MAX_CHARS)
+          .optional()
+          .describe("空間描述（選填）"),
       },
       async ({ name, description }, extra) => {
         const gate = writeGate(extra);
