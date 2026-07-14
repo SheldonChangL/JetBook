@@ -37,6 +37,19 @@ claude mcp add --transport http jetbook https://<網域>/api/mcp \
 }
 ```
 
+> **內網純 HTTP 部署**：`mcp-remote` 對非 localhost 的 `http://` URL 會直接拒絕
+> （`Non-HTTPS URLs are only allowed for localhost`）。在 args 加 `--allow-http` 即可：
+>
+> ```json
+> "args": [
+>   "-y", "mcp-remote", "http://<內網位址>/api/mcp",
+>   "--allow-http",
+>   "--header", "Authorization: Bearer jbk_xxxxxxxx"
+> ]
+> ```
+>
+> token 在純 HTTP 下是明文傳輸，僅限受信任內網；正式環境建議依 README「部署與維運」掛內部 CA 憑證走 HTTPS。
+
 ## 疑難排解
 
 | 症狀 | 原因 |
@@ -44,3 +57,4 @@ claude mcp add --transport http jetbook https://<網域>/api/mcp \
 | 401 | token 缺少、打錯、已撤銷、已過期，或帳號被停用 |
 | 找不到預期頁面 | token 擁有者對該空間無讀取權（權限即 UI 權限） |
 | SSE 連線失敗 | 本部署僅支援 streamable HTTP（`/api/mcp`），不支援舊式 SSE |
+| `Non-HTTPS URLs are only allowed for localhost` 後斷線 | `mcp-remote` 拒絕非 localhost 的 `http://`；內網純 HTTP 部署需加 `--allow-http`（見上方） |
