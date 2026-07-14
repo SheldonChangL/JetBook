@@ -211,6 +211,9 @@ export async function renamePage(input: z.infer<typeof renameSchema>) {
     }),
   );
   if (!renamed) throw new Error("NOT_FOUND");
+  // 標題在 embedding chunk 內（chunkMarkdown(title, …)，indexer.ts）：實際變更才重嵌，
+  // 否則語意檢索殘留舊標題直到下次內容編輯（issue #222；API 路徑 M4-13 起已同此行為）
+  if (data.title !== page.title) await triggerEmbedPage(page.id);
   const space = await db.query.spaces.findFirst({ where: eq(spaces.id, page.spaceId) });
   if (space) revalidatePath(`/s/${space.slug}`);
   return { slug: renamed.slug };
