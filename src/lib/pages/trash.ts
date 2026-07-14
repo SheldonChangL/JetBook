@@ -174,13 +174,15 @@ export async function softDeletePageSubtree(input: {
 export interface RestoreResult {
   spaceId: string;
   title: string;
-  /** 原父節點已刪除／不存在，改掛回最上層 */
+  /** 原父節點已刪除／不存在／已不同空間，改掛回最上層 */
   reparentedToRoot: boolean;
 }
 
 /**
  * 還原一支被刪子樹（同批 deleted_at）：清除子樹的 deleted_at；若頂節點的原父
- * 已刪除或不存在，改掛回最上層（parent_id=null，取一新末尾 position）。
+ * 已刪除、不存在、或已被搬到不同空間（跨空間子樹搬移把軟刪子孫留在來源空間，
+ * 見 movePageSubtreeToSpace），改掛回本頁所屬空間的最上層（parent_id=null，
+ * 取一新末尾 position），避免還原成 space_id=來源、parent 在他空間的孤兒（#225）。
  * 內容不變（非內容寫入，不走 savePage 管線）；embedding 於刪除時未清除，
  * 還原後即恢復進搜尋／RAG（getAccessiblePageIds 以 deleted_at 過濾）。
  */
@@ -192,11 +194,13 @@ export async function restoreTrashPage(input: {
     const page = await tx.query.pages.findFirst({ where: eq(pages.id, input.pageId) });
     if (!page || !page.deletedAt) throw new Error("NOT_FOUND");
 
-    // 頂節點原父是否仍存在且未刪：否則還原後掛回最上層
+    // 頂節點原父是否仍存在、未刪、且與本頁同空間：否則還原後掛回最上層。
+    // 跨空間搬移會把軟刪子孫留在來源空間，其 parent_id 仍指向已搬到他空間的父頁，
+    // 若照掛會成兩邊樹狀導覽都看不到的孤兒（#225）。
     let reparentToRoot = false;
     if (page.parentId) {
       const parent = await tx.query.pages.findFirst({ where: eq(pages.id, page.parentId) });
-      if (!parent || parent.deletedAt) reparentToRoot = true;
+      if (!parent || parent.deletedAt || parent.spaceId !== page.spaceId) reparentToRoot = true;
     }
 
     // 掛回最上層需取末尾 position——需在清除 deleted_at 之前計算
