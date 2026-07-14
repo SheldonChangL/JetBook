@@ -1,0 +1,1 @@
+ALTER TABLE "users" ADD COLUMN "email_notification_prefs" jsonb;

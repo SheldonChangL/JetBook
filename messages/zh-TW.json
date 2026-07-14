@@ -139,7 +139,52 @@
   },
   "email": {
     "resetSubject": "重設你的 JetBook 密碼",
-    "resetBody": "{name} 您好，\n\n我們收到重設 JetBook 密碼的請求。請點擊以下連結設定新密碼（30 分鐘內有效，僅能使用一次）：\n\n{url}\n\n若你沒有提出此請求，請忽略本信，你的密碼不會有任何變動。\n\n— JetBook（凱銳光電內部知識庫）"
+    "resetBody": "{name} 您好，\n\n我們收到重設 JetBook 密碼的請求。請點擊以下連結設定新密碼（30 分鐘內有效，僅能使用一次）：\n\n{url}\n\n若你沒有提出此請求，請忽略本信，你的密碼不會有任何變動。\n\n— JetBook（凱銳光電內部知識庫）",
+    "notifyReplySubject": "「{pageTitle}」有新回覆",
+    "notifyReplyBody": "{actorName} 回覆了你在「{pageTitle}」的討論串：\n\n{excerpt}\n\n前往查看：{url}\n\n（可於 JetBook 個人設定停用此類 Email 通知）\n— JetBook（凱銳光電內部知識庫）",
+    "notifyMentionSubject": "{actorName} 在「{pageTitle}」提及了你",
+    "notifyMentionBody": "{actorName} 在「{pageTitle}」提及了你。\n\n前往查看：{url}\n\n（可於 JetBook 個人設定停用此類 Email 通知）\n— JetBook（凱銳光電內部知識庫）",
+    "welcomeSubject": "你的 JetBook 帳號已建立",
+    "welcomeBody": "{name} 您好，\n\n管理者已為你建立 JetBook 帳號（登入信箱：{email}）。請點擊以下連結設定你的密碼（30 分鐘內有效）：\n\n{url}\n\n連結逾期時，可在登入頁點「忘記密碼」重新申請。\n\n— JetBook（凱銳光電內部知識庫）"
+  },
+  "apiDocs": {
+    "title": "API 文件",
+    "backToSettings": "返回個人設定",
+    "rawSpec": "下載 OpenAPI 規格（openapi.json）",
+    "params": "參數：{list}",
+    "paramRequired": "{name}（{location}）",
+    "paramOptional": "{name}（{location}，選填）",
+    "paramSeparator": "、"
+  },
+  "emojiPicker": {
+    "search": "搜尋 emoji（英文）",
+    "searchNoResults1": "喔不！",
+    "searchNoResults2": "找不到符合的 emoji",
+    "pick": "選一個 emoji…",
+    "addCustom": "新增自訂 emoji",
+    "clear": "清除圖示",
+    "categories": {
+      "activity": "活動",
+      "custom": "自訂",
+      "flags": "旗幟",
+      "foods": "飲食",
+      "frequent": "常用",
+      "nature": "動物與自然",
+      "objects": "物品",
+      "people": "表情與人物",
+      "places": "旅遊與地點",
+      "search": "搜尋結果",
+      "symbols": "符號"
+    },
+    "skins": {
+      "choose": "選擇預設膚色",
+      "default": "預設",
+      "light": "淺膚色",
+      "mediumLight": "中淺膚色",
+      "medium": "中膚色",
+      "mediumDark": "中深膚色",
+      "dark": "深膚色"
+    }
   },
   "spaces": {
     "title": "所有空間",
@@ -261,6 +306,38 @@
     },
     "statusActive": "啟用",
     "statusInactive": "停用",
+    "import": {
+      "button": "匯入 CSV",
+      "title": "CSV 批次建立使用者",
+      "fileHelper": "CSV 需含標題列。欄位：email（必填）、name（缺漏時以信箱帳號代替）、org_role（admin／管理員 → 管理員，其餘為成員）。相容 Redmine 匯出欄名（First name／Last name）。一次最多 200 列。",
+      "selectFile": "選擇 CSV 檔",
+      "previewSummary": "可建立 {valid} 筆，略過 {invalid} 筆",
+      "colLine": "列",
+      "colEmail": "Email",
+      "colName": "姓名",
+      "colRole": "系統角色",
+      "colStatus": "狀態",
+      "colPassword": "初始密碼",
+      "rowOk": "可建立",
+      "rowError": {
+        "INVALID_EMAIL": "Email 格式錯誤",
+        "DUPLICATE_IN_FILE": "檔內重複",
+        "EMAIL_TAKEN": "帳號已存在"
+      },
+      "fileError": {
+        "NO_EMAIL_COLUMN": "找不到 email 欄位（CSV 需含標題列）",
+        "EMPTY_FILE": "檔案沒有資料列",
+        "TOO_MANY_ROWS": "一次最多匯入 200 列，請分批"
+      },
+      "importConfirm": "建立 {count} 個帳號",
+      "resultSummary": "已建立 {created} 筆、略過 {skipped} 筆",
+      "passwordOnce": "初始密碼僅顯示這一次，關閉視窗後無法再取得。系統已同時寄出設定密碼連結（未設定 SMTP 時不寄送）。",
+      "statusCreated": "已建立",
+      "statusSkipped": "略過",
+      "back": "重新選擇",
+      "close": "關閉",
+      "actionError": "操作失敗，請稍後再試"
+    },
     "searchPlaceholder": "搜尋名稱或 Email…",
     "statusFilterAll": "全部狀態",
     "usersEmptyFiltered": "沒有符合條件的使用者",
@@ -443,6 +520,9 @@
     "title": "搜尋",
     "searchPlaceholder": "搜尋…",
     "noResults": "找不到符合的結果",
+    "attachmentsHeading": "附件（{count}）",
+    "attachmentPageLocation": "{space}／{page}",
+    "untitledPage": "未命名頁面",
     "filters": {
       "spaceLabel": "空間",
       "allSpaces": "全部空間",
@@ -478,6 +558,8 @@
     "back": "返回",
     "done": "完成編輯",
     "titlePlaceholder": "輸入標題…",
+    "iconPicker": "設定頁面圖示",
+    "iconError": "圖示更新失敗，請稍後再試",
     "saving": "儲存中…",
     "saved": "已自動儲存",
     "conflict": "版本衝突",
@@ -766,6 +848,15 @@
     "dragHandle": "拖曳排序",
     "spaceMenu": "空間動作",
     "importMarkdown": "匯入 Markdown",
+    "importDocx": "匯入 Word (.docx)",
+    "importDocxSuccess": "已匯入 Word 頁面",
+    "importDocxSuccessSkipped": "已匯入 Word 頁面（{skipped} 張圖片因驗證未通過而略過）",
+    "importDocxError": {
+      "INVALID_FILE": "請選擇 .docx 檔案",
+      "INVALID_DOCX": "檔案損壞或不是有效的 Word (.docx) 文件",
+      "EMPTY_DOCX": "文件沒有可匯入的內容",
+      "TOO_LARGE": "檔案過大（上限 50 MB）"
+    },
     "importSuccess": "已匯入 Markdown 頁面",
     "importError": "匯入失敗，請確認檔案格式後再試",
     "importTooLarge": "檔案過大，無法匯入（上限 2 MB）",
@@ -897,6 +988,14 @@
   },
   "spaceSettings": {
     "title": "空間設定",
+    "generalTitle": "一般資訊",
+    "generalDesc": "空間的名稱、描述與圖示。",
+    "generalIcon": "圖示",
+    "generalName": "名稱",
+    "generalDescription": "描述",
+    "generalSave": "儲存變更",
+    "generalUpdated": "空間資訊已更新",
+    "generalUpdateError": "更新失敗，請稍後再試",
     "backToSpace": "返回空間",
     "cancel": "取消",
     "visibilityHeading": "空間可見性",
@@ -1043,6 +1142,39 @@
   "settings": {
     "title": "個人設定",
     "subtitle": "管理你的基本資料、密碼與外觀偏好",
+    "notificationsHeading": "Email 通知",
+    "notificationsDesc": "站內通知同時寄送 Email 提醒（需系統已設定 SMTP）。",
+    "emailNotifEnabled": "寄送",
+    "emailNotif": {
+      "comment_reply": "留言回覆",
+      "page_mention": "頁面提及（@我）"
+    },
+    "apiTokens": {
+      "heading": "API Token",
+      "desc": "供 REST API 與 MCP 使用的個人存取權杖；權限與你的帳號一致。",
+      "docsLink": "查看 API 文件",
+      "create": "建立 Token",
+      "createTitle": "建立 API Token",
+      "nameLabel": "名稱（用途）",
+      "expiryLabel": "有效期限",
+      "expiry": {
+        "30": "30 天",
+        "90": "90 天",
+        "365": "365 天",
+        "0": "永不過期"
+      },
+      "createdFor": "「{name}」已建立，請立即複製：",
+      "shownOnce": "此 token 僅顯示這一次，關閉後無法再取得。請妥善保管，切勿分享給他人。",
+      "close": "關閉",
+      "empty": "尚未建立任何 API token。",
+      "meta": "建立於 {created} · 到期 {expires} · 最後使用 {lastUsed}",
+      "never": "永不",
+      "neverUsed": "從未使用",
+      "expired": "已過期",
+      "revoke": "撤銷",
+      "revoked": "Token 已撤銷，立即失效",
+      "actionError": "操作失敗，請稍後再試"
+    },
     "backToApp": "返回",
     "save": "儲存",
     "actionError": "操作失敗，請稍後再試",

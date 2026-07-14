@@ -46,6 +46,23 @@ export async function updateThemePreference(
   if (!updated) throw new Error("NOT_FOUND");
 }
 
+/**
+ * 更新單一類型的 Email 通知偏好（M4-05）：merge 進 jsonb（缺鍵＝啟用）。
+ */
+export async function updateEmailNotificationPref(
+  userId: string,
+  type: string,
+  enabled: boolean,
+): Promise<void> {
+  const current = await db.query.users.findFirst({ where: eq(users.id, userId) });
+  if (!current) throw new Error("NOT_FOUND");
+  const prefs = { ...(current.emailNotificationPrefs ?? {}), [type]: enabled };
+  await db
+    .update(users)
+    .set({ emailNotificationPrefs: prefs, updatedAt: new Date() })
+    .where(eq(users.id, userId));
+}
+
 export type ChangePasswordResult =
   | { ok: true }
   | { ok: false; reason: "invalid_current" | "weak" | "same" | "not_local" | "not_found" };

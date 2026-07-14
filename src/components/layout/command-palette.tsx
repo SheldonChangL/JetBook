@@ -310,7 +310,13 @@ export function CommandPalette({
                       onSelect={() => go(href)}
                       className={itemClass}
                     >
-                      <FileText aria-hidden className="size-4 shrink-0 text-fg-tertiary" />
+                      {hit.icon ? (
+                        <span aria-hidden className="w-4 shrink-0 text-center leading-none">
+                          {hit.icon}
+                        </span>
+                      ) : (
+                        <FileText aria-hidden className="size-4 shrink-0 text-fg-tertiary" />
+                      )}
                       <span className="min-w-0 flex-1">
                         <span
                           className="block truncate font-medium text-fg [&_mark]:bg-primary-tint [&_mark]:text-primary"

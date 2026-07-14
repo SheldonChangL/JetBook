@@ -7,6 +7,7 @@ import { isOrgAdmin } from "@/lib/authz/permission";
 import { listUsers } from "@/lib/admin/users";
 import { Badge } from "@/components/ui/badge";
 import { CreateUserButton } from "./create-user-button";
+import { ImportUsersButton } from "./import-users-button";
 import { UsersFilter } from "./users-filter";
 import { ActiveToggle, OrgRoleSelect, ResetPasswordButton } from "./user-row-actions";
 
@@ -58,7 +59,10 @@ export default async function AdminUsersPage({
     <div className="mx-auto flex max-w-5xl flex-col gap-6 px-6 py-8">
       <header className="flex items-center justify-between">
         <h1 className="text-h1 text-fg">{t("usersTitle")}</h1>
-        <CreateUserButton />
+        <div className="flex items-center gap-2">
+          <ImportUsersButton />
+          <CreateUserButton />
+        </div>
       </header>
 
       <UsersFilter

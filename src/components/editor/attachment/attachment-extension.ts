@@ -1,7 +1,23 @@
 import { Node, mergeAttributes } from "@tiptap/core";
+import { Plugin, PluginKey } from "@tiptap/pm/state";
 import { ReactNodeViewRenderer } from "@tiptap/react";
 import { AttachmentNodeView } from "./attachment-node-view";
+import { startAttachmentUpload } from "./attachment-upload";
 import type { UploadErrorCode } from "../image/image-upload-utils";
+
+/**
+ * 拖放檔案的分流：純圖片拖放交給 image extension（內嵌顯示），
+ * 含任何非圖片檔則整批由本 plugin 上傳為附件——handleDrop 一次只能由一個
+ * plugin 接手，若只取非圖片檔會讓混合拖放中的圖片被靜默丟棄（圖片本就在
+ * 附件白名單，當附件卡片處理不遺失任何檔案）。
+ * 白名單驗證在 /api/upload 伺服器端，名單外檔案逐檔回報錯誤。
+ */
+function attachmentDropFiles(list: FileList | null | undefined): File[] {
+  if (!list) return [];
+  const files = Array.from(list);
+  const hasNonImage = files.some((f) => !f.type.startsWith("image/"));
+  return hasNonImage ? files : [];
+}
 
 /**
  * 附件節點的上傳設定，由 PageEditor 於 mount 後填入 `editor.storage.attachment`。
@@ -76,6 +92,43 @@ export function createAttachmentExtension() {
 
     addNodeView() {
       return ReactNodeViewRenderer(AttachmentNodeView);
+    },
+
+    // M4-04：拖放非圖片檔即上傳為附件（多檔逐一處理；設定經 storage 傳遞，同 image 模式）
+    addProseMirrorPlugins() {
+      const { editor } = this;
+      return [
+        new Plugin({
+          key: new PluginKey("attachmentDrop"),
+          props: {
+            handleDrop(view, event, _slice, moved) {
+              if (moved) return false;
+              const dragEvent = event as DragEvent;
+              const files = attachmentDropFiles(dragEvent.dataTransfer?.files);
+              if (files.length === 0) return false;
+              const storage = editor.storage.attachment;
+              if (!storage.spaceId || !storage.pageId) return false;
+              event.preventDefault();
+              const dropped = view.posAtCoords({
+                left: dragEvent.clientX,
+                top: dragEvent.clientY,
+              });
+              const pos = dropped?.pos ?? view.state.selection.from;
+              for (const file of files) {
+                startAttachmentUpload({
+                  editor,
+                  file,
+                  pos,
+                  spaceId: storage.spaceId,
+                  pageId: storage.pageId,
+                  onError: storage.onError,
+                });
+              }
+              return true;
+            },
+          },
+        }),
+      ];
     },
   });
 }

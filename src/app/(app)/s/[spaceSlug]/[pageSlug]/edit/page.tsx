@@ -53,6 +53,7 @@ export default async function EditPage({
       spaceSlug={spaceSlug}
       pageSlug={pageSlug}
       initialTitle={page.title}
+      initialIcon={page.icon}
       initialContent={(page.content as ProseMirrorDoc | null) ?? null}
       initialVersionNo={page.currentVersionNo}
       aiEnabled={isLlmConfigured()}

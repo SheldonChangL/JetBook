@@ -26,13 +26,13 @@ Next.js（App Router、TS strict）全端 + PostgreSQL 16/pgvector/pgroonga + Do
 使用者需求 8 項評估後拆為 8 issues；決策：Redmine 匯入走 CSV 匯出、Word→MD 轉頁面優先、Webhooks（F-API-03）暫停。
 
 - [x] #192 M4-01 使用者搜尋與篩選（搜尋/狀態/分頁，整合測試 6 條）
-- [ ] #193 M4-02 CSV 批次建立使用者
-- [ ] #194 M4-03 emoji 圖示選擇器
-- [ ] #195 M4-04 附件批次上傳與檔名搜尋
-- [ ] #196 M4-05 Email 通知（F-NOTIF-02）
-- [ ] #197 M4-06 REST API v1 + API Token（F-API-01/02）
-- [ ] #198 M4-07 MCP Server（F-API-04，依賴 #197）
-- [ ] #199 M4-08 Word (.docx) 匯入（F-IE-03 子集）
+- [x] #193 M4-02 CSV 批次建立使用者（Redmine 欄名相容、預覽驗證、單交易批次、歡迎信走重設連結）
+- [x] #194 M4-03 emoji 圖示選擇器（emoji-mart core、編輯器/Space 設定/建立 Modal、Cmd+K 全文結果補 icon；瀏覽器實測）
+- [x] #195 M4-04 附件批次上傳與檔名搜尋（多檔選取/拖放、搜尋頁附件區塊、權限 SQL join）
+- [x] #196 M4-05 Email 通知（notify 鏡射 → pg-boss job → SMTP；個人設定逐類開關，預設全開）
+- [x] #197 M4-06 REST API v1 + API Token（api_tokens 表、Bearer 驗證、4 個唯讀端點、OpenAPI 文件頁、token 管理 UI；curl 實測）
+- [x] #198 M4-07 MCP Server（/api/mcp streamable HTTP、Bearer token、3 工具；真 MCP client 實測搜尋→讀取）
+- [x] #199 M4-08 Word (.docx) 匯入（mammoth+turndown → 既有 savePage 管線；圖片轉附件；瀏覽器 E2E 實測。附帶發現既有 Unicode slug 404 → #207）
 
 ### 尚未完成（v1 之後）
 - **#93 M4 backlog**：變更請求、行內評論、webhooks（暫停）、PDF 匯出、KaTeX、多欄、snippets、內容分析等——其餘候選項依回饋再拆
@@ -98,8 +98,9 @@ Space 封存/軟刪、跨 Space 移動複製、死鏈標示、附件 GC、Tabs/�
 
 無。
 
-## 下一步（v1 之後）
+## 下一步
 
-1. 部署到公司內部伺服器：`.env` 填正式值（含 HTTPS/內部 CA 於 proxy）、`docker compose up -d --build`、依 docs/ops/backup-restore-runbook.md 排一次還原演練
-2. 串接真實 AI 端點：先 `ANTHROPIC_API_KEY`（chat）＋ local BGE-M3（embedding，day-1 即不外流），之後 chat 亦切 local（改兩個 env）；上線後跑 /admin/ai 測試連線與全庫重嵌
-3. 收集使用回饋 → 於 #93 評估 M4 backlog 拆解（變更請求、REST API、Email 通知等）
+1. **Merge M4 第一批 stacked PRs（依序）**：#200 → #201 → #202 → #203 → #204 → #205 → #206 → #208（squash；每合一個 GitHub 會自動 retarget 下一個）。含兩個 migration（0018、0019），部署時跑 `db:migrate`
+2. 修 #207（既有 Unicode slug 404，非本批引入）
+3. 部署到公司內部伺服器：`.env` 填正式值（含 SMTP_* 讓 Email 通知/歡迎信生效）、`docker compose up -d --build`
+4. 串接真實 AI 端點（ANTHROPIC_API_KEY + local BGE-M3）；MCP 依 docs/guides/mcp-server.md 讓 Claude 接上知識庫（每人自建 API token）

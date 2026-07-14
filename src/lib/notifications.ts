@@ -3,6 +3,7 @@ import { and, desc, eq, inArray, isNull, sql } from "drizzle-orm";
 import { db } from "@/lib/db";
 import { comments, notifications, pages, spaces, users } from "@/lib/db/schema";
 import { can } from "@/lib/authz/permission";
+import { mirrorNotificationEmail } from "@/lib/notifications-email";
 import { logger } from "@/lib/logger";
 
 /**
@@ -56,6 +57,8 @@ export async function notify(
 ): Promise<void> {
   try {
     await db.insert(notifications).values({ userId, type, payload });
+    // M4-05：鏡射 Email（依收件人偏好；enqueue 失敗僅 warn，不影響站內通知）
+    await mirrorNotificationEmail(userId, type, payload);
   } catch (error) {
     logger.warn({ error, type, userId }, "notify failed");
   }

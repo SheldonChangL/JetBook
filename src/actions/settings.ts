@@ -9,6 +9,7 @@ import {
   THEME_PREFERENCES,
   updateDisplayName,
   updateThemePreference,
+  updateEmailNotificationPref,
 } from "@/lib/auth/account";
 import { createSession, setSessionCookie } from "@/lib/auth/session";
 import { ipFromHeaders, writeAudit } from "@/lib/audit";
@@ -106,5 +107,27 @@ export async function changePasswordAction(input: {
     ip,
   });
 
+  return { ok: true };
+}
+
+// ── M4-05 Email 通知偏好（F-NOTIF-02） ──
+
+export type EmailNotifResult = { ok: true } | { ok: false; error: "invalid" };
+
+const emailNotifSchema = z.object({
+  type: z.enum(["comment_reply", "page_mention"]),
+  enabled: z.boolean(),
+});
+
+/** 更新單一類型 Email 通知開關（預設全開；明確 false 停用）。 */
+export async function updateEmailNotificationPrefAction(input: {
+  type: string;
+  enabled: boolean;
+}): Promise<EmailNotifResult> {
+  const { user } = await requireSession();
+  const parsed = emailNotifSchema.safeParse(input);
+  if (!parsed.success) return { ok: false, error: "invalid" };
+  await updateEmailNotificationPref(user.id, parsed.data.type, parsed.data.enabled);
+  revalidatePath("/settings");
   return { ok: true };
 }

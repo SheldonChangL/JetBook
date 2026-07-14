@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import { useTranslations } from "next-intl";
 import { EditorContent, useEditor, type Editor } from "@tiptap/react";
 import { ArrowLeft } from "lucide-react";
-import { renamePage, savePage } from "@/actions/page";
+import { renamePage, savePage, setPageIcon } from "@/actions/page";
 import { heartbeatLockAction, releaseLockAction } from "@/actions/lock";
 import { buildExtensions } from "./extensions";
 import { TableMenu } from "./table-menu";
@@ -20,6 +20,7 @@ import { startAttachmentUpload } from "./attachment/attachment-upload";
 import { attachmentAcceptAttr } from "./attachment/attachment-utils";
 import type { ProseMirrorDoc } from "@/lib/content/types";
 import { Button } from "@/components/ui/button";
+import { EmojiPickerButton } from "@/components/ui/emoji-picker";
 import { useToast } from "@/components/ui/toast";
 
 const AUTOSAVE_DEBOUNCE_MS = 2000;
@@ -33,6 +34,8 @@ export interface PageEditorProps {
   spaceSlug: string;
   pageSlug: string;
   initialTitle: string;
+  /** 頁面 emoji 圖示（M4-03）；null＝未設定 */
+  initialIcon: string | null;
   initialContent: ProseMirrorDoc | null;
   initialVersionNo: number;
   /** AI 是否已設定（isLlmConfigured）；決定是否掛載選取文字的 AI 寫作輔助（I-08）。 */
@@ -51,6 +54,7 @@ export function PageEditor({
   spaceSlug,
   pageSlug,
   initialTitle,
+  initialIcon,
   initialContent,
   initialVersionNo,
   aiEnabled,
@@ -60,6 +64,7 @@ export function PageEditor({
   const router = useRouter();
   const toast = useToast();
   const [title, setTitle] = useState(initialTitle);
+  const [icon, setIcon] = useState<string | null>(initialIcon);
   const [saveState, setSaveState] = useState<SaveState>("idle");
   // 編輯鎖被搶/逾時接手 → 降級唯讀（F-COLLAB-01 驗收 3）；記住新持有者姓名供提示
   const [lockLostBy, setLockLostBy] = useState<string | null>(null);
@@ -178,24 +183,27 @@ export function PageEditor({
   }, [uploadAttachmentAtSelection]);
 
   // slash「檔案」→ 開檔案選擇器（隱藏 input，click 於使用者手勢中觸發原生對話框）
+  // M4-04：支援一次選取多檔，逐檔獨立上傳與錯誤回報（單檔失敗不影響其他檔）
   const openAttachmentPicker = useCallback(
     (pos: number) => {
       const input = document.createElement("input");
       input.type = "file";
+      input.multiple = true;
       input.accept = attachmentAcceptAttr();
       input.addEventListener("change", () => {
-        const file = input.files?.[0];
-        if (!file) return;
+        const files = input.files;
         const ed = editorRef.current;
-        if (!ed) return;
-        startAttachmentUpload({
-          editor: ed,
-          file,
-          pos,
-          spaceId,
-          pageId,
-          onError: showAttachmentError,
-        });
+        if (!files || files.length === 0 || !ed) return;
+        for (const file of files) {
+          startAttachmentUpload({
+            editor: ed,
+            file,
+            pos,
+            spaceId,
+            pageId,
+            onError: showAttachmentError,
+          });
+        }
       });
       input.click();
     },
@@ -316,21 +324,36 @@ export function PageEditor({
         </div>
       </div>
 
-      <input
-        value={title}
-        readOnly={lockLost}
-        onChange={(e) => setTitle(e.target.value)}
-        onBlur={() => {
-          if (lockLost) return;
-          const trimmed = title.trim();
-          if (trimmed && trimmed !== initialTitle) {
-            void renamePage({ pageId, title: trimmed });
-          }
-        }}
-        placeholder={t("titlePlaceholder")}
-        className="w-full bg-transparent text-h1 text-fg outline-none placeholder:text-fg-tertiary"
-        aria-label={t("titlePlaceholder")}
-      />
+      <div className="flex items-center gap-2">
+        <EmojiPickerButton
+          value={icon}
+          disabled={lockLost}
+          ariaLabel={t("iconPicker")}
+          onChange={(next) => {
+            const prev = icon;
+            setIcon(next);
+            void setPageIcon({ pageId, icon: next }).catch(() => {
+              setIcon(prev);
+              toast({ variant: "error", title: t("iconError") });
+            });
+          }}
+        />
+        <input
+          value={title}
+          readOnly={lockLost}
+          onChange={(e) => setTitle(e.target.value)}
+          onBlur={() => {
+            if (lockLost) return;
+            const trimmed = title.trim();
+            if (trimmed && trimmed !== initialTitle) {
+              void renamePage({ pageId, title: trimmed });
+            }
+          }}
+          placeholder={t("titlePlaceholder")}
+          className="w-full bg-transparent text-h1 text-fg outline-none placeholder:text-fg-tertiary"
+          aria-label={t("titlePlaceholder")}
+        />
+      </div>
 
       {lockLost ? (
         <div

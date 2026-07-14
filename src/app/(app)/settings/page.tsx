@@ -7,6 +7,9 @@ import type { Theme } from "@/lib/theme";
 import { ProfileSection } from "./profile-section";
 import { PasswordSection } from "./password-section";
 import { AppearanceSection } from "./appearance-section";
+import { NotificationsSection } from "./notifications-section";
+import { ApiTokensSection } from "./api-tokens-section";
+import { listApiTokens } from "@/lib/api-tokens";
 
 export async function generateMetadata(): Promise<Metadata> {
   const t = await getTranslations("settings");
@@ -20,6 +23,7 @@ export async function generateMetadata(): Promise<Metadata> {
 export default async function SettingsPage() {
   const { user } = await requireSession("/settings");
   const t = await getTranslations("settings");
+  const apiTokens = await listApiTokens(user.id);
 
   const currentTheme: Theme =
     user.themePreference === "light" || user.themePreference === "dark"
@@ -45,6 +49,19 @@ export default async function SettingsPage() {
       <PasswordSection isLocal={user.authProvider === "local" && user.passwordHash !== null} />
 
       <AppearanceSection initialTheme={currentTheme} />
+
+      <NotificationsSection initialPrefs={user.emailNotificationPrefs ?? null} />
+
+      <ApiTokensSection
+        tokens={apiTokens.map((token) => ({
+          id: token.id,
+          name: token.name,
+          scopes: token.scopes,
+          expiresAt: token.expiresAt?.toISOString() ?? null,
+          lastUsedAt: token.lastUsedAt?.toISOString() ?? null,
+          createdAt: token.createdAt.toISOString(),
+        }))}
+      />
     </main>
   );
 }
