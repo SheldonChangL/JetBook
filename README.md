@@ -3,7 +3,7 @@
 > 凱銳光電（Jet Opto）內部知識管理系統 —— 類 GitBook 的全端 web 應用，內建 AI RAG 知識問答。
 > Next.js（App Router、TypeScript strict）· PostgreSQL 16 + pgroonga + pgvector · Docker Compose · 繁體中文優先。
 
-**狀態：v1 商品化完成。** M0–M3 全數交付，兩道出貨閘門（MVP E2E 冒煙、RAG 權限隔離）通過，CI 全綠。功能對標 GitBook，程式碼全數原創（僅使用 MIT/Apache 授權之開源函式庫）。
+**狀態：v1 商品化完成，M4 第一批已上線。** M0–M3 全數交付，兩道出貨閘門（MVP E2E 冒煙、RAG 權限隔離）通過，CI 全綠；M4 第一批（REST API v1、MCP Server、Word 匯入、Email 通知、CSV 批次建立使用者等 8 項）已合併。功能對標 GitBook，程式碼全數原創（僅使用 MIT/Apache 授權之開源函式庫）。
 
 ---
 
@@ -13,32 +13,33 @@ JetBook 是一套自建、可自架的內部文件與知識庫系統：以 Space
 
 ## 核心功能
 
-- **組織與頁面**：單一工作區下多個 Space；頁面樹（鄰接表 + fractional index、可拖曳搬移、跨 Space 移動/複製）；slug 歷史與 301 轉址；回收桶（軟刪除）與 Space 封存。
+- **組織與頁面**：單一工作區下多個 Space；頁面樹（鄰接表 + fractional index、可拖曳搬移、跨 Space 移動/複製）；Space/頁面 emoji 圖示；slug 歷史與 301 轉址；回收桶（軟刪除）與 Space 封存。
 - **編輯器**：TipTap 區塊編輯器（H1–H3、清單/待辦、程式碼高亮、表格、圖片、附件、Callout、Tabs/摺疊/Stepper、Mermaid、白名單 embed）；slash 選單、Markdown 貼上；軟性編輯鎖（心跳 30s、閒置 5 分釋放、Admin 可搶）＋樂觀版本檢查防衝突。
 - **版本**：autosave 自動快照、版本檢視與還原、中文字級 diff。
-- **搜尋**：pgroonga 中文分詞全文搜尋（標題加權）＋ Cmd+K 命令面板；AI 開啟時併語意搜尋。
+- **搜尋**：pgroonga 中文分詞全文搜尋（標題加權）＋ Cmd+K 命令面板；附件檔名搜尋；AI 開啟時併語意搜尋。
 - **AI（RAG）**：LLM/Embedding Provider 抽象層（Anthropic ↔ OpenAI-compatible，env 切換）；增量嵌入索引管線（pg-boss）；Hybrid 檢索（pgroonga + pgvector，RRF）；SSE 串流問答，回答附 `[n]` 引用並可跳至來源頁對應區塊；每人每日用量配額與稽核。
-- **協作治理**：留言、通知、@mention 與頁面連結、群組授權、寫作輔助、匯入（Markdown/Zip）與匯出（Markdown）。
+- **協作治理**：留言、通知（站內＋Email，個人逐類開關）、@mention 與頁面連結、群組授權、寫作輔助、匯入（Markdown/Zip/Word .docx）與匯出（Markdown）。
+- **對外整合**：REST API v1（個人 API Token Bearer 認證、唯讀端點、OpenAPI 文件頁 `/api-docs`）；內建 MCP Server（`/api/mcp`），讓 Claude 等 AI 助理直接搜尋與閱讀知識庫（見下方[「REST API 與 MCP」](#rest-api-與-mcp)）。
 - **權限**：組織角色（admin/member）＋ Space 四級角色（admin/editor/commenter/viewer）＋ 三態可見性（private/org_read/org_write）＋ 群組掛載；預設拒絕。
-- **管理後台**：使用者、群組、Space、AI 用量、稽核日誌、系統健康。
+- **管理後台**：使用者（搜尋/狀態篩選/分頁、CSV 批次建立——相容 Redmine 匯出）、群組、Space、AI 用量、稽核日誌、系統健康。
 - **維運**：`/api/healthz`、`/api/readyz`、Prometheus `/api/metrics`；結構化 JSON 日誌（pino）＋ request id；每小時 pg_dump 備份 sidecar（RPO ≤ 1h）。
 
 ## 技術棧
 
-| 領域 | 選型 |
-|---|---|
-| 框架 | Next.js 15（App Router、standalone）、React 19、TypeScript 5.9 strict |
-| 樣式 / UI | Tailwind CSS v4（雙模式 CSS 變數）、Radix UI、cmdk、Lucide、self-host 字型 |
-| i18n | next-intl（單語系 zh-TW，ESLint 強制字串進訊息檔） |
-| 資料庫 | PostgreSQL 16 + **pgroonga**（中文全文檢索）+ **pgvector**（1024 維 HNSW 向量檢索） |
-| ORM / 遷移 | Drizzle ORM + drizzle-kit（版本化 migration，獨立部署步驟） |
-| 佇列 | pg-boss（複用 PostgreSQL，不引入 Redis） |
-| 編輯器 | TipTap 3 / ProseMirror（JSON 為 canonical 內容格式） |
-| 認證 | Argon2id（@node-rs/argon2）＋ DB-backed opaque session；OIDC/SSO 預留（openid-client） |
-| AI | @anthropic-ai/sdk；OpenAI-compatible（vLLM/Ollama）；embedding 建議 local BGE-M3 |
-| 觀測 | pino（JSON log）、prom-client（Prometheus 指標） |
-| 測試 | Vitest（單元）、testcontainers（真 PG 整合）、Playwright（E2E 冒煙） |
-| 部署 | Docker Compose（Caddy proxy / web / worker / db / backup），未來可遷 K8s |
+| 領域       | 選型                                                                                   |
+| ---------- | -------------------------------------------------------------------------------------- |
+| 框架       | Next.js 15（App Router、standalone）、React 19、TypeScript 5.9 strict                  |
+| 樣式 / UI  | Tailwind CSS v4（雙模式 CSS 變數）、Radix UI、cmdk、Lucide、self-host 字型             |
+| i18n       | next-intl（單語系 zh-TW，ESLint 強制字串進訊息檔）                                     |
+| 資料庫     | PostgreSQL 16 + **pgroonga**（中文全文檢索）+ **pgvector**（1024 維 HNSW 向量檢索）    |
+| ORM / 遷移 | Drizzle ORM + drizzle-kit（版本化 migration，獨立部署步驟）                            |
+| 佇列       | pg-boss（複用 PostgreSQL，不引入 Redis）                                               |
+| 編輯器     | TipTap 3 / ProseMirror（JSON 為 canonical 內容格式）                                   |
+| 認證       | Argon2id（@node-rs/argon2）＋ DB-backed opaque session；OIDC/SSO 預留（openid-client） |
+| AI         | @anthropic-ai/sdk；OpenAI-compatible（vLLM/Ollama）；embedding 建議 local BGE-M3       |
+| 觀測       | pino（JSON log）、prom-client（Prometheus 指標）                                       |
+| 測試       | Vitest（單元）、testcontainers（真 PG 整合）、Playwright（E2E 冒煙）                   |
+| 部署       | Docker Compose（Caddy proxy / web / worker / db / backup），未來可遷 K8s               |
 
 ## 系統架構
 
@@ -123,24 +124,33 @@ npm run dev                      # http://localhost:3000
 
 所有設定**只能**經 [`src/lib/env.ts`](src/lib/env.ts)（Zod 驗證、缺漏 fail-fast）取得，業務程式碼禁止直接讀 `process.env`。完整清單與註解見 [`.env.example`](.env.example)。重點：
 
-| 變數 | 必填 | 說明 |
-|---|---|---|
-| `BASE_URL` | ✅ | 對外 base URL（含 protocol） |
-| `DATABASE_URL` | ✅ | PostgreSQL 連線字串（須 `postgresql://` 前綴） |
-| `POSTGRES_PASSWORD` | ✅ | compose db 密碼 |
-| `LLM_PROVIDER` | — | `anthropic` \| `openai-compat`；未設定＝AI 關閉 |
-| `ANTHROPIC_API_KEY` / `OPENAI_COMPAT_BASE_URL` | — | 對應 provider 的憑證/端點 |
-| `EMBEDDING_BASE_URL` / `EMBEDDING_MODEL` / `EMBEDDING_DIMENSIONS` | — | 語意索引（建議 local BGE-M3，1024 維） |
-| `AUTH_OIDC_ISSUER` / `AUTH_OIDC_CLIENT_ID` / `AUTH_OIDC_CLIENT_SECRET` | — | 啟用 SSO；未設定則授權路由 404、登入頁不顯示按鈕 |
-| `SMTP_*` | — | 忘記密碼寄信；未設定則將重設連結輸出到 log（僅供開發） |
-| `METRICS_TOKEN` | — | `/api/metrics` 的 Bearer 權杖；未設定則不驗（信任內網） |
-| `UPLOAD_DIR` / `MAX_UPLOAD_MB` / `EMBED_ALLOWED_DOMAINS` / `BACKUP_*` | — | 附件、embed 白名單、備份保留策略 |
+| 變數                                                                   | 必填 | 說明                                                                             |
+| ---------------------------------------------------------------------- | ---- | -------------------------------------------------------------------------------- |
+| `BASE_URL`                                                             | ✅   | 對外 base URL（含 protocol）                                                     |
+| `DATABASE_URL`                                                         | ✅   | PostgreSQL 連線字串（須 `postgresql://` 前綴）                                   |
+| `POSTGRES_PASSWORD`                                                    | ✅   | compose db 密碼                                                                  |
+| `LLM_PROVIDER`                                                         | —    | `anthropic` \| `openai-compat`；未設定＝AI 關閉                                  |
+| `ANTHROPIC_API_KEY` / `OPENAI_COMPAT_BASE_URL`                         | —    | 對應 provider 的憑證/端點                                                        |
+| `EMBEDDING_BASE_URL` / `EMBEDDING_MODEL` / `EMBEDDING_DIMENSIONS`      | —    | 語意索引（建議 local BGE-M3，1024 維）                                           |
+| `AUTH_OIDC_ISSUER` / `AUTH_OIDC_CLIENT_ID` / `AUTH_OIDC_CLIENT_SECRET` | —    | 啟用 SSO；未設定則授權路由 404、登入頁不顯示按鈕                                 |
+| `SMTP_*`                                                               | —    | 忘記密碼／Email 通知／歡迎信寄送；未設定則不寄信、信件內容輸出到 log（僅供開發） |
+| `METRICS_TOKEN`                                                        | —    | `/api/metrics` 的 Bearer 權杖；未設定則不驗（信任內網）                          |
+| `UPLOAD_DIR` / `MAX_UPLOAD_MB` / `EMBED_ALLOWED_DOMAINS` / `BACKUP_*`  | —    | 附件、embed 白名單、備份保留策略                                                 |
 
 ## 啟用 AI 功能
 
 1. **Embedding（day-1 即用 local，內容不外流）**：設 `EMBEDDING_BASE_URL` 指向內部 BGE-M3 端點（vLLM/Ollama）、`EMBEDDING_DIMENSIONS=1024`。
 2. **Chat**：前期 `LLM_PROVIDER=anthropic` + `ANTHROPIC_API_KEY`；之後切內部 Local LLM 只需改為 `LLM_PROVIDER=openai-compat` + `OPENAI_COMPAT_BASE_URL`（Provider 抽象層已就位）。
 3. 於 `/admin/ai` 測試連線，並對既有內容執行全庫重嵌。
+
+## REST API 與 MCP
+
+兩者共用**個人 API Token**（「個人設定 → API Token」建立，`jbk_` 開頭，HTTP Bearer 認證）。工具與端點的可見範圍完全等於 token 擁有者在 JetBook 的權限；token 於個人設定撤銷後立即失效。
+
+- **REST API v1**：唯讀端點（空間清單、頁面樹、頁面內容、搜尋）；互動式 OpenAPI 文件見 `/api-docs`。
+- **MCP Server**：`https://<網域>/api/mcp`（streamable HTTP），提供 `search_pages`／`read_page`／`list_spaces` 三工具，讓 Claude 等 AI 助理直接搜尋與閱讀知識庫。接入方式（Claude Code／Claude Desktop）與疑難排解見 [`docs/guides/mcp-server.md`](docs/guides/mcp-server.md)。
+
+> **安全鐵律：每位使用者用自己的 token。** 共用 token（尤其 admin 的）等於把私有空間內容經 AI 助理外洩給無權者。
 
 ## 驗證與測試
 
@@ -160,7 +170,7 @@ npm run test:integration   # testcontainers 起真 PG（pgroonga+pgvector）跑�
 npm run test:e2e           # Playwright E2E 冒煙（需先起 db 並套遷移）
 ```
 
-規模：單元測試 447、整合測試 203（真 PG）、Playwright E2E 全旅程冒煙。CI 於 `.github/workflows/ci.yml` 定義 Validate 與 E2E 兩個必過 job。
+規模：單元測試 468、整合測試 236（真 PG）、Playwright E2E 全旅程冒煙。CI 於 `.github/workflows/ci.yml` 定義 Validate 與 E2E 兩個必過 job。
 
 **兩道出貨閘門（不可弱化）**：
 
@@ -184,7 +194,7 @@ src/
     admin/ audit/ metrics/ env.ts / logger.ts   後台、稽核、指標、設定、日誌
   worker.ts       背景 worker entrypoint（打包為 dist/worker.js）
 db/               PostgreSQL image（pgroonga base + pgvector）與 init 擴充
-drizzle/          版本化 migration（0000–0016）
+drizzle/          版本化 migration（0000–0019）
 messages/         i18n 訊息檔（zh-TW.json）
 tests/            integration（testcontainers）、e2e（Playwright）
 scripts/          seed-admin.mjs（引導管理員）、build-worker.mjs
@@ -211,6 +221,7 @@ docs/             specs / architecture / design / plans / ops
 - 設計：[`docs/design/`](docs/design/)（UI 規格、審查報告、HTML mockups）
 - 規劃：[`docs/plans/`](docs/plans/)（issue 拆解、里程碑、依賴圖）
 - 維運：[`docs/ops/backup-restore-runbook.md`](docs/ops/backup-restore-runbook.md)（備份與還原演練）
+- 指南：[`docs/guides/mcp-server.md`](docs/guides/mcp-server.md)（MCP Server 接入）
 
 ## 部署與維運
 
@@ -220,9 +231,9 @@ docs/             specs / architecture / design / plans / ops
 - **指標**：`/api/metrics`（Prometheus）；設 `METRICS_TOKEN` 後抓取端需帶 Bearer。
 - **相依服務**：`web` 以 `/api/readyz` 為 healthcheck，依賴 `db` healthy 後啟動。
 
-## 尚未涵蓋（v1 之後 · M4 backlog）
+## 尚未涵蓋（M4 backlog）
 
-變更請求、行內評論、REST API/token、webhooks、MCP server、Word/PDF 匯入匯出、KaTeX、多欄版面、snippets、Email 通知、內容分析等，依實際使用回饋於 M4 拆解（追蹤於 issue #93）。
+變更請求、行內評論、webhooks（暫停）、PDF 匯出、KaTeX、多欄版面、snippets、內容分析等，依實際使用回饋再拆解（追蹤於 issue #93）。
 
 ## 授權與原創聲明
 
