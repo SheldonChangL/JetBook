@@ -130,7 +130,8 @@ export async function DELETE(request: Request, ctx: { params: Promise<{ id: stri
   const { id } = await ctx.params;
   if (!z.uuid().safeParse(id).success) return notFound();
 
-  const recursive = new URL(request.url).searchParams.get("recursive") === "true";
+  const recursiveRaw = new URL(request.url).searchParams.get("recursive");
+  const recursive = recursiveRaw === "true" || recursiveRaw === "1";
   const outcome = await apiDeletePage(result.auth.user, { pageId: id, recursive });
   if (!outcome.ok) {
     if (outcome.error === "HAS_CHILDREN") {

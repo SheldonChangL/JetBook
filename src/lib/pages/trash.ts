@@ -140,15 +140,23 @@ export async function softDeletePageSubtree(input: {
     const page = await tx.query.pages.findFirst({ where: eq(pages.id, input.pageId) });
     if (!page || page.deletedAt) throw new Error("NOT_FOUND");
 
+    const now = new Date();
     if (!input.recursive) {
       const [kids] = await tx
         .select({ n: count() })
         .from(pages)
         .where(and(eq(pages.parentId, input.pageId), isNull(pages.deletedAt)));
       if ((kids?.n ?? 0) > 0) throw new HasChildrenError(kids!.n);
+      // 只刪單列、不跑子樹 CTE：count 與 CTE 之間的並發新增子頁不會被連帶誤刪，
+      // 已軟刪子頁下的活孫頁（直接子頁 count 看不到）也不會被 CTE 穿越刪掉
+      const deleted = await tx
+        .update(pages)
+        .set({ deletedAt: now })
+        .where(and(eq(pages.id, input.pageId), isNull(pages.deletedAt)))
+        .returning({ id: pages.id });
+      return { deletedIds: deleted.map((row) => row.id) };
     }
 
-    const now = new Date();
     const deleted = await tx.execute<{ id: string }>(sql`
       WITH RECURSIVE subtree AS (
         SELECT id FROM ${pages} WHERE id = ${input.pageId}

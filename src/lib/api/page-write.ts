@@ -424,7 +424,9 @@ export type ApiDeleteResult =
  */
 export async function apiDeletePage(user: Actor, input: ApiDeletePageInput): Promise<ApiDeleteResult> {
   const page = await db.query.pages.findFirst({ where: eq(pages.id, input.pageId) });
-  if (!page || page.deletedAt) return { ok: false, error: "NOT_FOUND" };
+  // 根節點限 kind=page：與同 API 面的 GET/PATCH 存在性模型一致（group/external_link 視同不存在，
+  // 避免對讀不到的節點回 409 洩漏存在性）；子樹內的 group/external 節點仍隨 recursive 一併刪
+  if (!page || page.deletedAt || page.kind !== "page") return { ok: false, error: "NOT_FOUND" };
   if (!(await can(user, "page.edit", { type: "page", spaceId: page.spaceId }))) {
     return { ok: false, error: "NOT_FOUND" };
   }
