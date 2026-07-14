@@ -10,13 +10,17 @@ import { acquireLock, getLockState } from "@/lib/pages/lock";
 import { PageEditor } from "@/components/editor/page-editor";
 import { EditLockNotice } from "./edit-lock-notice";
 import type { ProseMirrorDoc } from "@/lib/content/types";
+import { decodeRouteParam } from "@/lib/utils";
 
 export default async function EditPage({
   params,
 }: {
   params: Promise<{ spaceSlug: string; pageSlug: string }>;
 }) {
-  const { spaceSlug, pageSlug } = await params;
+  const raw = await params;
+  // route param 為 percent-encoded；含 CJK 的 slug 須還原才比對得到 DB（issue #207）
+  const spaceSlug = decodeRouteParam(raw.spaceSlug);
+  const pageSlug = decodeRouteParam(raw.pageSlug);
   const { user } = await requireSession(`/s/${spaceSlug}/${pageSlug}/edit`);
 
   const space = await db.query.spaces.findFirst({ where: eq(spaces.slug, spaceSlug) });

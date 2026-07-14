@@ -12,6 +12,7 @@ import { can } from "@/lib/authz/permission";
 import { denyPageRead } from "@/lib/authz/deny";
 import { recordVisit } from "@/lib/pages/visits";
 import { resolvePageBySlug } from "@/lib/pages/slug";
+import { decodeRouteParam } from "@/lib/utils";
 import { resolvePageLinkTargets } from "@/lib/pages/link-resolve";
 import { collectPageLinkIds } from "@/lib/content/mentions";
 import { listPageComments } from "@/lib/comments/service";
@@ -28,7 +29,10 @@ export async function generateMetadata({
 }: {
   params: Promise<{ spaceSlug: string; pageSlug: string }>;
 }): Promise<Metadata> {
-  const { spaceSlug, pageSlug } = await params;
+  const raw = await params;
+  // route param 為 percent-encoded；含 CJK 的 slug 須還原才比對得到 DB（issue #207）
+  const spaceSlug = decodeRouteParam(raw.spaceSlug);
+  const pageSlug = decodeRouteParam(raw.pageSlug);
   // 權限檢查同頁面本體：無權限者連 <title> 都不得洩漏頁面存在性（G-04 §3.12）。
   const session = await getCurrentSession();
   if (!session) return {};
@@ -47,7 +51,9 @@ export default async function PageReadPage({
 }: {
   params: Promise<{ spaceSlug: string; pageSlug: string }>;
 }) {
-  const { spaceSlug, pageSlug } = await params;
+  const raw = await params;
+  const spaceSlug = decodeRouteParam(raw.spaceSlug);
+  const pageSlug = decodeRouteParam(raw.pageSlug);
   const { user } = await requireSession(`/s/${spaceSlug}/${pageSlug}`);
   const t = await getTranslations("reading");
 
@@ -55,7 +61,9 @@ export default async function PageReadPage({
   if (!space) notFound();
 
   const { page, redirectToSlug } = await resolvePageBySlug(space.id, pageSlug);
-  if (redirectToSlug) redirect(`/s/${spaceSlug}/${redirectToSlug}`);
+  // Location header 不允許非 ASCII：CJK slug 必須重新 percent-encode（issue #207）
+  if (redirectToSlug)
+    redirect(`/s/${encodeURIComponent(spaceSlug)}/${encodeURIComponent(redirectToSlug)}`);
   if (!page) notFound();
   // 群組分節與外部連結節點無內文、不可開啟為頁面（C-11，F-PAGE-04）。
   if (page.kind !== "page") notFound();
