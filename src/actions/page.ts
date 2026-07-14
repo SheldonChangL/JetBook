@@ -7,7 +7,7 @@ import { z } from "zod";
 import { db } from "@/lib/db";
 import { pageEmbeddings, pages, pageVersions, spaces, users } from "@/lib/db/schema";
 import { requireSession } from "@/lib/auth/current";
-import { triggerEmbedPage } from "@/lib/jobs/queue";
+import { reembedIndexedPages, triggerEmbedPage } from "@/lib/jobs/queue";
 import { isEmbeddingConfigured } from "@/lib/llm";
 import { assertCan, getEditableSpaceIds } from "@/lib/authz/permission";
 import { movePageNode } from "@/lib/pages/move";
@@ -32,24 +32,7 @@ async function requireEditor(spaceId: string) {
   return user;
 }
 
-/**
- * 對「確實有向量」的頁面批次 enqueue 重嵌（跨 space 搬移後重評目的地 space 的 AI 索引政策，
- * NFR-COMP-03；handler 依現行 space 決定重建或清除）。整段 best-effort：任何失敗都不得
- * 阻塞搬移主流程（RAG 檢索本以現行 space join 過濾，向量新鮮度非安全條件）。
- */
-async function reembedIndexedPages(pageIds: string[]): Promise<void> {
-  if (!isEmbeddingConfigured() || pageIds.length === 0) return;
-  try {
-    const indexed = await db
-      .select({ pageId: pageEmbeddings.pageId })
-      .from(pageEmbeddings)
-      .where(inArray(pageEmbeddings.pageId, pageIds))
-      .groupBy(pageEmbeddings.pageId);
-    for (const { pageId } of indexed) await triggerEmbedPage(pageId);
-  } catch (error) {
-    logger.error({ err: error }, "跨 space 搬移後重嵌 enqueue 失敗（不阻塞搬移）");
-  }
-}
+// reembedIndexedPages 已移至 lib/jobs/queue.ts（M4-14：web 與 API move 共用）
 
 const createSchema = z.object({
   spaceId: z.uuid(),

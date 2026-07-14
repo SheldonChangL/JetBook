@@ -15,6 +15,11 @@ export interface MovePageNodeInput {
   afterId?: string | null;
   /** 操作者（寫入 updated_by） */
   movedBy: string;
+  /**
+   * 呼叫端權限檢查時頁面所屬的 space（M4-14 API 路徑）：交易內重讀後不符即 NOT_FOUND，
+   * 堵住「權限檢查後、交易前」頁面被並發搬到他空間的 TOCTOU 窗口。省略＝不驗（web 互動路徑）。
+   */
+  expectedSpaceId?: string;
 }
 
 /**
@@ -32,6 +37,9 @@ export async function movePageNode(input: MovePageNodeInput): Promise<{ position
   return db.transaction(async (tx) => {
     const page = await tx.query.pages.findFirst({ where: eq(pages.id, pageId) });
     if (!page || page.deletedAt) throw new Error("NOT_FOUND");
+    if (input.expectedSpaceId && page.spaceId !== input.expectedSpaceId) {
+      throw new Error("NOT_FOUND");
+    }
 
     if (newParentId !== null) {
       const parent = await tx.query.pages.findFirst({ where: eq(pages.id, newParentId) });

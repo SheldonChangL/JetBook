@@ -1,7 +1,8 @@
 import "server-only";
 import { PgBoss, type SendOptions } from "pg-boss";
-import { sql } from "drizzle-orm";
+import { inArray, sql } from "drizzle-orm";
 import { db } from "@/lib/db";
+import { pageEmbeddings } from "@/lib/db/schema";
 import { env } from "@/lib/env";
 import { isEmbeddingConfigured } from "@/lib/llm";
 import { logger } from "@/lib/logger";
@@ -142,6 +143,26 @@ export async function triggerEmbedPage(pageId: string): Promise<void> {
     await enqueueEmbedPage(pageId);
   } catch (error) {
     logger.error({ err: error, pageId }, "enqueue embed-page 失敗（不阻塞寫入）");
+  }
+}
+
+/**
+ * 對「確實有向量」的頁面批次 enqueue 重嵌（跨 space 搬移後重評目的地 space 的 AI 索引政策，
+ * NFR-COMP-03；handler 依現行 space 決定重建或清除）。整段 best-effort：任何失敗都不得
+ * 阻塞搬移主流程（RAG 檢索本以現行 space join 過濾，向量新鮮度非安全條件）。
+ * web 跨 space 搬移（actions/page.ts）與 API move_page（lib/api，M4-14）共用。
+ */
+export async function reembedIndexedPages(pageIds: string[]): Promise<void> {
+  if (!isEmbeddingConfigured() || pageIds.length === 0) return;
+  try {
+    const indexed = await db
+      .select({ pageId: pageEmbeddings.pageId })
+      .from(pageEmbeddings)
+      .where(inArray(pageEmbeddings.pageId, pageIds))
+      .groupBy(pageEmbeddings.pageId);
+    for (const { pageId } of indexed) await triggerEmbedPage(pageId);
+  } catch (error) {
+    logger.error({ err: error }, "跨 space 搬移後重嵌 enqueue 失敗（不阻塞搬移）");
   }
 }
 
