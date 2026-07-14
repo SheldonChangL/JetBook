@@ -90,6 +90,11 @@ export interface MovePageToSpaceInput {
   targetSpaceId: string;
   /** 操作者（寫入 updated_by） */
   movedBy: string;
+  /**
+   * 呼叫端權限檢查時子樹根所屬的 space（M4-14 API 路徑）：交易內重讀後不符即 NOT_FOUND，
+   * 堵住「權限檢查後、交易前」頁面被並發搬到他空間的 TOCTOU 窗口。省略＝不驗（web 互動路徑）。
+   */
+  expectedSourceSpaceId?: string;
 }
 
 export interface MovePageToSpaceResult {
@@ -120,6 +125,9 @@ export async function movePageSubtreeToSpace(
     if (rows.length === 0) throw new Error("NOT_FOUND");
     const root = rows[0]!;
     if (root.id !== pageId) throw new Error("NOT_FOUND");
+    if (input.expectedSourceSpaceId && root.spaceId !== input.expectedSourceSpaceId) {
+      throw new Error("NOT_FOUND");
+    }
     // 同 space「搬移」無意義且會使根頁 slug 與自身相撞而平白重生成：一律拒絕（同 space 排序走 movePageNode）。
     if (root.spaceId === targetSpaceId) throw new Error("SAME_SPACE");
 

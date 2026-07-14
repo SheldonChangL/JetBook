@@ -106,7 +106,7 @@ describe("API 搬移頁面（M4-14，issue #219）", () => {
     expect(body.error.code).toBe("CYCLE");
   });
 
-  it("external_link 節點不可作父 → 404（C-11）", async () => {
+  it("external_link 節點不可作父 → 400 INVALID_MOVE 明確訊息（C-11）", async () => {
     const owner = await seedUser();
     const space = await seedSpace(owner.id, { visibility: "org_write" });
     const link = await seedPage(space.id, { kind: "external_link", externalUrl: "https://x" });
@@ -115,7 +115,9 @@ describe("API 搬移頁面（M4-14，issue #219）", () => {
     const token = await makeToken(writer.id, ["read", "write"]);
 
     const res = await moveReq(page.id, token, { newParentId: link.id });
-    expect(res.status).toBe(404);
+    expect(res.status).toBe(400);
+    const body = (await res.json()) as { error: { code: string } };
+    expect(body.error.code).toBe("INVALID_MOVE");
   });
 
   it("跨空間搬移：子樹 space_id 與附件歸屬同交易轉移、根頁掛目標根層", async () => {

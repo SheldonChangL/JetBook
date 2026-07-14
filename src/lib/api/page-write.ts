@@ -311,6 +311,8 @@ export async function apiMovePage(user: Actor, input: ApiMovePageInput): Promise
         pageId: page.id,
         targetSpaceId: target.id,
         movedBy: user.id,
+        // 交易內重驗來源 space＝權限檢查時的 space（堵 TOCTOU）
+        expectedSourceSpaceId: page.spaceId,
       }));
     } catch (error) {
       if (error instanceof Error && (error.message === "NOT_FOUND" || error.message === "SAME_SPACE")) {
@@ -357,13 +359,16 @@ export async function apiMovePage(user: Actor, input: ApiMovePageInput): Promise
       pageId: page.id,
       newParentId: input.newParentId,
       movedBy: user.id,
+      // 交易內重驗頁面 space＝權限檢查時的 space（堵 TOCTOU）
+      expectedSpaceId: page.spaceId,
     });
   } catch (error) {
     if (error instanceof PageMoveCycleError) return { ok: false, error: "CYCLE" };
-    if (
-      error instanceof Error &&
-      (error.message === "NOT_FOUND" || error.message === "EXTERNAL_LINK_NO_CHILDREN")
-    ) {
+    if (error instanceof Error && error.message === "EXTERNAL_LINK_NO_CHILDREN") {
+      // 呼叫者可讀到該父節點（同空間且有編輯權），回明確錯誤而非 404，agent 才能自我修正
+      return { ok: false, error: "INVALID", message: "外部連結節點是葉節點，不可作為父層" };
+    }
+    if (error instanceof Error && error.message === "NOT_FOUND") {
       return { ok: false, error: "NOT_FOUND" };
     }
     throw error;
