@@ -1,5 +1,5 @@
 import "server-only";
-import { and, asc, eq, isNull, ne, sql } from "drizzle-orm";
+import { and, asc, eq, inArray, isNull, ne, sql } from "drizzle-orm";
 import { db } from "@/lib/db";
 import { pages } from "@/lib/db/schema";
 import { PageMoveCycleError } from "./errors";
@@ -25,8 +25,9 @@ export interface MovePageNodeInput {
 /**
  * 頁面搬移／排序（C-04，ADR-001 fractional index）：
  * - 只改動被搬移節點本身的 parent_id/position，兄弟節點零重排；
- * - 循環防護：同一交易內以 recursive CTE 確認 newParent 不在 pageId 子樹（含自身），
- *   違反即丟 PageMoveCycleError；
+ * - 循環防護：交易開頭先以固定順序（id 排序）`SELECT ... FOR UPDATE` 鎖定被搬頁與新父頁列，
+ *   序列化互相衝突的 reparent（防止並行「X→Y」「Y→X」各自通過 cycle check 後成環，issue #224），
+ *   再於同一交易內以 recursive CTE 確認 newParent 不在 pageId 子樹（含自身），違反即丟 PageMoveCycleError；
  * - beforeId/afterId 指定目標父節點下的錨點兄弟，positionBetween 取鄰位中間鍵。
  * 呼叫端（server action）負責 session／authz（lib/authz 唯一入口）。
  */
@@ -35,6 +36,20 @@ export async function movePageNode(input: MovePageNodeInput): Promise<{ position
   if (newParentId === pageId) throw new PageMoveCycleError();
 
   return db.transaction(async (tx) => {
+    // 循環防護第一道（issue #224）：先以固定順序（id 排序）取被搬頁與新父頁的列鎖，序列化互相
+    // 衝突的並行 reparent。READ COMMITTED 下無此鎖時，並行「X→Y」與「Y→X」會各自讀到對方舊
+    // parent_id、都通過下方 cycle check、更新不同列不互相阻塞，提交後成環。固定 id 排序取鎖避免死鎖；
+    // 後取鎖者被阻塞、待前者提交後重讀最新已提交狀態，其 cycle check 即能偵測到環並 rollback。
+    const idsToLock = Array.from(
+      new Set(newParentId === null ? [pageId] : [pageId, newParentId]),
+    );
+    await tx
+      .select({ id: pages.id })
+      .from(pages)
+      .where(inArray(pages.id, idsToLock))
+      .orderBy(asc(pages.id))
+      .for("update");
+
     const page = await tx.query.pages.findFirst({ where: eq(pages.id, pageId) });
     if (!page || page.deletedAt) throw new Error("NOT_FOUND");
     if (input.expectedSpaceId && page.spaceId !== input.expectedSpaceId) {
