@@ -1132,7 +1132,11 @@
     "attachment": {
       "download": "下載",
       "downloadAria": "下載附件 {fileName}",
-      "unnamed": "未命名檔案"
+      "unnamed": "未命名檔案",
+      "preview": "預覽",
+      "previewAria": "預覽附件 {fileName}",
+      "previewClose": "關閉預覽",
+      "previewFrameTitle": "PDF 預覽：{fileName}"
     },
     "embed": {
       "frameTitle": "{host} 的嵌入內容",

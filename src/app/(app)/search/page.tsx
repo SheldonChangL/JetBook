@@ -9,7 +9,9 @@ import { listAccessibleSpaces } from "@/lib/spaces/queries";
 import {
   attachmentFileUrl,
   formatFileSize,
+  isPreviewableAttachment,
 } from "@/components/editor/attachment/attachment-utils";
+import { AttachmentPreviewButton } from "@/components/content/attachment-preview";
 import { SearchResults } from "./search-results";
 
 /** 更新時間過濾允許值（7 天 / 30 天 / 全部）。 */
@@ -101,6 +103,9 @@ export default async function SearchPage({
                     </Link>
                   </p>
                 </div>
+                {isPreviewableAttachment(hit.fileName) ? (
+                  <AttachmentPreviewButton attachmentId={hit.id} fileName={hit.fileName} />
+                ) : null}
               </li>
             ))}
           </ul>
