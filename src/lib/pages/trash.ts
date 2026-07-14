@@ -1,7 +1,8 @@
 import "server-only";
-import { and, desc, eq, isNull, sql } from "drizzle-orm";
+import { and, count, desc, eq, isNull, sql } from "drizzle-orm";
 import { db } from "@/lib/db";
 import { pages } from "@/lib/db/schema";
+import { HasChildrenError } from "@/lib/pages/errors";
 import { positionBetween } from "@/lib/pages/position";
 import { writeAudit } from "@/lib/audit";
 import { logger } from "@/lib/logger";
@@ -121,6 +122,53 @@ export async function listTrashItems(spaceIds: string[]): Promise<TrashItem[]> {
     deleterName: row.deleter_name,
     descendantCount: Number(row.descendant_count),
   }));
+}
+
+/**
+ * 軟刪除一支子樹（C-08）：同一交易內以 recursive CTE 將整支子樹的 `deleted_at`
+ * 設為同一時間戳（＝一「批」，還原時連帶還原）。web deletePage（無條件連子樹）與
+ * API delete_page（M4-15，`recursive:false` 時有未刪子頁即拒絕）共用的唯一刪除路徑。
+ * 權限由呼叫端薄殼先驗（架構鐵律 #1）；embedding 清除由呼叫端於交易後 enqueue。
+ * 回傳受影響（本次被軟刪）的頁面 id 清單。
+ */
+export async function softDeletePageSubtree(input: {
+  pageId: string;
+  /** false 且存在未刪除子頁 → 擲 HasChildrenError（帶子頁數）。 */
+  recursive: boolean;
+}): Promise<{ deletedIds: string[] }> {
+  return db.transaction(async (tx) => {
+    const page = await tx.query.pages.findFirst({ where: eq(pages.id, input.pageId) });
+    if (!page || page.deletedAt) throw new Error("NOT_FOUND");
+
+    const now = new Date();
+    if (!input.recursive) {
+      const [kids] = await tx
+        .select({ n: count() })
+        .from(pages)
+        .where(and(eq(pages.parentId, input.pageId), isNull(pages.deletedAt)));
+      if ((kids?.n ?? 0) > 0) throw new HasChildrenError(kids!.n);
+      // 只刪單列、不跑子樹 CTE：count 與 CTE 之間的並發新增子頁不會被連帶誤刪，
+      // 已軟刪子頁下的活孫頁（直接子頁 count 看不到）也不會被 CTE 穿越刪掉
+      const deleted = await tx
+        .update(pages)
+        .set({ deletedAt: now })
+        .where(and(eq(pages.id, input.pageId), isNull(pages.deletedAt)))
+        .returning({ id: pages.id });
+      return { deletedIds: deleted.map((row) => row.id) };
+    }
+
+    const deleted = await tx.execute<{ id: string }>(sql`
+      WITH RECURSIVE subtree AS (
+        SELECT id FROM ${pages} WHERE id = ${input.pageId}
+        UNION ALL
+        SELECT p.id FROM ${pages} p JOIN subtree s ON p.parent_id = s.id
+      )
+      UPDATE ${pages} SET deleted_at = ${now}
+      WHERE id IN (SELECT id FROM subtree) AND deleted_at IS NULL
+      RETURNING id
+    `);
+    return { deletedIds: deleted.rows.map((row) => row.id) };
+  });
 }
 
 export interface RestoreResult {

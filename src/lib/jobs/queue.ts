@@ -162,7 +162,7 @@ export async function reembedIndexedPages(pageIds: string[]): Promise<void> {
       .groupBy(pageEmbeddings.pageId);
     for (const { pageId } of indexed) await triggerEmbedPage(pageId);
   } catch (error) {
-    logger.error({ err: error }, "跨 space 搬移後重嵌 enqueue 失敗（不阻塞搬移）");
+    logger.error({ err: error, pageIds }, "批次重嵌/向量清除 enqueue 失敗（不阻塞主流程）");
   }
 }
 

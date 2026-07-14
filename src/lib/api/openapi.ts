@@ -103,6 +103,27 @@ export const openApiSpec = {
           "404": { description: "頁面不存在或無權存取" },
         },
       },
+      delete: {
+        summary: "軟刪除頁面（M4-15，需 write scope）",
+        description:
+          "一律軟刪除進回收桶（30 天可還原，不提供硬刪除）。有未刪除子頁時需 ?recursive=true 才連同子樹刪除，否則 409 HAS_CHILDREN（含 childCount）。刪除內容即刻退出搜尋與 RAG 檢索。",
+        parameters: [
+          { name: "id", in: "path", required: true, schema: { type: "string", format: "uuid" } },
+          {
+            name: "recursive",
+            in: "query",
+            required: false,
+            schema: { type: "boolean", default: false },
+            description: "true＝連同全部子頁面一併軟刪",
+          },
+        ],
+        responses: {
+          "200": { description: "已軟刪除（deletedPageIds）" },
+          "403": { description: "token 無 write scope" },
+          "404": { description: "頁面不存在或無權存取" },
+          "409": { description: "HAS_CHILDREN（有子頁且未帶 recursive=true，含 childCount）" },
+        },
+      },
       patch: {
         summary: "部分更新頁面（M4-09/M4-13，需 write scope）",
         description:

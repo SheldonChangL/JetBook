@@ -6,7 +6,8 @@ import { can, type Actor } from "@/lib/authz/permission";
 import { markdownToDoc } from "@/lib/content/markdown-to-doc";
 import { createPageInTx } from "@/lib/pages/create";
 import { writePageContentTx } from "@/lib/pages/content-write";
-import { PageMoveCycleError, VersionConflictError } from "@/lib/pages/errors";
+import { HasChildrenError, PageMoveCycleError, VersionConflictError } from "@/lib/pages/errors";
+import { softDeletePageSubtree } from "@/lib/pages/trash";
 import { movePageNode } from "@/lib/pages/move";
 import { movePageSubtreeToSpace } from "@/lib/pages/cross-space";
 import { acquireLock, getLockState, releaseLock } from "@/lib/pages/lock";
@@ -398,4 +399,74 @@ export async function apiMovePage(user: Actor, input: ApiMovePageInput): Promise
     page: { id: page.id, slug: page.slug, spaceSlug: space.slug, parentId: input.newParentId },
     movedCount: 1,
   };
+}
+
+export interface ApiDeletePageInput {
+  pageId: string;
+  /** true＝連同子樹一併軟刪；false（預設）＝有未刪除子頁即拒絕。 */
+  recursive?: boolean;
+}
+
+export type ApiDeleteResult =
+  | { ok: true; deletedPageIds: string[] }
+  | { ok: false; error: "NOT_FOUND" }
+  | { ok: false; error: "HAS_CHILDREN"; childCount: number };
+
+/**
+ * 軟刪除頁面（M4-15，issue #220）：MCP 工具與 REST v1 共用的 lib 層。
+ * - 一律軟刪除進回收桶（30 天保留、可還原）——不提供硬刪除。
+ * - 重用 softDeletePageSubtree（web deletePage 同一核心）：同批 deleted_at、
+ *   recursive:false 且有未刪子頁時擲 HasChildrenError（回子頁數供呼叫端提示）。
+ * - 軟刪後 best-effort enqueue 向量清除（handler 見 deletedAt 即刪向量）；
+ *   搜尋/RAG 以 deleted_at 過濾，軟刪內容即刻退出檢索。
+ * - audit 沿用 web 的 action "page.delete"（回收桶以此 action 解析刪除者，
+ *   換名會使 API 刪除的項目顯示不出刪除者），以 metadata.via 區分來源。
+ */
+export async function apiDeletePage(user: Actor, input: ApiDeletePageInput): Promise<ApiDeleteResult> {
+  const page = await db.query.pages.findFirst({ where: eq(pages.id, input.pageId) });
+  // 根節點限 kind=page：與同 API 面的 GET/PATCH 存在性模型一致（group/external_link 視同不存在，
+  // 避免對讀不到的節點回 409 洩漏存在性）；子樹內的 group/external 節點仍隨 recursive 一併刪
+  if (!page || page.deletedAt || page.kind !== "page") return { ok: false, error: "NOT_FOUND" };
+  if (!(await can(user, "page.edit", { type: "page", spaceId: page.spaceId }))) {
+    return { ok: false, error: "NOT_FOUND" };
+  }
+
+  let deletedIds: string[];
+  try {
+    ({ deletedIds } = await softDeletePageSubtree({
+      pageId: page.id,
+      recursive: input.recursive ?? false,
+    }));
+  } catch (error) {
+    if (error instanceof HasChildrenError) {
+      return { ok: false, error: "HAS_CHILDREN", childCount: error.childCount };
+    }
+    if (error instanceof Error && error.message === "NOT_FOUND") {
+      return { ok: false, error: "NOT_FOUND" };
+    }
+    throw error;
+  }
+
+  await reembedIndexedPages(deletedIds);
+  logger.info(
+    { userId: user.id, pageId: page.id, deletedCount: deletedIds.length },
+    "page soft-deleted via api",
+  );
+  await writeAudit({
+    actorId: user.id,
+    action: "page.delete",
+    targetType: "page",
+    targetId: page.id,
+    metadata: {
+      spaceId: page.spaceId,
+      title: page.title,
+      recursive: input.recursive ?? false,
+      deletedCount: deletedIds.length,
+      deletedPageIds: deletedIds,
+      via: "api",
+    },
+    ip: null,
+  });
+
+  return { ok: true, deletedPageIds: deletedIds };
 }

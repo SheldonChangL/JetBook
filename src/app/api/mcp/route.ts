@@ -7,6 +7,7 @@ import {
   API_PAGE_TITLE_MAX_CHARS,
   API_WRITE_MARKDOWN_MAX_CHARS,
   apiCreatePage,
+  apiDeletePage,
   apiMovePage,
   apiUpdatePage,
 } from "@/lib/api/page-write";
@@ -255,6 +256,39 @@ const handler = createMcpHandler(
             {
               type: "text" as const,
               text: `已搬移（受影響 ${outcome.movedCount} 頁）\n路徑: /s/${p.spaceSlug}/${p.slug}\n父層: ${p.parentId ?? "（根層）"}`,
+            },
+          ],
+        };
+      },
+    );
+
+    server.tool(
+      "delete_page",
+      "【破壞性操作】刪除頁面（軟刪除進回收桶，30 天內可還原）。有子頁面時需 recursive=true 才會連同整支子樹刪除。執行前務必先向使用者確認要刪的是哪一頁；除非使用者明確要求連子頁一起刪，否則不要帶 recursive。需要 write scope 的 token。",
+      {
+        pageId: z.string().uuid().describe("要刪除的頁面 id（UUID）"),
+        recursive: z
+          .boolean()
+          .optional()
+          .describe("true＝連同全部子頁面一併刪除（預設 false：有子頁即拒絕）"),
+      },
+      async ({ pageId, recursive }, extra) => {
+        const gate = writeGate(extra);
+        if (!gate.ok) return gate.result;
+        const outcome = await apiDeletePage(actorFrom(extra), { pageId, recursive });
+        if (!outcome.ok) {
+          if (outcome.error === "HAS_CHILDREN") {
+            return mcpError(
+              `頁面有 ${outcome.childCount} 個子頁面，未執行刪除。若確定要連同子樹刪除，請與使用者確認後帶 recursive=true 重試。`,
+            );
+          }
+          return mcpError("頁面不存在或無權寫入。");
+        }
+        return {
+          content: [
+            {
+              type: "text" as const,
+              text: `已軟刪除 ${outcome.deletedPageIds.length} 頁（回收桶保留 30 天，可由空間編輯者還原）。`,
             },
           ],
         };
