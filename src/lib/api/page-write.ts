@@ -6,10 +6,12 @@ import { can, type Actor } from "@/lib/authz/permission";
 import { markdownToDoc } from "@/lib/content/markdown-to-doc";
 import { createPageInTx } from "@/lib/pages/create";
 import { writePageContentTx } from "@/lib/pages/content-write";
-import { VersionConflictError } from "@/lib/pages/errors";
+import { PageMoveCycleError, VersionConflictError } from "@/lib/pages/errors";
+import { movePageNode } from "@/lib/pages/move";
+import { movePageSubtreeToSpace } from "@/lib/pages/cross-space";
 import { acquireLock, getLockState, releaseLock } from "@/lib/pages/lock";
 import { renamePageTx } from "@/lib/pages/rename";
-import { triggerEmbedPage } from "@/lib/jobs/queue";
+import { reembedIndexedPages, triggerEmbedPage } from "@/lib/jobs/queue";
 import { writeAudit } from "@/lib/audit";
 import { logger } from "@/lib/logger";
 
@@ -250,5 +252,145 @@ export async function apiUpdatePage(user: Actor, input: ApiUpdatePageInput): Pro
       spaceSlug: space.slug,
       versionNo: result.versionNo,
     },
+  };
+}
+
+export interface ApiMovePageInput {
+  pageId: string;
+  /** 目的地空間（跨空間搬移；省略＝同空間 reparent）。 */
+  targetSpaceId?: string;
+  /** 同空間搬移的新父節點（null＝根層；接該層末尾）。跨空間搬移不支援（一律掛目標根層，與 web 一致）。 */
+  newParentId?: string | null;
+}
+
+export type ApiMoveResult =
+  | {
+      ok: true;
+      page: { id: string; slug: string; spaceSlug: string; parentId: string | null };
+      /** 受影響頁數（跨空間＝整支子樹；同空間＝1） */
+      movedCount: number;
+    }
+  | { ok: false; error: "NOT_FOUND" }
+  | { ok: false; error: "CYCLE" }
+  | { ok: false; error: "INVALID"; message: string };
+
+/**
+ * 搬移頁面（M4-14，issue #219）：MCP 工具與 REST v1 共用的 lib 層。
+ * - 同空間 reparent：重用 movePageNode（循環防護 recursive CTE、fractional index 接末尾、
+ *   external_link 不可作父）。
+ * - 跨空間：重用 movePageSubtreeToSpace（子樹 space_id／slug 撞名重生成／附件歸屬同交易轉移，
+ *   根頁掛目標根層——與 web movePageToSpace 相同語意），搬移後 best-effort 重嵌。
+ * - 權限：來源與目標空間都需 can(user, "page.edit", …)；不存在/無權一律 NOT_FOUND 防枚舉。
+ * - 搬移不動內容三欄位，無鎖與版本語意（與 web 拖曳/跨空間搬移一致，不檢查編輯鎖）。
+ */
+export async function apiMovePage(user: Actor, input: ApiMovePageInput): Promise<ApiMoveResult> {
+  const page = await db.query.pages.findFirst({ where: eq(pages.id, input.pageId) });
+  if (!page || page.deletedAt) return { ok: false, error: "NOT_FOUND" };
+  if (!(await can(user, "page.edit", { type: "page", spaceId: page.spaceId }))) {
+    return { ok: false, error: "NOT_FOUND" };
+  }
+
+  const crossSpace = input.targetSpaceId !== undefined;
+  if (crossSpace) {
+    if (input.targetSpaceId === page.spaceId) {
+      return { ok: false, error: "INVALID", message: "targetSpaceId 與頁面現行空間相同；同空間搬移請改用 newParentId" };
+    }
+    if (input.newParentId != null) {
+      return { ok: false, error: "INVALID", message: "跨空間搬移一律掛目標空間根層，不支援 newParentId" };
+    }
+    const target = await db.query.spaces.findFirst({ where: eq(spaces.id, input.targetSpaceId!) });
+    if (!target || target.deletedAt) return { ok: false, error: "NOT_FOUND" };
+    if (!(await can(user, "page.edit", { type: "page", spaceId: target.id }))) {
+      return { ok: false, error: "NOT_FOUND" };
+    }
+
+    let rootSlug: string;
+    let movedPageIds: string[];
+    try {
+      ({ rootSlug, movedPageIds } = await movePageSubtreeToSpace({
+        pageId: page.id,
+        targetSpaceId: target.id,
+        movedBy: user.id,
+      }));
+    } catch (error) {
+      if (error instanceof Error && (error.message === "NOT_FOUND" || error.message === "SAME_SPACE")) {
+        return { ok: false, error: "NOT_FOUND" };
+      }
+      throw error;
+    }
+
+    await reembedIndexedPages(movedPageIds);
+    logger.info(
+      { userId: user.id, pageId: page.id, fromSpace: page.spaceId, toSpace: target.id },
+      "page moved across spaces via api",
+    );
+    await writeAudit({
+      actorId: user.id,
+      action: "page.api_move",
+      targetType: "page",
+      targetId: page.id,
+      metadata: {
+        fromSpaceId: page.spaceId,
+        toSpaceId: target.id,
+        fromParentId: page.parentId,
+        toParentId: null,
+        movedCount: movedPageIds.length,
+        via: "api",
+      },
+      ip: null,
+    });
+    return {
+      ok: true,
+      page: { id: page.id, slug: rootSlug, spaceSlug: target.slug, parentId: null },
+      movedCount: movedPageIds.length,
+    };
+  }
+
+  if (input.newParentId === undefined) {
+    return { ok: false, error: "INVALID", message: "同空間搬移需提供 newParentId（null＝根層）；跨空間請提供 targetSpaceId" };
+  }
+  const space = await db.query.spaces.findFirst({ where: eq(spaces.id, page.spaceId) });
+  if (!space || space.deletedAt) return { ok: false, error: "NOT_FOUND" };
+
+  try {
+    await movePageNode({
+      pageId: page.id,
+      newParentId: input.newParentId,
+      movedBy: user.id,
+    });
+  } catch (error) {
+    if (error instanceof PageMoveCycleError) return { ok: false, error: "CYCLE" };
+    if (
+      error instanceof Error &&
+      (error.message === "NOT_FOUND" || error.message === "EXTERNAL_LINK_NO_CHILDREN")
+    ) {
+      return { ok: false, error: "NOT_FOUND" };
+    }
+    throw error;
+  }
+
+  logger.info(
+    { userId: user.id, pageId: page.id, newParentId: input.newParentId },
+    "page moved via api",
+  );
+  await writeAudit({
+    actorId: user.id,
+    action: "page.api_move",
+    targetType: "page",
+    targetId: page.id,
+    metadata: {
+      fromSpaceId: page.spaceId,
+      toSpaceId: page.spaceId,
+      fromParentId: page.parentId,
+      toParentId: input.newParentId,
+      movedCount: 1,
+      via: "api",
+    },
+    ip: null,
+  });
+  return {
+    ok: true,
+    page: { id: page.id, slug: page.slug, spaceSlug: space.slug, parentId: input.newParentId },
+    movedCount: 1,
   };
 }

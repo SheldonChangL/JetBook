@@ -7,6 +7,7 @@ import {
   API_PAGE_TITLE_MAX_CHARS,
   API_WRITE_MARKDOWN_MAX_CHARS,
   apiCreatePage,
+  apiMovePage,
   apiUpdatePage,
 } from "@/lib/api/page-write";
 import {
@@ -216,6 +217,44 @@ const handler = createMcpHandler(
             {
               type: "text" as const,
               text: `已建立空間「${space.name}」\nspaceId: ${space.id}\nslug: ${space.slug}`,
+            },
+          ],
+        };
+      },
+    );
+
+    server.tool(
+      "move_page",
+      "搬移頁面。同空間換父層：給 newParentId（null＝根層，接該層末尾）；跨空間：給 targetSpaceId（整支子樹搬移、附件歸屬同步轉移，掛目標空間根層）。兩者擇一。需要 write scope 的 token。",
+      {
+        pageId: z.string().uuid().describe("要搬移的頁面 id（UUID）"),
+        targetSpaceId: z
+          .string()
+          .uuid()
+          .optional()
+          .describe("目的地空間 id（跨空間搬移；取自 list_spaces）"),
+        newParentId: z
+          .string()
+          .uuid()
+          .nullable()
+          .optional()
+          .describe("同空間搬移的新父頁面 id；null＝移到根層"),
+      },
+      async ({ pageId, targetSpaceId, newParentId }, extra) => {
+        const gate = writeGate(extra);
+        if (!gate.ok) return gate.result;
+        const outcome = await apiMovePage(actorFrom(extra), { pageId, targetSpaceId, newParentId });
+        if (!outcome.ok) {
+          if (outcome.error === "CYCLE") return mcpError("不可搬移到自己或自己的子頁面之下。");
+          if (outcome.error === "INVALID") return mcpError(outcome.message);
+          return mcpError("頁面/目標空間不存在或無權寫入。");
+        }
+        const p = outcome.page;
+        return {
+          content: [
+            {
+              type: "text" as const,
+              text: `已搬移（受影響 ${outcome.movedCount} 頁）\n路徑: /s/${p.spaceSlug}/${p.slug}\n父層: ${p.parentId ?? "（根層）"}`,
             },
           ],
         };

@@ -140,6 +140,43 @@ export const openApiSpec = {
         },
       },
     },
+    "/api/v1/pages/{id}/move": {
+      post: {
+        summary: "搬移頁面（M4-14，需 write scope）",
+        description:
+          "同空間換父層：給 newParentId（null＝根層，接該層末尾）；跨空間：給 targetSpaceId（整支子樹搬移、附件歸屬同步轉移，掛目標空間根層）。兩者擇一。循環（搬到自己子樹下）回 409。",
+        parameters: [{ name: "id", in: "path", required: true, schema: { type: "string", format: "uuid" } }],
+        requestBody: {
+          required: true,
+          content: {
+            "application/json": {
+              schema: {
+                type: "object",
+                properties: {
+                  targetSpaceId: {
+                    type: "string",
+                    format: "uuid",
+                    description: "目的地空間 id（跨空間搬移）",
+                  },
+                  newParentId: {
+                    type: ["string", "null"],
+                    format: "uuid",
+                    description: "同空間搬移的新父頁面 id；null＝根層",
+                  },
+                },
+              },
+            },
+          },
+        },
+        responses: {
+          "200": { description: "已搬移（id、slug、spaceSlug、parentId、movedCount）" },
+          "400": { description: "body 格式錯誤或搬移組合無效（INVALID_MOVE）" },
+          "403": { description: "token 無 write scope" },
+          "404": { description: "頁面/目標空間不存在或無權存取" },
+          "409": { description: "CYCLE（不可搬到自己或子孫之下）" },
+        },
+      },
+    },
     "/api/v1/search": {
       get: {
         summary: "全文搜尋",
