@@ -7,8 +7,10 @@ import {
   listTrashItems,
   purgeExpiredTrash,
   restoreTrashPage,
+  softDeletePageSubtree,
   TRASH_RETENTION_DAYS,
 } from "@/lib/pages/trash";
+import { movePageSubtreeToSpace } from "@/lib/pages/cross-space";
 import { fullTextSearch } from "@/lib/search/fulltext";
 import { addMember, seedPage, seedSpace, seedUser } from "./helpers";
 
@@ -116,6 +118,36 @@ describe("restoreTrashPage（還原語意）", () => {
     expect(restored?.parentId).toBeNull();
     // 父頁仍在回收桶
     expect((await getPage(parent.id))?.deletedAt).not.toBeNull();
+  });
+
+  it("原父已跨空間搬移：還原掛回來源空間根層，不成孤兒（#225）", async () => {
+    const owner = await seedUser({ orgRole: "admin" });
+    const spaceA = await seedSpace(owner.id, { visibility: "org_read" });
+    const spaceB = await seedSpace(owner.id, { visibility: "org_read" });
+
+    // 空間 A：root → child
+    const root = await seedPage(spaceA.id, { title: "來源根頁" });
+    const child = await seedPage(spaceA.id, { title: "留桶子頁", parentId: root.id });
+
+    // child 先進回收桶（軟刪子樹）
+    await softDeletePageSubtree({ pageId: child.id, recursive: true });
+    expect((await getPage(child.id))?.deletedAt).not.toBeNull();
+
+    // root 跨空間搬到 B——child 已軟刪，依設計留在來源空間 A，parent_id 仍指向已在 B 的 root
+    await movePageSubtreeToSpace({ pageId: root.id, targetSpaceId: spaceB.id, movedBy: owner.id });
+    expect((await getPage(root.id))?.spaceId).toBe(spaceB.id);
+    const orphanBefore = await getPage(child.id);
+    expect(orphanBefore?.spaceId).toBe(spaceA.id);
+    expect(orphanBefore?.parentId).toBe(root.id); // 父現在他空間
+
+    // 還原 child：偵測 parent.spaceId ≠ child.spaceId → 掛回 A 的根層
+    const res = await restoreTrashPage({ pageId: child.id, userId: owner.id });
+    expect(res.reparentedToRoot).toBe(true);
+
+    const restored = await getPage(child.id);
+    expect(restored?.deletedAt).toBeNull();
+    expect(restored?.spaceId).toBe(spaceA.id); // 仍在來源空間 A
+    expect(restored?.parentId).toBeNull(); // A 的根層，非跨空間孤兒
   });
 
   it("只還原同批：較早刪除的後代仍留在回收桶", async () => {
