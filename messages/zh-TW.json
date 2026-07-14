@@ -1164,6 +1164,9 @@
         "0": "永不過期"
       },
       "createdFor": "「{name}」已建立，請立即複製：",
+      "copy": "複製",
+      "copied": "Token 已複製到剪貼簿",
+      "copyFailed": "複製失敗，請手動反白複製",
       "shownOnce": "此 token 僅顯示這一次，關閉後無法再取得。請妥善保管，切勿分享給他人。",
       "close": "關閉",
       "empty": "尚未建立任何 API token。",
