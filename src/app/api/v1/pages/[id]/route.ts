@@ -8,6 +8,7 @@ import { canReadPage } from "@/lib/authz/permission";
 import {
   API_PAGE_TITLE_MAX_CHARS,
   API_WRITE_MARKDOWN_MAX_CHARS,
+  apiDeletePage,
   apiUpdatePage,
 } from "@/lib/api/page-write";
 
@@ -116,4 +117,35 @@ export async function PATCH(request: Request, ctx: { params: Promise<{ id: strin
     return notFound();
   }
   return NextResponse.json({ data: outcome.page });
+}
+
+/**
+ * DELETE /api/v1/pages/{id}：軟刪除頁面（M4-15，issue #220）。
+ * 一律軟刪進回收桶（30 天可還原）。有未刪除子頁時需 `?recursive=true` 才連子樹刪，
+ * 否則 409 HAS_CHILDREN（含 childCount）。scope=write；權限/刪除核心由 lib 層負責。
+ */
+export async function DELETE(request: Request, ctx: { params: Promise<{ id: string }> }) {
+  const result = await requireApiAuth(request, "write");
+  if (!result.ok) return result.response;
+  const { id } = await ctx.params;
+  if (!z.uuid().safeParse(id).success) return notFound();
+
+  const recursive = new URL(request.url).searchParams.get("recursive") === "true";
+  const outcome = await apiDeletePage(result.auth.user, { pageId: id, recursive });
+  if (!outcome.ok) {
+    if (outcome.error === "HAS_CHILDREN") {
+      return NextResponse.json(
+        {
+          error: {
+            code: "HAS_CHILDREN",
+            message: `頁面有 ${outcome.childCount} 個子頁面；連同子樹刪除請加 ?recursive=true`,
+            childCount: outcome.childCount,
+          },
+        },
+        { status: 409 },
+      );
+    }
+    return notFound();
+  }
+  return NextResponse.json({ data: { deletedPageIds: outcome.deletedPageIds } });
 }

@@ -13,3 +13,11 @@ export class PageMoveCycleError extends Error {
     this.name = "PageMoveCycleError";
   }
 }
+
+/** 刪除被拒（M4-15 API delete_page）：頁面有未刪除子頁且未指定 recursive。 */
+export class HasChildrenError extends Error {
+  constructor(public childCount: number) {
+    super("HAS_CHILDREN");
+    this.name = "HasChildrenError";
+  }
+}

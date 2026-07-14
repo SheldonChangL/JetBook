@@ -5,14 +5,14 @@ import { revalidatePath } from "next/cache";
 import { headers } from "next/headers";
 import { z } from "zod";
 import { db } from "@/lib/db";
-import { pageEmbeddings, pages, pageVersions, spaces, users } from "@/lib/db/schema";
+import { pages, pageVersions, spaces, users } from "@/lib/db/schema";
 import { requireSession } from "@/lib/auth/current";
 import { reembedIndexedPages, triggerEmbedPage } from "@/lib/jobs/queue";
-import { isEmbeddingConfigured } from "@/lib/llm";
 import { assertCan, getEditableSpaceIds } from "@/lib/authz/permission";
 import { movePageNode } from "@/lib/pages/move";
 import { copyPageSubtreeToSpace, movePageSubtreeToSpace } from "@/lib/pages/cross-space";
 import { listSpaceTreeNodes } from "@/lib/pages/tree";
+import { softDeletePageSubtree } from "@/lib/pages/trash";
 import { reclaimSlug, uniquePageSlug } from "@/lib/pages/slug";
 import { renamePageTx } from "@/lib/pages/rename";
 import { createPageInTx } from "@/lib/pages/create";
@@ -384,41 +384,14 @@ export async function deletePage(input: z.infer<typeof deleteSchema>) {
   if (!page || page.deletedAt) throw new Error("NOT_FOUND");
   const user = await requireEditor(page.spaceId);
 
-  const now = new Date();
-  // recursive CTE 找出整支子樹並一次軟刪；RETURNING 取受影響 id 供清除向量索引
-  const deleted = await db.execute<{ id: string }>(sql`
-    WITH RECURSIVE subtree AS (
-      SELECT id FROM ${pages} WHERE id = ${pageId}
-      UNION ALL
-      SELECT p.id FROM ${pages} p JOIN subtree s ON p.parent_id = s.id
-    )
-    UPDATE ${pages} SET deleted_at = ${now}
-    WHERE id IN (SELECT id FROM subtree) AND deleted_at IS NULL
-    RETURNING id
-  `);
+  // 子樹軟刪核心抽至 lib/pages/trash.ts（M4-15：web 與 API delete_page 共用）
+  const { deletedIds } = await softDeletePageSubtree({ pageId, recursive: true });
 
   logger.info({ userId: user.id, pageId }, "page soft-deleted (subtree)");
 
-  // 軟刪清除向量（H-06）：重用 embed 管線——handler 見 deletedAt 即刪向量。
-  // 只對「確實有向量」的頁面 enqueue（避免整棵子樹空派工）。整段包 try/catch：
-  // 索引清除的任何失敗都不得阻塞刪除流程或後續稽核（驗收：不阻塞編輯）。
-  if (isEmbeddingConfigured()) {
-    try {
-      const deletedIds = deleted.rows.map((row) => row.id);
-      if (deletedIds.length > 0) {
-        const indexed = await db
-          .select({ pageId: pageEmbeddings.pageId })
-          .from(pageEmbeddings)
-          .where(inArray(pageEmbeddings.pageId, deletedIds))
-          .groupBy(pageEmbeddings.pageId);
-        for (const { pageId: indexedId } of indexed) {
-          await triggerEmbedPage(indexedId);
-        }
-      }
-    } catch (error) {
-      logger.error({ err: error, pageId }, "軟刪清除向量 enqueue 失敗（不阻塞刪除）");
-    }
-  }
+  // 軟刪清除向量（H-06）：重用 embed 管線——handler 見 deletedAt 即刪向量；
+  // 只對「確實有向量」的頁面 enqueue，best-effort 不阻塞刪除流程。
+  await reembedIndexedPages(deletedIds);
   await writeAudit({
     actorId: user.id,
     action: "page.delete",
