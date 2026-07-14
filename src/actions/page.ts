@@ -13,7 +13,8 @@ import { assertCan, getEditableSpaceIds } from "@/lib/authz/permission";
 import { movePageNode } from "@/lib/pages/move";
 import { copyPageSubtreeToSpace, movePageSubtreeToSpace } from "@/lib/pages/cross-space";
 import { listSpaceTreeNodes } from "@/lib/pages/tree";
-import { recordSlugHistory, reclaimSlug, uniquePageSlug } from "@/lib/pages/slug";
+import { reclaimSlug, uniquePageSlug } from "@/lib/pages/slug";
+import { renamePageTx } from "@/lib/pages/rename";
 import { createPageInTx } from "@/lib/pages/create";
 import { writePageContentTx } from "@/lib/pages/content-write";
 import { buildMarkdownImport } from "@/lib/content/import-markdown";
@@ -201,23 +202,18 @@ export async function renamePage(input: z.infer<typeof renameSchema>) {
   if (!page || page.deletedAt) throw new Error("NOT_FOUND");
   const user = await requireEditor(page.spaceId);
 
-  // 排除頁面自身：改名為同義標題（slug 不變）時不因自撞而平白產生尾碼
-  const newSlug = await uniquePageSlug(page.spaceId, data.title, { excludePageId: page.id });
-  await db.transaction(async (tx) => {
-    if (newSlug !== page.slug) {
-      // 舊 slug 進歷史表供 301（G1）
-      await recordSlugHistory(tx, page.spaceId, page.slug, page.id);
-      // 新 slug 若曾是他頁的舊 slug → 清除該歷史（本頁現行佔用，避免陳舊 301）
-      await reclaimSlug(tx, page.spaceId, newSlug);
-    }
-    await tx
-      .update(pages)
-      .set({ title: data.title, slug: newSlug, updatedBy: user.id, updatedAt: new Date() })
-      .where(eq(pages.id, page.id));
-  });
+  // 改名核心（slug 重算＋301 歷史）抽至 lib/pages/rename.ts，與 API 寫入共用（M4-13）
+  const renamed = await db.transaction(async (tx) =>
+    renamePageTx(tx, {
+      page: { id: page.id, spaceId: page.spaceId, slug: page.slug },
+      title: data.title,
+      userId: user.id,
+    }),
+  );
+  if (!renamed) throw new Error("NOT_FOUND");
   const space = await db.query.spaces.findFirst({ where: eq(spaces.id, page.spaceId) });
   if (space) revalidatePath(`/s/${space.slug}`);
-  return { slug: newSlug };
+  return { slug: renamed.slug };
 }
 
 const iconSchema = z.object({

@@ -4,7 +4,11 @@ import { requireApiAuth } from "@/lib/api-tokens/bearer";
 import { getAccessiblePageIds } from "@/lib/authz/permission";
 import { listAccessibleSpaces } from "@/lib/spaces/queries";
 import { listSpaceTreeNodes } from "@/lib/pages/tree";
-import { API_WRITE_MARKDOWN_MAX_CHARS, apiCreatePage } from "@/lib/api/page-write";
+import {
+  API_PAGE_TITLE_MAX_CHARS,
+  API_WRITE_MARKDOWN_MAX_CHARS,
+  apiCreatePage,
+} from "@/lib/api/page-write";
 import { decodeRouteParam } from "@/lib/utils";
 
 export const dynamic = "force-dynamic";
@@ -51,7 +55,7 @@ export async function GET(request: Request, ctx: { params: Promise<{ slug: strin
 }
 
 const createSchema = z.object({
-  title: z.string().trim().min(1).max(200),
+  title: z.string().trim().min(1).max(API_PAGE_TITLE_MAX_CHARS),
   markdown: z.string().min(1).max(API_WRITE_MARKDOWN_MAX_CHARS),
   /** 父節點 id；省略＝根層 */
   parentId: z.uuid().nullish(),

@@ -44,6 +44,8 @@ export interface McpPage {
   spaceName: string;
   contentMd: string;
   updatedAt: Date;
+  /** 現行版本號：update_page 的 expectedVersion（樂觀鎖）以此為基準（M4-13） */
+  versionNo: number;
 }
 
 /** 讀取單一頁面（Markdown）；不存在或無權回 null。 */
@@ -58,6 +60,7 @@ export async function mcpReadPage(user: Actor, pageId: string): Promise<McpPage 
     spaceName: space?.name ?? "",
     contentMd: page.contentMd,
     updatedAt: page.updatedAt,
+    versionNo: page.currentVersionNo,
   };
 }
 

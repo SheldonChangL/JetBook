@@ -36,7 +36,16 @@ Next.js（App Router、TS strict）全端 + PostgreSQL 16/pgvector/pgroonga + Do
 
 ### M4 第二批（2026-07-14 使用回饋，#211/#212）
 - [x] #212 M4-10 API Token 建立後一鍵複製（copyText 通用化＋toast 回饋；瀏覽器實測）— PR #213
-- [x] #211 M4-09 MCP/REST API 寫入能力：token write scope（建立時勾選，預設唯讀）、MCP `create_page`/`update_page`、REST POST /spaces/{slug}/pages 與 PATCH /pages/{id}；重用唯一儲存管線（三欄同交易＋版本快照＋embedding enqueue）、can() 預設拒絕、尊重編輯鎖、audit；整合測試 8 條＋真 MCP client 實測 create→read→update 往返與 scope 閘門 — PR 疊在 #213 上
+- [x] #211 M4-09 MCP/REST API 寫入能力：token write scope（建立時勾選，預設唯讀）、MCP `create_page`/`update_page`、REST POST /spaces/{slug}/pages 與 PATCH /pages/{id}；重用唯一儲存管線（三欄同交易＋版本快照＋embedding enqueue）、can() 預設拒絕、尊重編輯鎖、audit；整合測試 8 條＋真 MCP client 實測 create→read→update 往返與 scope 閘門 — PR #217（原 stacked PR #214 因 base 分支刪除改開）
+- [x] #218 M4-13 MCP/REST 寫入第二批：`update_page` 部分更新（title 改名走 renamePage 規則：slug 重算＋301 歷史、title-only 不動版本；`expectedVersion` 樂觀鎖，衝突回目前版本號）＋`create_space`（MCP 工具與 REST POST /api/v1/spaces；createSpaceCore 抽至 lib/spaces/create.ts 供 web/API 共用，slug 自動產生、建立者成 space admin、audit `space.api_create`）；整合測試 +9 條（254 綠）＋真 MCP client 實測 create_space→create_page→改名→過期版本拒絕→正確版本寫入
+
+### M4 附件預覽（規劃完成，待實作）
+- [ ] #215 M4-11 PDF 附件線上預覽（preview 端點僅 PDF inline＋sandbox iframe Modal）
+- [ ] #216 M4-12 Office 附件轉 PDF 預覽（Gotenberg sidecar env-gated＋pg-boss 轉檔＋attachment_previews 表；依賴 #215）
+
+### M4 MCP 寫入後續（issue 已開，依序交付）
+- [ ] #219 M4-14 move_page（重用 M3 跨 Space 搬移 lib；循環防護、雙端權限）
+- [ ] #220 M4-15 delete_page（軟刪除進回收桶＋recursive flag；風險最高，單獨 PR）
 
 ### 尚未完成（v1 之後）
 - **#93 M4 backlog**：變更請求、行內評論、webhooks（暫停）、PDF 匯出、KaTeX、多欄、snippets、內容分析等——其餘候選項依回饋再拆
@@ -104,7 +113,7 @@ Space 封存/軟刪、跨 Space 移動複製、死鏈標示、附件 GC、Tabs/�
 
 ## 下一步
 
-1. ~~Merge M4 第一批 stacked PRs~~ ✅ 已全數落地 main（#200 squash＋#208 merge commit 帶入 #201–#206 內容；issue #192–#199 全關）。含兩個 migration（0018、0019），部署時跑 `db:migrate`
-2. ~~修 #207~~ ✅ Unicode slug 404 已修（route param decode＋301 redirect encode，E2E `unicode-slug.spec.ts` 正反向驗證）
+1. MCP 寫入後續：#219 M4-14 move_page → #220 M4-15 delete_page（依序、單獨 PR）
+2. 附件預覽：#215 M4-11 PDF 預覽 → #216 M4-12 Office 轉 PDF 預覽
 3. 部署到公司內部伺服器：`.env` 填正式值（含 SMTP_* 讓 Email 通知/歡迎信生效）、`docker compose up -d --build`
 4. 串接真實 AI 端點（ANTHROPIC_API_KEY + local BGE-M3）；MCP 依 docs/guides/mcp-server.md 讓 Claude 接上知識庫（每人自建 API token）

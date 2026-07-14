@@ -3,7 +3,17 @@ import { z } from "zod";
 import { verifyApiToken } from "@/lib/api-tokens";
 import { checkApiTokenRate } from "@/lib/api-tokens/bearer";
 import type { Actor } from "@/lib/authz/permission";
-import { API_WRITE_MARKDOWN_MAX_CHARS, apiCreatePage, apiUpdatePage } from "@/lib/api/page-write";
+import {
+  API_PAGE_TITLE_MAX_CHARS,
+  API_WRITE_MARKDOWN_MAX_CHARS,
+  apiCreatePage,
+  apiUpdatePage,
+} from "@/lib/api/page-write";
+import {
+  SPACE_DESCRIPTION_MAX_CHARS,
+  SPACE_NAME_MAX_CHARS,
+  apiCreateSpace,
+} from "@/lib/api/space-write";
 import { mcpListSpaces, mcpReadPage, mcpSearchPages } from "@/lib/mcp/tools";
 
 /**
@@ -91,7 +101,7 @@ const handler = createMcpHandler(
             isError: true,
           };
         }
-        const text = `# ${page.title}\n（空間：${page.spaceName}；更新：${page.updatedAt.toISOString()}）\n\n${page.contentMd}`;
+        const text = `# ${page.title}\n（空間：${page.spaceName}；版本：${page.versionNo}；更新：${page.updatedAt.toISOString()}）\n\n${page.contentMd}`;
         return { content: [{ type: "text" as const, text }] };
       },
     );
@@ -101,7 +111,7 @@ const handler = createMcpHandler(
       "在指定空間建立新頁面（Markdown 內容）。spaceId 取自 list_spaces；需要 write scope 的 token。回傳新頁面的 pageId 與網址路徑。",
       {
         spaceId: z.string().uuid().describe("目標空間 id（UUID，取自 list_spaces）"),
-        title: z.string().min(1).max(200).describe("頁面標題"),
+        title: z.string().trim().min(1).max(API_PAGE_TITLE_MAX_CHARS).describe("頁面標題"),
         markdown: z.string().min(1).max(API_WRITE_MARKDOWN_MAX_CHARS).describe("頁面內容（Markdown）"),
         parentId: z.string().uuid().optional().describe("父頁面 id（省略＝根層）"),
       },
@@ -129,20 +139,48 @@ const handler = createMcpHandler(
 
     server.tool(
       "update_page",
-      "以 Markdown 全量更新既有頁面內容（覆蓋原內容，會留版本快照可還原）。pageId 取自 search_pages/read_page；需要 write scope 的 token。",
+      "部分更新既有頁面：markdown（全量取代內容，留版本快照可還原）與 title（改名）至少提供一項；expectedVersion 選填做樂觀鎖。pageId 取自 search_pages/read_page；需要 write scope 的 token。",
       {
         pageId: z.string().uuid().describe("頁面 id（UUID）"),
-        markdown: z.string().min(1).max(API_WRITE_MARKDOWN_MAX_CHARS).describe("新的頁面內容（Markdown，全量取代）"),
+        markdown: z
+          .string()
+          .min(1)
+          .max(API_WRITE_MARKDOWN_MAX_CHARS)
+          .optional()
+          .describe("新的頁面內容（Markdown，全量取代）；省略＝僅改標題"),
+        title: z
+          .string()
+          .trim()
+          .min(1)
+          .max(API_PAGE_TITLE_MAX_CHARS)
+          .optional()
+          .describe("新標題；省略＝不變"),
+        expectedVersion: z
+          .number()
+          .int()
+          .min(0)
+          .optional()
+          .describe("樂觀鎖：呼叫端已知的版本號（read_page 可得），不符時拒絕以免覆蓋他人變更"),
       },
-      async ({ pageId, markdown }, extra) => {
+      async ({ pageId, markdown, title, expectedVersion }, extra) => {
         const gate = writeGate(extra);
         if (!gate.ok) return gate.result;
-        const outcome = await apiUpdatePage(actorFrom(extra), { pageId, markdown });
+        if (markdown === undefined && title === undefined) {
+          return mcpError("markdown 與 title 至少需提供一項。");
+        }
+        const outcome = await apiUpdatePage(actorFrom(extra), {
+          pageId,
+          markdown,
+          title,
+          expectedVersion,
+        });
         if (!outcome.ok) {
           if (outcome.error === "LOCKED")
             return mcpError(`頁面正由 ${outcome.lockedByName ?? "他人"} 編輯中，稍後再試。`);
           if (outcome.error === "CONFLICT")
-            return mcpError("頁面同時被其他寫入更新，請重新讀取後再試。");
+            return mcpError(
+              `版本不符（目前版本 ${outcome.currentVersionNo}），請重新 read_page 後再試。`,
+            );
           return mcpError("頁面不存在或無權寫入。");
         }
         const p = outcome.page;
@@ -151,6 +189,33 @@ const handler = createMcpHandler(
             {
               type: "text" as const,
               text: `已更新「${p.title}」（版本 ${p.versionNo}）\n路徑: /s/${p.spaceSlug}/${p.slug}`,
+            },
+          ],
+        };
+      },
+    );
+
+    server.tool(
+      "create_space",
+      "建立新的知識空間。slug 由系統自動產生（重名自動加尾碼）；建立者自動成為該空間管理員。需要 write scope 的 token。",
+      {
+        name: z.string().trim().min(1).max(SPACE_NAME_MAX_CHARS).describe("空間名稱"),
+        description: z
+          .string()
+          .trim()
+          .max(SPACE_DESCRIPTION_MAX_CHARS)
+          .optional()
+          .describe("空間描述（選填）"),
+      },
+      async ({ name, description }, extra) => {
+        const gate = writeGate(extra);
+        if (!gate.ok) return gate.result;
+        const space = await apiCreateSpace(actorFrom(extra), { name, description });
+        return {
+          content: [
+            {
+              type: "text" as const,
+              text: `已建立空間「${space.name}」\nspaceId: ${space.id}\nslug: ${space.slug}`,
             },
           ],
         };

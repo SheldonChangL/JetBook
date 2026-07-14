@@ -5,9 +5,10 @@ import { revalidatePath } from "next/cache";
 import { headers } from "next/headers";
 import { z } from "zod";
 import { db } from "@/lib/db";
-import { spaceMembers, spaces } from "@/lib/db/schema";
+import { spaces } from "@/lib/db/schema";
 import { requireSession } from "@/lib/auth/current";
 import { assertCan, assertOrgAdmin } from "@/lib/authz/permission";
+import { createSpaceCore } from "@/lib/spaces/create";
 import {
   restoreSpace as restoreSpaceRow,
   setSpaceArchived,
@@ -18,25 +19,7 @@ import {
 import { ipFromHeaders, writeAudit } from "@/lib/audit";
 import { logger } from "@/lib/logger";
 
-function slugify(name: string): string {
-  const base = name
-    .trim()
-    .toLowerCase()
-    .replace(/[^\p{L}\p{N}]+/gu, "-")
-    .replace(/^-+|-+$/g, "");
-  // 中文標題產不出 ASCII slug 時退化為短碼
-  return base && /[a-z0-9]/.test(base) ? base.slice(0, 48) : `s-${crypto.randomUUID().slice(0, 8)}`;
-}
-
-async function uniqueSlug(name: string): Promise<string> {
-  const base = slugify(name);
-  let candidate = base;
-  for (let i = 2; ; i += 1) {
-    const existing = await db.query.spaces.findFirst({ where: eq(spaces.slug, candidate) });
-    if (!existing) return candidate;
-    candidate = `${base}-${i}`;
-  }
-}
+// slug 產生與建立核心已抽至 lib/spaces/create.ts（M4-13：web 與 API 寫入共用）
 
 const createSchema = z.object({
   name: z.string().trim().min(1).max(100),
@@ -47,18 +30,8 @@ const createSchema = z.object({
 export async function createSpace(input: z.infer<typeof createSchema>) {
   const { user } = await requireSession();
   const data = createSchema.parse(input);
-  const slug = await uniqueSlug(data.name);
 
-  const space = await db.transaction(async (tx) => {
-    const [created] = await tx
-      .insert(spaces)
-      .values({ ...data, slug, createdBy: user.id })
-      .returning();
-    if (!created) throw new Error("space 建立失敗");
-    // 建立者成為該 space admin
-    await tx.insert(spaceMembers).values({ spaceId: created.id, userId: user.id, role: "admin" });
-    return created;
-  });
+  const space = await createSpaceCore(user.id, data);
 
   logger.info({ userId: user.id, spaceId: space.id }, "space created");
   await writeAudit({
@@ -66,7 +39,7 @@ export async function createSpace(input: z.infer<typeof createSchema>) {
     action: "space.create",
     targetType: "space",
     targetId: space.id,
-    metadata: { name: data.name, slug },
+    metadata: { name: data.name, slug: space.slug },
     ip: ipFromHeaders(await headers()),
   });
   revalidatePath("/spaces");
