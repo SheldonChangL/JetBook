@@ -21,6 +21,12 @@ export interface WritePageContentInput {
   content: ProseMirrorDoc;
   /** 存檔者（版本快照 created_by 與合併窗判定用） */
   userId: string;
+  /**
+   * 版本快照合併窗（毫秒）；預設 SNAPSHOT_MERGE_MS（高頻 autosave 合併）。
+   * 非互動寫入（API/MCP，M4-09）傳 0 停用合併——每次寫入必留獨立快照，
+   * 避免覆寫使用者 5 分鐘內的手動存檔版本。
+   */
+  snapshotMergeMs?: number;
 }
 
 /**
@@ -68,10 +74,12 @@ export async function writePageContentTx(
     where: eq(pageVersions.pageId, input.pageId),
     orderBy: desc(pageVersions.versionNo),
   });
+  const mergeWindow = input.snapshotMergeMs ?? SNAPSHOT_MERGE_MS;
   const mergeable =
     last &&
+    mergeWindow > 0 &&
     last.createdBy === input.userId &&
-    Date.now() - last.createdAt.getTime() < SNAPSHOT_MERGE_MS;
+    Date.now() - last.createdAt.getTime() < mergeWindow;
 
   if (mergeable) {
     await tx

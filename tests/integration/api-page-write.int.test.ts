@@ -193,6 +193,42 @@ describe("API 寫入（M4-09，issue #211）", () => {
     expect(patchRes.status).toBe(404);
   });
 
+  it("parentId 為 external_link 葉節點 → 404（C-11，不得 500）", async () => {
+    const owner = await seedUser();
+    const space = await seedSpace(owner.id, { visibility: "org_write" });
+    const linkNode = await seedPage(space.id, { kind: "external_link", externalUrl: "https://x" });
+
+    const writer = await seedUser();
+    const token = await makeToken(writer.id, ["read", "write"]);
+    const res = await postSpacePage(
+      jsonReq(`/api/v1/spaces/${space.slug}/pages`, token, "POST", {
+        title: "x",
+        markdown: "x",
+        parentId: linkNode.id,
+      }),
+      { params: Promise.resolve({ slug: space.slug }) },
+    );
+    expect(res.status).toBe(404);
+  });
+
+  it("同一使用者 5 分鐘內連續 API 寫入 → 各留獨立版本快照（不合併，可還原）", async () => {
+    const owner = await seedUser();
+    const space = await seedSpace(owner.id, { visibility: "org_write" });
+    const page = await seedPage(space.id);
+    const writer = await seedUser();
+
+    const r1 = await apiUpdatePage({ id: writer.id, orgRole: "member" }, { pageId: page.id, markdown: "第一版" });
+    const r2 = await apiUpdatePage({ id: writer.id, orgRole: "member" }, { pageId: page.id, markdown: "第二版" });
+    expect(r1.ok && r2.ok).toBe(true);
+
+    const versions = await db.query.pageVersions.findMany({
+      where: eq(pageVersions.pageId, page.id),
+    });
+    // 若走預設 SNAPSHOT_MERGE_MS 合併窗，兩次寫入會被合併成一筆而遺失第一版
+    expect(versions.length).toBe(2);
+    expect(versions.map((v) => v.contentMd).join("|")).toContain("第一版");
+  });
+
   it("parentId 屬其他空間 → 404（不得跨空間掛節點）", async () => {
     const owner = await seedUser();
     const spaceA = await seedSpace(owner.id, { visibility: "org_write" });

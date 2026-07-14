@@ -1,8 +1,5 @@
 import { NextResponse } from "next/server";
-import { eq } from "drizzle-orm";
 import { z } from "zod";
-import { db } from "@/lib/db";
-import { spaces } from "@/lib/db/schema";
 import { requireApiAuth } from "@/lib/api-tokens/bearer";
 import { getAccessiblePageIds } from "@/lib/authz/permission";
 import { listAccessibleSpaces } from "@/lib/spaces/queries";
@@ -78,16 +75,9 @@ export async function POST(request: Request, ctx: { params: Promise<{ slug: stri
     );
   }
 
-  const space = await db.query.spaces.findFirst({ where: eq(spaces.slug, slug) });
-  if (!space || space.deletedAt) {
-    return NextResponse.json(
-      { error: { code: "NOT_FOUND", message: "空間不存在或無權存取" } },
-      { status: 404 },
-    );
-  }
-
+  // 空間存在性/權限判定集中在 lib（apiCreatePage），薄殼不重複查驗
   const outcome = await apiCreatePage(result.auth.user, {
-    spaceId: space.id,
+    spaceSlug: slug,
     parentId: body.data.parentId ?? null,
     title: body.data.title,
     markdown: body.data.markdown,

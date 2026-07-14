@@ -1,6 +1,7 @@
 import { createMcpHandler, withMcpAuth } from "mcp-handler";
 import { z } from "zod";
 import { verifyApiToken } from "@/lib/api-tokens";
+import { checkApiTokenRate } from "@/lib/api-tokens/bearer";
 import type { Actor } from "@/lib/authz/permission";
 import { API_WRITE_MARKDOWN_MAX_CHARS, apiCreatePage, apiUpdatePage } from "@/lib/api/page-write";
 import { mcpListSpaces, mcpReadPage, mcpSearchPages } from "@/lib/mcp/tools";
@@ -19,21 +20,40 @@ function actorFrom(extra: unknown): Actor {
   return user;
 }
 
-/** 寫入工具的 scope 檢查（M4-09）：withMcpAuth 只保證 read，write 逐工具驗。 */
-function hasWriteScope(extra: unknown): boolean {
-  const scopes = (extra as { authInfo?: { scopes?: string[] } }).authInfo?.scopes;
-  return Array.isArray(scopes) && scopes.includes("write");
+function mcpError(text: string) {
+  return { content: [{ type: "text" as const, text }], isError: true };
 }
 
-const NO_WRITE_SCOPE = {
-  content: [
-    {
-      type: "text" as const,
-      text: "此 token 沒有 write scope，無法寫入。請在 JetBook「個人設定 → API Token」建立勾選「允許寫入」的 token。",
-    },
-  ],
-  isError: true,
-};
+type WriteGate = { ok: true } | { ok: false; result: ReturnType<typeof mcpError> };
+
+/**
+ * 寫入工具的統一閘門（M4-09）：withMcpAuth 只保證 read；write scope 與
+ * 每-token 限流（與 REST 共用同一 limiter 與額度）在此逐工具強制。
+ * 新增寫入工具一律先過 writeGate，不得手寫散裝檢查。
+ */
+function writeGate(extra: unknown): WriteGate {
+  const authInfo = (extra as { authInfo?: { scopes?: string[]; extra?: { tokenId?: string } } })
+    .authInfo;
+  if (!authInfo?.scopes?.includes("write")) {
+    return {
+      ok: false,
+      result: mcpError(
+        "此 token 沒有 write scope，無法寫入。請在 JetBook「個人設定 → API Token」建立勾選「允許寫入」的 token。",
+      ),
+    };
+  }
+  const tokenId = authInfo.extra?.tokenId;
+  if (tokenId) {
+    const rate = checkApiTokenRate(tokenId);
+    if (!rate.allowed) {
+      return {
+        ok: false,
+        result: mcpError(`請求過於頻繁，請於 ${rate.retryAfterSeconds} 秒後再試。`),
+      };
+    }
+  }
+  return { ok: true };
+}
 
 const handler = createMcpHandler(
   (server) => {
@@ -86,19 +106,15 @@ const handler = createMcpHandler(
         parentId: z.string().uuid().optional().describe("父頁面 id（省略＝根層）"),
       },
       async ({ spaceId, title, markdown, parentId }, extra) => {
-        if (!hasWriteScope(extra)) return NO_WRITE_SCOPE;
+        const gate = writeGate(extra);
+        if (!gate.ok) return gate.result;
         const outcome = await apiCreatePage(actorFrom(extra), {
           spaceId,
           title,
           markdown,
           parentId: parentId ?? null,
         });
-        if (!outcome.ok) {
-          return {
-            content: [{ type: "text" as const, text: "空間/父頁面不存在或無權寫入。" }],
-            isError: true,
-          };
-        }
+        if (!outcome.ok) return mcpError("空間/父頁面不存在或無權寫入。");
         const p = outcome.page;
         return {
           content: [
@@ -119,16 +135,15 @@ const handler = createMcpHandler(
         markdown: z.string().min(1).max(API_WRITE_MARKDOWN_MAX_CHARS).describe("新的頁面內容（Markdown，全量取代）"),
       },
       async ({ pageId, markdown }, extra) => {
-        if (!hasWriteScope(extra)) return NO_WRITE_SCOPE;
+        const gate = writeGate(extra);
+        if (!gate.ok) return gate.result;
         const outcome = await apiUpdatePage(actorFrom(extra), { pageId, markdown });
         if (!outcome.ok) {
-          const text =
-            outcome.error === "LOCKED"
-              ? `頁面正由 ${outcome.lockedByName ?? "他人"} 編輯中，稍後再試。`
-              : outcome.error === "CONFLICT"
-                ? "頁面同時被其他寫入更新，請重新讀取後再試。"
-                : "頁面不存在或無權寫入。";
-          return { content: [{ type: "text" as const, text }], isError: true };
+          if (outcome.error === "LOCKED")
+            return mcpError(`頁面正由 ${outcome.lockedByName ?? "他人"} 編輯中，稍後再試。`);
+          if (outcome.error === "CONFLICT")
+            return mcpError("頁面同時被其他寫入更新，請重新讀取後再試。");
+          return mcpError("頁面不存在或無權寫入。");
         }
         const p = outcome.page;
         return {
@@ -171,7 +186,7 @@ const authHandler = withMcpAuth(
       token,
       scopes: auth.scopes,
       clientId: auth.user.id,
-      extra: { user: auth.user },
+      extra: { user: auth.user, tokenId: auth.tokenId },
     };
   },
   { required: true },
