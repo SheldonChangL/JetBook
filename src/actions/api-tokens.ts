@@ -29,6 +29,8 @@ const createSchema = z.object({
     .refine((v): v is (typeof EXPIRY_DAYS)[number] =>
       (EXPIRY_DAYS as readonly number[]).includes(v),
     ),
+  /** M4-09：允許寫入（建立/更新頁面）；預設唯讀。 */
+  allowWrite: z.boolean().default(false),
 });
 
 export type CreateTokenResult =
@@ -38,6 +40,7 @@ export type CreateTokenResult =
 export async function createApiTokenAction(input: {
   name: string;
   expiryDays: number;
+  allowWrite?: boolean;
 }): Promise<CreateTokenResult> {
   const { user } = await requireSession();
   const parsed = createSchema.safeParse(input);
@@ -50,7 +53,8 @@ export async function createApiTokenAction(input: {
 
   const { token, row } = await createApiToken(user.id, {
     name: parsed.data.name,
-    scopes: [...API_TOKEN_SCOPES],
+    // write 必含 read（寫入流程需先讀）；唯讀為預設
+    scopes: parsed.data.allowWrite ? [...API_TOKEN_SCOPES] : ["read"],
     expiresAt,
   });
 
@@ -59,7 +63,7 @@ export async function createApiTokenAction(input: {
     action: "api_token.create",
     targetType: "api_token",
     targetId: row.id,
-    metadata: { name: row.name, expiresAt: row.expiresAt },
+    metadata: { name: row.name, expiresAt: row.expiresAt, scopes: row.scopes },
     ip: ipFromHeaders(await headers()),
   });
   logger.info({ userId: user.id, tokenId: row.id }, "api token created");

@@ -5,6 +5,7 @@ import { db } from "@/lib/db";
 import { pages, spaces } from "@/lib/db/schema";
 import { requireApiAuth } from "@/lib/api-tokens/bearer";
 import { canReadPage } from "@/lib/authz/permission";
+import { API_WRITE_MARKDOWN_MAX_CHARS, apiUpdatePage } from "@/lib/api/page-write";
 
 export const dynamic = "force-dynamic";
 
@@ -44,4 +45,45 @@ export async function GET(request: Request, ctx: { params: Promise<{ id: string 
       updatedAt: page.updatedAt,
     },
   });
+}
+
+const patchSchema = z.object({
+  markdown: z.string().min(1).max(API_WRITE_MARKDOWN_MAX_CHARS),
+});
+
+/**
+ * PATCH /api/v1/pages/{id}：以 Markdown 全量更新頁面內容（M4-09）。
+ * scope=write；權限/鎖/儲存管線一律由 lib/api/page-write 負責（薄殼原則）。
+ */
+export async function PATCH(request: Request, ctx: { params: Promise<{ id: string }> }) {
+  const result = await requireApiAuth(request, "write");
+  if (!result.ok) return result.response;
+  const { id } = await ctx.params;
+  if (!z.uuid().safeParse(id).success) return notFound();
+
+  const body = patchSchema.safeParse(await request.json().catch(() => null));
+  if (!body.success) {
+    return NextResponse.json(
+      { error: { code: "INVALID_BODY", message: "body 需含 markdown（非空字串）" } },
+      { status: 400 },
+    );
+  }
+
+  const outcome = await apiUpdatePage(result.auth.user, { pageId: id, markdown: body.data.markdown });
+  if (!outcome.ok) {
+    if (outcome.error === "LOCKED") {
+      return NextResponse.json(
+        { error: { code: "LOCKED", message: `頁面正由 ${outcome.lockedByName ?? "他人"} 編輯中` } },
+        { status: 409 },
+      );
+    }
+    if (outcome.error === "CONFLICT") {
+      return NextResponse.json(
+        { error: { code: "CONFLICT", message: "頁面同時被其他寫入更新，請重試" } },
+        { status: 409 },
+      );
+    }
+    return notFound();
+  }
+  return NextResponse.json({ data: outcome.page });
 }

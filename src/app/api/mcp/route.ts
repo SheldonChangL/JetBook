@@ -2,6 +2,7 @@ import { createMcpHandler, withMcpAuth } from "mcp-handler";
 import { z } from "zod";
 import { verifyApiToken } from "@/lib/api-tokens";
 import type { Actor } from "@/lib/authz/permission";
+import { API_WRITE_MARKDOWN_MAX_CHARS, apiCreatePage, apiUpdatePage } from "@/lib/api/page-write";
 import { mcpListSpaces, mcpReadPage, mcpSearchPages } from "@/lib/mcp/tools";
 
 /**
@@ -17,6 +18,22 @@ function actorFrom(extra: unknown): Actor {
   if (!user) throw new Error("UNAUTHENTICATED");
   return user;
 }
+
+/** 寫入工具的 scope 檢查（M4-09）：withMcpAuth 只保證 read，write 逐工具驗。 */
+function hasWriteScope(extra: unknown): boolean {
+  const scopes = (extra as { authInfo?: { scopes?: string[] } }).authInfo?.scopes;
+  return Array.isArray(scopes) && scopes.includes("write");
+}
+
+const NO_WRITE_SCOPE = {
+  content: [
+    {
+      type: "text" as const,
+      text: "此 token 沒有 write scope，無法寫入。請在 JetBook「個人設定 → API Token」建立勾選「允許寫入」的 token。",
+    },
+  ],
+  isError: true,
+};
 
 const handler = createMcpHandler(
   (server) => {
@@ -56,6 +73,72 @@ const handler = createMcpHandler(
         }
         const text = `# ${page.title}\n（空間：${page.spaceName}；更新：${page.updatedAt.toISOString()}）\n\n${page.contentMd}`;
         return { content: [{ type: "text" as const, text }] };
+      },
+    );
+
+    server.tool(
+      "create_page",
+      "在指定空間建立新頁面（Markdown 內容）。spaceId 取自 list_spaces；需要 write scope 的 token。回傳新頁面的 pageId 與網址路徑。",
+      {
+        spaceId: z.string().uuid().describe("目標空間 id（UUID，取自 list_spaces）"),
+        title: z.string().min(1).max(200).describe("頁面標題"),
+        markdown: z.string().min(1).max(API_WRITE_MARKDOWN_MAX_CHARS).describe("頁面內容（Markdown）"),
+        parentId: z.string().uuid().optional().describe("父頁面 id（省略＝根層）"),
+      },
+      async ({ spaceId, title, markdown, parentId }, extra) => {
+        if (!hasWriteScope(extra)) return NO_WRITE_SCOPE;
+        const outcome = await apiCreatePage(actorFrom(extra), {
+          spaceId,
+          title,
+          markdown,
+          parentId: parentId ?? null,
+        });
+        if (!outcome.ok) {
+          return {
+            content: [{ type: "text" as const, text: "空間/父頁面不存在或無權寫入。" }],
+            isError: true,
+          };
+        }
+        const p = outcome.page;
+        return {
+          content: [
+            {
+              type: "text" as const,
+              text: `已建立「${p.title}」\npageId: ${p.id}\n路徑: /s/${p.spaceSlug}/${p.slug}`,
+            },
+          ],
+        };
+      },
+    );
+
+    server.tool(
+      "update_page",
+      "以 Markdown 全量更新既有頁面內容（覆蓋原內容，會留版本快照可還原）。pageId 取自 search_pages/read_page；需要 write scope 的 token。",
+      {
+        pageId: z.string().uuid().describe("頁面 id（UUID）"),
+        markdown: z.string().min(1).max(API_WRITE_MARKDOWN_MAX_CHARS).describe("新的頁面內容（Markdown，全量取代）"),
+      },
+      async ({ pageId, markdown }, extra) => {
+        if (!hasWriteScope(extra)) return NO_WRITE_SCOPE;
+        const outcome = await apiUpdatePage(actorFrom(extra), { pageId, markdown });
+        if (!outcome.ok) {
+          const text =
+            outcome.error === "LOCKED"
+              ? `頁面正由 ${outcome.lockedByName ?? "他人"} 編輯中，稍後再試。`
+              : outcome.error === "CONFLICT"
+                ? "頁面同時被其他寫入更新，請重新讀取後再試。"
+                : "頁面不存在或無權寫入。";
+          return { content: [{ type: "text" as const, text }], isError: true };
+        }
+        const p = outcome.page;
+        return {
+          content: [
+            {
+              type: "text" as const,
+              text: `已更新「${p.title}」（版本 ${p.versionNo}）\n路徑: /s/${p.spaceSlug}/${p.slug}`,
+            },
+          ],
+        };
       },
     );
 
