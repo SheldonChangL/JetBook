@@ -2,7 +2,12 @@
 
 import { Download, Paperclip } from "lucide-react";
 import { useTranslations } from "next-intl";
-import { attachmentFileUrl, formatFileSize } from "@/components/editor/attachment/attachment-utils";
+import {
+  attachmentFileUrl,
+  formatFileSize,
+  isPreviewableAttachment,
+} from "@/components/editor/attachment/attachment-utils";
+import { AttachmentPreviewButton } from "@/components/content/attachment-preview";
 
 /**
  * 附件卡片（D-08，F-EDIT-10）：檔名／大小／下載連結。
@@ -30,6 +35,9 @@ export function ContentAttachment({
         <span className="content-attachment__name">{displayName}</span>
         {size ? <span className="content-attachment__size">{size}</span> : null}
       </span>
+      {isPreviewableAttachment(fileName) ? (
+        <AttachmentPreviewButton attachmentId={attachmentId} fileName={fileName} />
+      ) : null}
       <a
         href={href}
         download={fileName || undefined}

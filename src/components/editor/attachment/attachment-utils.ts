@@ -5,11 +5,21 @@
  * 同一事實來源——名單新增副檔名時 picker 自動同步，不需兩處維護。
  */
 
-import { ALLOWED_FILE_TYPES } from "@/lib/storage/validate";
+import { ALLOWED_FILE_TYPES, fileExtension } from "@/lib/storage/validate";
 
 /** 由附件 id 組出同源下載路徑（閱讀／編輯共用；下載 API 於 /api/files 驗權限）。 */
 export function attachmentFileUrl(id: string): string {
   return `/api/files/${id}`;
+}
+
+/** 線上預覽路徑（M4-11）：伺服端僅對 PDF 回 inline，其餘 404。 */
+export function attachmentPreviewUrl(id: string): string {
+  return `/api/files/${id}/preview`;
+}
+
+/** 是否為可線上預覽的附件（M4-11 第一階段：僅 PDF）。 */
+export function isPreviewableAttachment(fileName: string): boolean {
+  return fileExtension(fileName) === ".pdf";
 }
 
 /**
