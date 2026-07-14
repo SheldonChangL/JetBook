@@ -1,8 +1,10 @@
 import { NextResponse } from "next/server";
+import { z } from "zod";
 import { requireApiAuth } from "@/lib/api-tokens/bearer";
 import { getAccessiblePageIds } from "@/lib/authz/permission";
 import { listAccessibleSpaces } from "@/lib/spaces/queries";
 import { listSpaceTreeNodes } from "@/lib/pages/tree";
+import { API_WRITE_MARKDOWN_MAX_CHARS, apiCreatePage } from "@/lib/api/page-write";
 import { decodeRouteParam } from "@/lib/utils";
 
 export const dynamic = "force-dynamic";
@@ -46,4 +48,45 @@ export async function GET(request: Request, ctx: { params: Promise<{ slug: strin
         externalUrl: n.externalUrl,
       })),
   });
+}
+
+const createSchema = z.object({
+  title: z.string().trim().min(1).max(200),
+  markdown: z.string().min(1).max(API_WRITE_MARKDOWN_MAX_CHARS),
+  /** 父節點 id；省略＝根層 */
+  parentId: z.uuid().nullish(),
+});
+
+/**
+ * POST /api/v1/spaces/{slug}/pages：建立頁面並寫入 Markdown 內容（M4-09）。
+ * scope=write；權限/儲存管線一律由 lib/api/page-write 負責（薄殼原則）。
+ * 空間不存在與無權一律 404（防枚舉，同 GET）。
+ */
+export async function POST(request: Request, ctx: { params: Promise<{ slug: string }> }) {
+  const result = await requireApiAuth(request, "write");
+  if (!result.ok) return result.response;
+  const slug = decodeRouteParam((await ctx.params).slug);
+
+  const body = createSchema.safeParse(await request.json().catch(() => null));
+  if (!body.success) {
+    return NextResponse.json(
+      { error: { code: "INVALID_BODY", message: "body 需含 title 與 markdown" } },
+      { status: 400 },
+    );
+  }
+
+  // 空間存在性/權限判定集中在 lib（apiCreatePage），薄殼不重複查驗
+  const outcome = await apiCreatePage(result.auth.user, {
+    spaceSlug: slug,
+    parentId: body.data.parentId ?? null,
+    title: body.data.title,
+    markdown: body.data.markdown,
+  });
+  if (!outcome.ok) {
+    return NextResponse.json(
+      { error: { code: "NOT_FOUND", message: "空間/父節點不存在或無權存取" } },
+      { status: 404 },
+    );
+  }
+  return NextResponse.json({ data: outcome.page }, { status: 201 });
 }

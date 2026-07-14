@@ -7,7 +7,7 @@ import { z } from "zod";
 import { db } from "@/lib/db";
 import { pageEmbeddings, pages, pageVersions, spaces, users } from "@/lib/db/schema";
 import { requireSession } from "@/lib/auth/current";
-import { enqueueEmbedPage } from "@/lib/jobs/queue";
+import { triggerEmbedPage } from "@/lib/jobs/queue";
 import { isEmbeddingConfigured } from "@/lib/llm";
 import { assertCan, getEditableSpaceIds } from "@/lib/authz/permission";
 import { movePageNode } from "@/lib/pages/move";
@@ -29,23 +29,6 @@ async function requireEditor(spaceId: string) {
   const { user } = await requireSession();
   await assertCan(user, "page.edit", { type: "page", spaceId });
   return user;
-}
-
-/**
- * 觸發頁面嵌入索引（H-06）：存檔／刪除後 fire-and-forget enqueue。
- * 未設定 embedding 端點時直接略過；enqueue 失敗只記錄不擲出——嵌入管線
- * 絕不阻塞編輯（驗收：失敗重試與死信不阻塞編輯）。
- */
-async function triggerEmbedPage(pageId: string): Promise<void> {
-  if (!isEmbeddingConfigured()) {
-    logger.debug({ pageId }, "embedding 未設定，略過索引 enqueue");
-    return;
-  }
-  try {
-    await enqueueEmbedPage(pageId);
-  } catch (error) {
-    logger.error({ err: error, pageId }, "enqueue embed-page 失敗（不阻塞編輯）");
-  }
 }
 
 /**

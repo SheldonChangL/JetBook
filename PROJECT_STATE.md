@@ -34,6 +34,10 @@ Next.js（App Router、TS strict）全端 + PostgreSQL 16/pgvector/pgroonga + Do
 - [x] #198 M4-07 MCP Server（/api/mcp streamable HTTP、Bearer token、3 工具；真 MCP client 實測搜尋→讀取）
 - [x] #199 M4-08 Word (.docx) 匯入（mammoth+turndown → 既有 savePage 管線；圖片轉附件；瀏覽器 E2E 實測。附帶發現既有 Unicode slug 404 → #207）
 
+### M4 第二批（2026-07-14 使用回饋，#211/#212）
+- [x] #212 M4-10 API Token 建立後一鍵複製（copyText 通用化＋toast 回饋；瀏覽器實測）— PR #213
+- [x] #211 M4-09 MCP/REST API 寫入能力：token write scope（建立時勾選，預設唯讀）、MCP `create_page`/`update_page`、REST POST /spaces/{slug}/pages 與 PATCH /pages/{id}；重用唯一儲存管線（三欄同交易＋版本快照＋embedding enqueue）、can() 預設拒絕、尊重編輯鎖、audit；整合測試 8 條＋真 MCP client 實測 create→read→update 往返與 scope 閘門 — PR 疊在 #213 上
+
 ### 尚未完成（v1 之後）
 - **#93 M4 backlog**：變更請求、行內評論、webhooks（暫停）、PDF 匯出、KaTeX、多欄、snippets、內容分析等——其餘候選項依回饋再拆
 - 真實 LLM/Embedding 端點串接為部署設定（本機開發以 mock 驗證介面）；上線時以 /admin/ai 測試連線驗證

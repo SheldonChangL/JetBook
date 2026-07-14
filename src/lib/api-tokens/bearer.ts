@@ -55,7 +55,7 @@ export async function requireApiAuth(
     };
   }
 
-  const rate = apiRateLimiter().check(auth.tokenId);
+  const rate = checkApiTokenRate(auth.tokenId);
   if (!rate.allowed) {
     return {
       ok: false,
@@ -66,4 +66,15 @@ export async function requireApiAuth(
   }
 
   return { ok: true, auth };
+}
+
+/**
+ * 每 token 限流檢查（REST 與 MCP 共用同一 limiter 實例與額度，M4-09）：
+ * MCP 佈線不經 requireApiAuth，寫入工具以此重建同一道護欄。
+ */
+export function checkApiTokenRate(tokenId: string): {
+  allowed: boolean;
+  retryAfterSeconds: number;
+} {
+  return apiRateLimiter().check(tokenId);
 }

@@ -3,6 +3,7 @@ import { PgBoss, type SendOptions } from "pg-boss";
 import { sql } from "drizzle-orm";
 import { db } from "@/lib/db";
 import { env } from "@/lib/env";
+import { isEmbeddingConfigured } from "@/lib/llm";
 import { logger } from "@/lib/logger";
 
 /**
@@ -125,6 +126,23 @@ export async function enqueueEmbedPage(pageId: string): Promise<string | null> {
       retryBackoff: true,
     },
   );
+}
+
+/**
+ * 觸發頁面嵌入索引（H-06）：存檔／刪除後 fire-and-forget enqueue 的唯一入口，
+ * 編輯器存檔（actions/page.ts）與 API 寫入（lib/api/page-write）共用。
+ * 未設定 embedding 端點時直接略過；enqueue 失敗只記錄不擲出——嵌入管線絕不阻塞寫入。
+ */
+export async function triggerEmbedPage(pageId: string): Promise<void> {
+  if (!isEmbeddingConfigured()) {
+    logger.debug({ pageId }, "embedding 未設定，略過索引 enqueue");
+    return;
+  }
+  try {
+    await enqueueEmbedPage(pageId);
+  } catch (error) {
+    logger.error({ err: error, pageId }, "enqueue embed-page 失敗（不阻塞寫入）");
+  }
 }
 
 // ── Zip 批次匯入（J-02） ───────────────────────────────────────────

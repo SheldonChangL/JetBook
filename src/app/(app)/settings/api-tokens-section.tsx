@@ -39,6 +39,7 @@ export function ApiTokensSection({ tokens }: { tokens: ApiTokenRow[] }) {
   const toast = useToast();
   const [open, setOpen] = useState(false);
   const [expiryDays, setExpiryDays] = useState<(typeof EXPIRY_OPTIONS)[number]>("90");
+  const [allowWrite, setAllowWrite] = useState(false);
   const [created, setCreated] = useState<{ token: string; name: string } | null>(null);
   const [pending, startTransition] = useTransition();
 
@@ -49,7 +50,11 @@ export function ApiTokensSection({ tokens }: { tokens: ApiTokenRow[] }) {
     if (!name) return;
     startTransition(async () => {
       try {
-        const result = await createApiTokenAction({ name, expiryDays: Number(expiryDays) });
+        const result = await createApiTokenAction({
+          name,
+          expiryDays: Number(expiryDays),
+          allowWrite,
+        });
         if (!result.ok) {
           toast({ variant: "error", title: t("actionError") });
           return;
@@ -93,6 +98,7 @@ export function ApiTokensSection({ tokens }: { tokens: ApiTokenRow[] }) {
     if (next) {
       setCreated(null);
       setExpiryDays("90");
+      setAllowWrite(false);
     }
   }
 
@@ -133,6 +139,18 @@ export function ApiTokensSection({ tokens }: { tokens: ApiTokenRow[] }) {
                       ))}
                     </SelectContent>
                   </Select>
+                </div>
+                <div className="flex flex-col gap-1.5">
+                  <label className="flex cursor-pointer items-center gap-2 text-body-ui text-fg">
+                    <input
+                      type="checkbox"
+                      className="size-4 accent-primary"
+                      checked={allowWrite}
+                      onChange={(e) => setAllowWrite(e.target.checked)}
+                    />
+                    {t("allowWrite")}
+                  </label>
+                  <p className="text-caption text-fg-tertiary">{t("allowWriteHint")}</p>
                 </div>
                 <div className="flex justify-end">
                   <Button type="submit" loading={pending}>
@@ -181,6 +199,9 @@ export function ApiTokensSection({ tokens }: { tokens: ApiTokenRow[] }) {
                 <div className="min-w-0 flex-1">
                   <p className="flex items-center gap-2 text-body-ui font-medium text-fg">
                     <span className="truncate">{token.name}</span>
+                    {token.scopes.includes("write") && (
+                      <Badge variant="warning">{t("writeBadge")}</Badge>
+                    )}
                     {expired && <Badge variant="danger">{t("expired")}</Badge>}
                   </p>
                   <p className="text-caption text-fg-tertiary">

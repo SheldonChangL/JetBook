@@ -8,10 +8,11 @@ import { apiTokens, users, type ApiToken, type User } from "@/lib/db/schema";
  * API Token 商業邏輯（M4-06，F-API-02）。
  * - 明文格式 `jbk_<base64url 32B>`；僅建立當下回傳一次，DB 只存 sha256。
  * - 驗證：hash 查表 → 未撤銷、未過期、擁有者啟用中 → 回擁有者（權限走既有 lib/authz）。
- * - scopes v1 僅 "read"；欄位為未來 write 預留。
+ * - scopes："read"（唯讀端點/工具）；"write"（M4-09，建立/更新頁面）為選配，
+ *   建立 token 時明確勾選才發，且必含 read。
  */
 
-export const API_TOKEN_SCOPES = ["read"] as const;
+export const API_TOKEN_SCOPES = ["read", "write"] as const;
 export type ApiTokenScope = (typeof API_TOKEN_SCOPES)[number];
 
 const TOKEN_PREFIX = "jbk_";
