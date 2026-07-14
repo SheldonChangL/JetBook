@@ -47,12 +47,21 @@ export async function GET(request: Request, ctx: { params: Promise<{ id: string 
   });
 }
 
-const patchSchema = z.object({
-  markdown: z.string().min(1).max(API_WRITE_MARKDOWN_MAX_CHARS),
-});
+const patchSchema = z
+  .object({
+    markdown: z.string().min(1).max(API_WRITE_MARKDOWN_MAX_CHARS).optional(),
+    title: z.string().trim().min(1).max(200).optional(),
+    // 0 合法：從未寫入內容的頁面 currentVersionNo 為 0
+    expectedVersion: z.number().int().min(0).optional(),
+  })
+  .refine((d) => d.markdown !== undefined || d.title !== undefined, {
+    message: "markdown 與 title 至少需提供一項",
+  });
 
 /**
- * PATCH /api/v1/pages/{id}：以 Markdown 全量更新頁面內容（M4-09）。
+ * PATCH /api/v1/pages/{id}：部分更新頁面（M4-09/M4-13）。
+ * - markdown：全量取代內容；title：改名（slug 重算＋301 歷史）；至少提供一項。
+ * - expectedVersion：樂觀鎖，不符回 409 CONFLICT（含 currentVersion 供重讀）。
  * scope=write；權限/鎖/儲存管線一律由 lib/api/page-write 負責（薄殼原則）。
  */
 export async function PATCH(request: Request, ctx: { params: Promise<{ id: string }> }) {
@@ -64,12 +73,22 @@ export async function PATCH(request: Request, ctx: { params: Promise<{ id: strin
   const body = patchSchema.safeParse(await request.json().catch(() => null));
   if (!body.success) {
     return NextResponse.json(
-      { error: { code: "INVALID_BODY", message: "body 需含 markdown（非空字串）" } },
+      {
+        error: {
+          code: "INVALID_BODY",
+          message: "body 需含 markdown 或 title 至少一項（非空字串）；expectedVersion 為選填正整數",
+        },
+      },
       { status: 400 },
     );
   }
 
-  const outcome = await apiUpdatePage(result.auth.user, { pageId: id, markdown: body.data.markdown });
+  const outcome = await apiUpdatePage(result.auth.user, {
+    pageId: id,
+    markdown: body.data.markdown,
+    title: body.data.title,
+    expectedVersion: body.data.expectedVersion,
+  });
   if (!outcome.ok) {
     if (outcome.error === "LOCKED") {
       return NextResponse.json(
@@ -79,7 +98,13 @@ export async function PATCH(request: Request, ctx: { params: Promise<{ id: strin
     }
     if (outcome.error === "CONFLICT") {
       return NextResponse.json(
-        { error: { code: "CONFLICT", message: "頁面同時被其他寫入更新，請重試" } },
+        {
+          error: {
+            code: "CONFLICT",
+            message: "版本不符或頁面同時被其他寫入更新，請重新讀取後再試",
+            currentVersion: outcome.currentVersionNo,
+          },
+        },
         { status: 409 },
       );
     }

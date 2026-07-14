@@ -8,6 +8,7 @@ import { createPageInTx } from "@/lib/pages/create";
 import { writePageContentTx } from "@/lib/pages/content-write";
 import { VersionConflictError } from "@/lib/pages/errors";
 import { acquireLock, getLockState, releaseLock } from "@/lib/pages/lock";
+import { recordSlugHistory, reclaimSlug, uniquePageSlug } from "@/lib/pages/slug";
 import { triggerEmbedPage } from "@/lib/jobs/queue";
 import { writeAudit } from "@/lib/audit";
 import { logger } from "@/lib/logger";
@@ -31,7 +32,7 @@ export const API_WRITE_MARKDOWN_MAX_CHARS = 2 * 1024 * 1024;
 export type ApiWriteFailure =
   | { ok: false; error: "NOT_FOUND" }
   | { ok: false; error: "LOCKED"; lockedByName: string | null }
-  | { ok: false; error: "CONFLICT" };
+  | { ok: false; error: "CONFLICT"; currentVersionNo: number };
 
 export interface ApiPageRef {
   id: string;
@@ -125,11 +126,23 @@ export async function apiCreatePage(user: Actor, input: ApiCreatePageInput): Pro
 
 export interface ApiUpdatePageInput {
   pageId: string;
-  markdown: string;
+  /** 新內容（Markdown 全量取代）；省略＝不動內容。與 title 至少提供一項（呼叫端薄殼驗證）。 */
+  markdown?: string;
+  /** 新標題；省略＝不動標題。改名沿用 web renamePage 規則：slug 重算＋舊 slug 進 301 歷史。 */
+  title?: string;
+  /**
+   * 樂觀鎖（M4-13）：呼叫端已知的版本號，不符即回 CONFLICT（含目前版本號供重讀）。
+   * 省略＝以交易內最新版本為基準（#211 原行為）。
+   */
+  expectedVersion?: number;
 }
 
-/** 以 Markdown 全量更新頁面內容（重用唯一儲存管線；他人持鎖拒絕）。 */
+/** 部分更新頁面（標題／內容擇一或皆有；重用唯一儲存管線；他人持鎖拒絕）。 */
 export async function apiUpdatePage(user: Actor, input: ApiUpdatePageInput): Promise<ApiWriteResult> {
+  if (input.markdown === undefined && input.title === undefined) {
+    // 呼叫端薄殼已擋；此為程式錯誤而非使用者輸入
+    throw new Error("apiUpdatePage: markdown 與 title 至少需提供一項");
+  }
   const page = await db.query.pages.findFirst({ where: eq(pages.id, input.pageId) });
   // 群組／外部連結節點無內文（C-11），視同不存在
   if (!page || page.deletedAt || page.kind !== "page") return { ok: false, error: "NOT_FOUND" };
@@ -149,30 +162,61 @@ export async function apiUpdatePage(user: Actor, input: ApiUpdatePageInput): Pro
   }
   const shouldRelease = !before.lockedByMe;
 
-  const doc = markdownToDoc(input.markdown);
+  const doc = input.markdown !== undefined ? markdownToDoc(input.markdown) : null;
   let versionNo: number;
+  let finalTitle: string;
+  let finalSlug: string;
   try {
-    versionNo = await db.transaction(async (tx) => {
-      // 於交易內讀最新版本號作為樂觀鎖基準（API 呼叫端不追蹤版本）
+    ({ versionNo, finalTitle, finalSlug } = await db.transaction(async (tx) => {
       const fresh = await tx.query.pages.findFirst({ where: eq(pages.id, page.id) });
       if (!fresh || fresh.deletedAt) throw new PageGoneError();
-      return writePageContentTx(tx, {
-        pageId: page.id,
-        pageTitle: fresh.title,
-        expectedVersionNo: fresh.currentVersionNo,
-        content: doc,
-        userId: user.id,
-        snapshotMergeMs: 0,
-      });
-    });
+      // 呼叫端帶 expectedVersion 時先行比對；內容寫入時 writePageContentTx 的
+      // 原子 WHERE 是第二道防線（title-only 更新則以此比對為唯一防線）
+      if (input.expectedVersion !== undefined && fresh.currentVersionNo !== input.expectedVersion) {
+        throw new VersionConflictError(fresh.currentVersionNo);
+      }
+
+      let title = fresh.title;
+      let slug = fresh.slug;
+      if (input.title !== undefined && input.title !== fresh.title) {
+        title = input.title;
+        // 改名規則同 web renamePage：排除自身避免自撞尾碼；slug 變更時記 301 歷史並回收新 slug 的陳舊指向
+        slug = await uniquePageSlug(fresh.spaceId, title, { excludePageId: fresh.id, client: tx });
+        if (slug !== fresh.slug) {
+          await recordSlugHistory(tx, fresh.spaceId, fresh.slug, fresh.id);
+          await reclaimSlug(tx, fresh.spaceId, slug);
+        }
+        await tx
+          .update(pages)
+          .set({ title, slug, updatedBy: user.id, updatedAt: new Date() })
+          .where(eq(pages.id, fresh.id));
+      }
+
+      // title-only 更新不動內容也不遞增版本（與 web renamePage 一致）
+      let v = fresh.currentVersionNo;
+      if (doc) {
+        v = await writePageContentTx(tx, {
+          pageId: fresh.id,
+          pageTitle: title,
+          expectedVersionNo: input.expectedVersion ?? fresh.currentVersionNo,
+          content: doc,
+          userId: user.id,
+          snapshotMergeMs: 0,
+        });
+      }
+      return { versionNo: v, finalTitle: title, finalSlug: slug };
+    }));
   } catch (error) {
     if (error instanceof PageGoneError) return { ok: false, error: "NOT_FOUND" };
-    if (error instanceof VersionConflictError) return { ok: false, error: "CONFLICT" };
+    if (error instanceof VersionConflictError) {
+      return { ok: false, error: "CONFLICT", currentVersionNo: error.currentVersionNo };
+    }
     throw error;
   } finally {
     if (shouldRelease) await releaseLock(page.id, user.id);
   }
 
+  // 標題也在 embedding chunk 內（chunkMarkdown(title, …)），故 title-only 變更同樣重嵌
   await triggerEmbedPage(page.id);
   logger.info({ userId: user.id, pageId: page.id, versionNo }, "page updated via api");
   await writeAudit({
@@ -180,7 +224,13 @@ export async function apiUpdatePage(user: Actor, input: ApiUpdatePageInput): Pro
     action: "page.api_update",
     targetType: "page",
     targetId: page.id,
-    metadata: { spaceId: page.spaceId, versionNo, via: "api" },
+    metadata: {
+      spaceId: page.spaceId,
+      versionNo,
+      via: "api",
+      titleChanged: finalTitle !== page.title,
+      contentChanged: doc !== null,
+    },
     ip: null,
   });
 
@@ -188,8 +238,8 @@ export async function apiUpdatePage(user: Actor, input: ApiUpdatePageInput): Pro
     ok: true,
     page: {
       id: page.id,
-      slug: page.slug,
-      title: page.title,
+      slug: finalSlug,
+      title: finalTitle,
       spaceSlug: space.slug,
       versionNo,
     },

@@ -2,7 +2,7 @@ import { randomUUID } from "crypto";
 import { eq } from "drizzle-orm";
 import { describe, expect, it } from "vitest";
 import { db } from "@/lib/db";
-import { pages, pageVersions, spaces } from "@/lib/db/schema";
+import { pages, pageSlugHistory, pageVersions, spaces } from "@/lib/db/schema";
 import { createApiToken } from "@/lib/api-tokens";
 import { acquireLock } from "@/lib/pages/lock";
 import { apiUpdatePage } from "@/lib/api/page-write";
@@ -227,6 +227,119 @@ describe("API 寫入（M4-09，issue #211）", () => {
     // 若走預設 SNAPSHOT_MERGE_MS 合併窗，兩次寫入會被合併成一筆而遺失第一版
     expect(versions.length).toBe(2);
     expect(versions.map((v) => v.contentMd).join("|")).toContain("第一版");
+  });
+
+  it("PATCH 僅更新標題（M4-13）→ 改名＋slug 重算＋301 歷史；版本與快照不動", async () => {
+    const owner = await seedUser();
+    const space = await seedSpace(owner.id, { visibility: "org_write" });
+    const page = await seedPage(space.id, { title: "old title page" });
+    const writer = await seedUser();
+    const token = await makeToken(writer.id, ["read", "write"]);
+
+    const versionsBefore = await db.query.pageVersions.findMany({
+      where: eq(pageVersions.pageId, page.id),
+    });
+
+    const res = await patchPage(
+      jsonReq(`/api/v1/pages/${page.id}`, token, "PATCH", { title: "renamed via api" }),
+      { params: Promise.resolve({ id: page.id }) },
+    );
+    expect(res.status).toBe(200);
+    const body = (await res.json()) as {
+      data: { title: string; slug: string; versionNo: number };
+    };
+    expect(body.data.title).toBe("renamed via api");
+    expect(body.data.slug).not.toBe(page.slug);
+    // title-only 不遞增版本（與 web renamePage 一致）
+    expect(body.data.versionNo).toBe(page.currentVersionNo);
+
+    const fresh = await db.query.pages.findFirst({ where: eq(pages.id, page.id) });
+    expect(fresh!.title).toBe("renamed via api");
+    // 舊 slug 進 301 歷史（G1）
+    const history = await db.query.pageSlugHistory.findFirst({
+      where: eq(pageSlugHistory.oldSlug, page.slug),
+    });
+    expect(history?.pageId).toBe(page.id);
+    // 無新版本快照
+    const versionsAfter = await db.query.pageVersions.findMany({
+      where: eq(pageVersions.pageId, page.id),
+    });
+    expect(versionsAfter.length).toBe(versionsBefore.length);
+  });
+
+  it("PATCH expectedVersion 樂觀鎖（M4-13）：過期 → 409 帶 currentVersion；正確 → 成功", async () => {
+    const owner = await seedUser();
+    const space = await seedSpace(owner.id, { visibility: "org_write" });
+    const page = await seedPage(space.id);
+    const writer = await seedUser();
+    const token = await makeToken(writer.id, ["read", "write"]);
+
+    const stale = await patchPage(
+      jsonReq(`/api/v1/pages/${page.id}`, token, "PATCH", {
+        markdown: "過期版本的寫入內容-STALE",
+        expectedVersion: page.currentVersionNo + 5,
+      }),
+      { params: Promise.resolve({ id: page.id }) },
+    );
+    expect(stale.status).toBe(409);
+    const staleBody = (await stale.json()) as {
+      error: { code: string; currentVersion: number };
+    };
+    expect(staleBody.error.code).toBe("CONFLICT");
+    expect(staleBody.error.currentVersion).toBe(page.currentVersionNo);
+    // 內容未被改動
+    const untouched = await db.query.pages.findFirst({ where: eq(pages.id, page.id) });
+    expect(untouched!.contentMd ?? "").not.toContain("STALE");
+
+    const ok = await patchPage(
+      jsonReq(`/api/v1/pages/${page.id}`, token, "PATCH", {
+        markdown: "帶正確版本的更新",
+        expectedVersion: page.currentVersionNo,
+      }),
+      { params: Promise.resolve({ id: page.id }) },
+    );
+    expect(ok.status).toBe(200);
+    const okBody = (await ok.json()) as { data: { versionNo: number } };
+    expect(okBody.data.versionNo).toBe(page.currentVersionNo + 1);
+  });
+
+  it("PATCH title＋markdown 同時（M4-13）→ 版本快照記新標題", async () => {
+    const owner = await seedUser();
+    const space = await seedSpace(owner.id, { visibility: "org_write" });
+    const page = await seedPage(space.id, { title: "舊標題" });
+    const writer = await seedUser();
+    const token = await makeToken(writer.id, ["read", "write"]);
+
+    const res = await patchPage(
+      jsonReq(`/api/v1/pages/${page.id}`, token, "PATCH", {
+        title: "新標題（快照應記此名）",
+        markdown: "同時更新的內容",
+      }),
+      { params: Promise.resolve({ id: page.id }) },
+    );
+    expect(res.status).toBe(200);
+    const body = (await res.json()) as { data: { versionNo: number } };
+
+    const versions = await db.query.pageVersions.findMany({
+      where: eq(pageVersions.pageId, page.id),
+    });
+    const snapshot = versions.find((v) => v.versionNo === body.data.versionNo);
+    expect(snapshot?.title).toBe("新標題（快照應記此名）");
+    expect(snapshot?.contentMd).toContain("同時更新的內容");
+  });
+
+  it("PATCH 空 body（markdown 與 title 皆缺）→ 400", async () => {
+    const owner = await seedUser();
+    const space = await seedSpace(owner.id, { visibility: "org_write" });
+    const page = await seedPage(space.id);
+    const writer = await seedUser();
+    const token = await makeToken(writer.id, ["read", "write"]);
+
+    const res = await patchPage(
+      jsonReq(`/api/v1/pages/${page.id}`, token, "PATCH", { expectedVersion: 1 }),
+      { params: Promise.resolve({ id: page.id }) },
+    );
+    expect(res.status).toBe(400);
   });
 
   it("parentId 屬其他空間 → 404（不得跨空間掛節點）", async () => {
