@@ -26,6 +26,12 @@ const envSchema = z.object({
   UPLOAD_DIR: z.string().default("./data/uploads"),
   /** 單檔上傳大小上限（MB） */
   MAX_UPLOAD_MB: z.coerce.number().int().positive().default(50),
+  /**
+   * Office 附件轉 PDF 預覽的轉檔服務（M4-12，issue #216）：Gotenberg HTTP API 位址
+   * （compose sidecar 為 http://gotenberg:3000）。未設定＝Office 預覽停用，
+   * 附件優雅降級為僅下載；PDF 預覽（M4-11）不受影響。
+   */
+  PREVIEW_CONVERTER_URL: z.string().url().optional(),
 
   // ── 編輯器 Embed 白名單（D-14，F-EDIT-15） ──
   /**

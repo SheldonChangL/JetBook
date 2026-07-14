@@ -4,6 +4,7 @@ import { NextIntlClientProvider } from "next-intl";
 import { getLocale, getTranslations } from "next-intl/server";
 import { Inter, JetBrains_Mono, Noto_Sans_TC } from "next/font/google";
 import { getCurrentSession } from "@/lib/auth/current";
+import { isPreviewConverterConfigured } from "@/lib/storage/office-preview";
 import { normalizeTheme, type Theme } from "@/lib/theme";
 import { ToastProvider } from "@/components/ui/toast";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -68,7 +69,9 @@ export default async function RootLayout({ children }: { children: ReactNode }) 
       <head>
         <script dangerouslySetInnerHTML={{ __html: themeInitScript }} />
       </head>
-      <body>
+      {/* data-office-preview：Office 附件預覽是否啟用（M4-12，PREVIEW_CONVERTER_URL）。
+          以 body dataset 傳遞給深層 client 元件（附件卡片），免 props 穿越 TipTap 渲染鏈 */}
+      <body data-office-preview={isPreviewConverterConfigured() ? "1" : undefined}>
         <NextIntlClientProvider>
           <TooltipProvider>
             <ToastProvider closeLabel={t("close")}>{children}</ToastProvider>

@@ -3,7 +3,9 @@ import { createHash, randomUUID } from "node:crypto";
 import { db } from "@/lib/db";
 import { attachments, type Attachment } from "@/lib/db/schema";
 import { env } from "@/lib/env";
+import { triggerConvertAttachmentPreview } from "@/lib/jobs/queue";
 import { getStorageProvider } from "./provider";
+import { isOfficeAttachment, isPreviewConverterConfigured } from "./office-preview";
 import { fileExtension, validateUpload, type UploadValidationErrorCode } from "./validate";
 
 /** 上傳驗證失敗（型別/大小/空檔）；code 供 route 對映 HTTP 狀態。 */
@@ -65,6 +67,10 @@ export async function saveAttachment(input: SaveAttachmentInput): Promise<Attach
       })
       .returning();
     if (!row) throw new Error("attachments insert 未回傳資料列");
+    // Office 附件排轉 PDF 預覽（M4-12）：fire-and-forget，enqueue 失敗不影響上傳
+    if (isPreviewConverterConfigured() && isOfficeAttachment(row.fileName)) {
+      await triggerConvertAttachmentPreview(row.id);
+    }
     return row;
   } catch (error) {
     await storage.delete(storageKey).catch(() => undefined);

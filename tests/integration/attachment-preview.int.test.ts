@@ -2,7 +2,7 @@ import { randomUUID } from "crypto";
 import { describe, expect, it } from "vitest";
 import { db } from "@/lib/db";
 import { attachments } from "@/lib/db/schema";
-import { resolvePdfPreview } from "@/lib/storage/preview";
+import { resolveAttachmentPreview } from "@/lib/storage/preview";
 import { seedPage, seedSpace, seedUser } from "./helpers";
 
 /**
@@ -39,7 +39,7 @@ describe("PDF 附件預覽決策（M4-11，issue #215）", () => {
     const att = await seedAttachment(space.id, page.id);
 
     const reader = await seedUser();
-    const result = await resolvePdfPreview(reader, att.id);
+    const result = await resolveAttachmentPreview(reader, att.id);
     expect(result.ok).toBe(true);
   });
 
@@ -50,7 +50,7 @@ describe("PDF 附件預覽決策（M4-11，issue #215）", () => {
     const att = await seedAttachment(space.id, page.id);
 
     const outsider = await seedUser();
-    const result = await resolvePdfPreview(outsider, att.id);
+    const result = await resolveAttachmentPreview(outsider, att.id);
     expect(result).toEqual({ ok: false, status: 403 });
   });
 
@@ -72,14 +72,14 @@ describe("PDF 附件預覽決策（M4-11，issue #215）", () => {
     });
 
     const reader = await seedUser();
-    expect(await resolvePdfPreview(reader, docx.id)).toEqual({ ok: false, status: 404 });
-    expect(await resolvePdfPreview(reader, forged.id)).toEqual({ ok: false, status: 404 });
-    expect(await resolvePdfPreview(reader, forgedExt.id)).toEqual({ ok: false, status: 404 });
+    expect(await resolveAttachmentPreview(reader, docx.id)).toEqual({ ok: false, status: 404 });
+    expect(await resolveAttachmentPreview(reader, forged.id)).toEqual({ ok: false, status: 404 });
+    expect(await resolveAttachmentPreview(reader, forgedExt.id)).toEqual({ ok: false, status: 404 });
   });
 
   it("不存在／非 UUID → 404", async () => {
     const reader = await seedUser();
-    expect(await resolvePdfPreview(reader, randomUUID())).toEqual({ ok: false, status: 404 });
-    expect(await resolvePdfPreview(reader, "not-a-uuid")).toEqual({ ok: false, status: 404 });
+    expect(await resolveAttachmentPreview(reader, randomUUID())).toEqual({ ok: false, status: 404 });
+    expect(await resolveAttachmentPreview(reader, "not-a-uuid")).toEqual({ ok: false, status: 404 });
   });
 });

@@ -1136,7 +1136,9 @@
       "preview": "預覽",
       "previewAria": "預覽附件 {fileName}",
       "previewClose": "關閉預覽",
-      "previewFrameTitle": "PDF 預覽：{fileName}"
+      "previewFrameTitle": "PDF 預覽：{fileName}",
+      "previewConverting": "文件轉換中，請稍候…",
+      "previewUnavailable": "無法預覽此檔案，請下載後開啟"
     },
     "embed": {
       "frameTitle": "{host} 的嵌入內容",

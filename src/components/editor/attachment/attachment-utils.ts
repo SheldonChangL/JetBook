@@ -5,7 +5,11 @@
  * 同一事實來源——名單新增副檔名時 picker 自動同步，不需兩處維護。
  */
 
-import { ALLOWED_FILE_TYPES, fileExtension } from "@/lib/storage/validate";
+import {
+  ALLOWED_FILE_TYPES,
+  OFFICE_PREVIEW_EXTENSIONS,
+  fileExtension,
+} from "@/lib/storage/validate";
 
 /** 由附件 id 組出同源下載路徑（閱讀／編輯共用；下載 API 於 /api/files 驗權限）。 */
 export function attachmentFileUrl(id: string): string {
@@ -17,9 +21,14 @@ export function attachmentPreviewUrl(id: string): string {
   return `/api/files/${id}/preview`;
 }
 
-/** 是否為可線上預覽的附件（M4-11 第一階段：僅 PDF）。 */
+/** 是否為原生可線上預覽的附件（M4-11：PDF，無需轉檔）。 */
 export function isPreviewableAttachment(fileName: string): boolean {
   return fileExtension(fileName) === ".pdf";
+}
+
+/** 是否為可經轉檔預覽的 Office 附件（M4-12；還需部署啟用轉檔服務）。 */
+export function isOfficePreviewCandidate(fileName: string): boolean {
+  return OFFICE_PREVIEW_EXTENSIONS.has(fileExtension(fileName));
 }
 
 /**

@@ -35,6 +35,8 @@ export const JOBS = {
   exportSpace: "export-space",
   /** 匯出暫存檔逾期清除（J-03，cron） */
   purgeExports: "purge-exports",
+  /** Office 附件轉 PDF 預覽（M4-12）：ConvertAttachmentPreviewJob */
+  convertAttachmentPreview: "convert-attachment-preview",
 } as const;
 
 export type JobName = (typeof JOBS)[keyof typeof JOBS];
@@ -62,6 +64,30 @@ export interface NotificationEmailJob {
   to: string;
   subject: string;
   text: string;
+}
+
+/** convert-attachment-preview job payload（M4-12）。 */
+export interface ConvertAttachmentPreviewJob {
+  attachmentId: string;
+}
+
+/**
+ * enqueue Office 附件轉 PDF 預覽（M4-12）：fire-and-forget，上傳流程不因
+ * enqueue 失敗而失敗；singletonKey 防同一附件重複排程（含 preview 端點的
+ * lazy 補排）。轉檔服務未設定時呼叫端不應 enqueue（由呼叫端判斷）。
+ */
+export async function triggerConvertAttachmentPreview(attachmentId: string): Promise<void> {
+  try {
+    const boss = await getBoss();
+    await boss.createQueue(JOBS.convertAttachmentPreview);
+    await boss.send(
+      JOBS.convertAttachmentPreview,
+      { attachmentId } satisfies ConvertAttachmentPreviewJob,
+      { retryLimit: 3, retryDelay: 30, retryBackoff: true, singletonKey: attachmentId },
+    );
+  } catch (error) {
+    logger.error({ err: error, attachmentId }, "enqueue convert-attachment-preview 失敗（不阻塞上傳）");
+  }
 }
 
 const globalForBoss = globalThis as unknown as { jetbookBoss?: PgBoss };

@@ -1,7 +1,7 @@
 import "server-only";
 import { eq, isNull, lt } from "drizzle-orm";
 import { db } from "@/lib/db";
-import { attachments, pages } from "@/lib/db/schema";
+import { attachmentPreviews, attachments, pages } from "@/lib/db/schema";
 import { writeAudit } from "@/lib/audit";
 import { logger } from "@/lib/logger";
 import { getStorageProvider } from "./provider";
@@ -149,6 +149,11 @@ export async function collectOrphanAttachments(
       // 先刪實體檔（不存在視為成功，冪等）再刪 metadata 列：
       // 若列刪除失敗，下一輪仍會重新判定回收，不致殘留「有列無檔」的可下載壞附件。
       await storage.delete(orphan.storageKey);
+      // 衍生 PDF 預覽（M4-12）：實體檔一併回收（metadata 列由 FK cascade 隨附件刪除）
+      const preview = await db.query.attachmentPreviews.findFirst({
+        where: eq(attachmentPreviews.attachmentId, orphan.id),
+      });
+      if (preview?.storageKey) await storage.delete(preview.storageKey);
       await db.delete(attachments).where(eq(attachments.id, orphan.id));
       deletedIds.push(orphan.id);
       freedBytes += orphan.sizeBytes;

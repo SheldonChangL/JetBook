@@ -51,6 +51,13 @@ services:
     volumes:
       - uploads:/data/uploads
 
+  # Office 附件轉 PDF 預覽（M4-12，issue #216）：內建 LibreOffice 的 stateless 轉檔服務。
+  # 啟用：.env 設 PREVIEW_CONVERTER_URL=http://gotenberg:3000；未設定時本服務閒置、
+  # Office 附件優雅降級為僅下載（PDF 預覽不受影響）。僅內網，不對外開 port。
+  gotenberg:
+    image: gotenberg/gotenberg:8
+    restart: always
+
   db:
     build: db/
     restart: always

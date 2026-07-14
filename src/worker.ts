@@ -5,6 +5,7 @@ import { deleteExpiredSessions } from "@/lib/auth/session";
 import { purgeExpiredTrash } from "@/lib/pages/trash";
 import { purgeExpiredSpaces } from "@/lib/spaces/manage";
 import { collectOrphanAttachments } from "@/lib/storage/gc";
+import { convertAttachmentPreview } from "@/lib/storage/office-preview";
 import { sendEmail } from "@/lib/email";
 import {
   ensureEmbedQueues,
@@ -15,6 +16,7 @@ import {
   updateExportSpaceProgress,
   updateImportZipProgress,
   updateReindexAllProgress,
+  type ConvertAttachmentPreviewJob,
   type EmbedPageJob,
   type NotificationEmailJob,
   type ExportSpaceJob,
@@ -83,6 +85,22 @@ async function main() {
     const result = await collectOrphanAttachments();
     logger.info(result, "orphan attachments gc done");
   });
+
+  // ── 任務型 job：Office 附件轉 PDF 預覽（M4-12） ──
+  await boss.createQueue(JOBS.convertAttachmentPreview);
+  await boss.work(
+    JOBS.convertAttachmentPreview,
+    async (jobs: Job<ConvertAttachmentPreviewJob>[]) => {
+      for (const job of jobs) {
+        // 轉檔服務未設定（部署未啟用或暫時下線）：略過，不讓 job 失敗堆積。
+        if (!env.PREVIEW_CONVERTER_URL) {
+          logger.debug({ attachmentId: job.data.attachmentId }, "轉檔服務未設定，略過預覽 job");
+          continue;
+        }
+        await convertAttachmentPreview(job.data.attachmentId, env.PREVIEW_CONVERTER_URL);
+      }
+    },
+  );
 
   // ── 任務型 job：頁面嵌入索引（H-06） ──
   await ensureEmbedQueues(boss);

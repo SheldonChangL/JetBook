@@ -369,6 +369,27 @@ export const attachments = pgTable(
   ],
 );
 
+/**
+ * Office 附件的衍生 PDF 預覽（M4-12，issue #216）。與 attachments 1:1
+ * （attachment_id 為 PK＋cascade），實體衍生檔同存 StorageProvider；
+ * 附件 GC 回收時需一併刪除衍生檔（列隨 FK cascade）。
+ */
+export const attachmentPreviews = pgTable("attachment_previews", {
+  attachmentId: uuid("attachment_id")
+    .primaryKey()
+    .references(() => attachments.id, { onDelete: "cascade" }),
+  /** pending＝轉檔中；ready＝可預覽；failed＝轉檔失敗（error 記原因） */
+  status: text("status", { enum: ["pending", "ready", "failed"] })
+    .notNull()
+    .default("pending"),
+  /** 衍生 PDF 的 StorageProvider 鍵；ready 時必有值 */
+  storageKey: text("storage_key"),
+  sizeBytes: bigint("size_bytes", { mode: "number" }),
+  error: text("error"),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+});
+
 // ── 頁面留言（K-01；F-COLLAB-02 頁面級討論串，設計規範 §3.9） ────────────────
 
 /**
