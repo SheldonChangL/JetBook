@@ -9,6 +9,7 @@ import { spaces } from "@/lib/db/schema";
 import { requireSession } from "@/lib/auth/current";
 import { actionAllowedForRole, resolveSpaceAccess } from "@/lib/authz/permission";
 import { listSpaceTreeNodes } from "@/lib/pages/tree";
+import { decodeRouteParam } from "@/lib/utils";
 import { PageTree } from "@/components/tree/page-tree";
 
 /**
@@ -22,7 +23,8 @@ export default async function SpaceLayout({
   children: ReactNode;
   params: Promise<{ spaceSlug: string }>;
 }) {
-  const { spaceSlug } = await params;
+  // route param 為 percent-encoded；含 CJK 的 slug 須還原才比對得到 DB（issue #207）
+  const spaceSlug = decodeRouteParam((await params).spaceSlug);
   const { user } = await requireSession(`/s/${spaceSlug}`);
 
   const space = await db.query.spaces.findFirst({ where: eq(spaces.slug, spaceSlug) });

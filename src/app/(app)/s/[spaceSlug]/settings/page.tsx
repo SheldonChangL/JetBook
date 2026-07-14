@@ -15,6 +15,7 @@ import {
   listSpaceMembers,
 } from "@/lib/spaces/manage";
 import { listGroups } from "@/lib/admin/groups";
+import { decodeRouteParam } from "@/lib/utils";
 import { Badge } from "@/components/ui/badge";
 import { GeneralSection } from "./general-section";
 import { VisibilitySection } from "./visibility-section";
@@ -39,7 +40,8 @@ export default async function SpaceSettingsPage({
 }: {
   params: Promise<{ spaceSlug: string }>;
 }) {
-  const { spaceSlug } = await params;
+  // route param 為 percent-encoded；含 CJK 的 slug 須還原才比對得到 DB（issue #207）
+  const spaceSlug = decodeRouteParam((await params).spaceSlug);
   const { user } = await requireSession(`/s/${spaceSlug}/settings`);
 
   const space = await db.query.spaces.findFirst({ where: eq(spaces.slug, spaceSlug) });

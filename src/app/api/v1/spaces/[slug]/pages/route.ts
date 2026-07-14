@@ -3,6 +3,7 @@ import { requireApiAuth } from "@/lib/api-tokens/bearer";
 import { getAccessiblePageIds } from "@/lib/authz/permission";
 import { listAccessibleSpaces } from "@/lib/spaces/queries";
 import { listSpaceTreeNodes } from "@/lib/pages/tree";
+import { decodeRouteParam } from "@/lib/utils";
 
 export const dynamic = "force-dynamic";
 
@@ -14,7 +15,8 @@ export const dynamic = "force-dynamic";
 export async function GET(request: Request, ctx: { params: Promise<{ slug: string }> }) {
   const result = await requireApiAuth(request, "read");
   if (!result.ok) return result.response;
-  const { slug } = await ctx.params;
+  // route param 為 percent-encoded；含 CJK 的 slug 須還原才比對得到 DB（issue #207）
+  const slug = decodeRouteParam((await ctx.params).slug);
 
   const spaces = await listAccessibleSpaces(result.auth.user);
   const space = spaces.find((s) => s.slug === slug);

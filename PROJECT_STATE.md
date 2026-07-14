@@ -100,7 +100,7 @@ Space 封存/軟刪、跨 Space 移動複製、死鏈標示、附件 GC、Tabs/�
 
 ## 下一步
 
-1. **Merge M4 第一批 stacked PRs（依序）**：#200 → #201 → #202 → #203 → #204 → #205 → #206 → #208（squash；每合一個 GitHub 會自動 retarget 下一個）。含兩個 migration（0018、0019），部署時跑 `db:migrate`
-2. 修 #207（既有 Unicode slug 404，非本批引入）
+1. ~~Merge M4 第一批 stacked PRs~~ ✅ 已全數落地 main（#200 squash＋#208 merge commit 帶入 #201–#206 內容；issue #192–#199 全關）。含兩個 migration（0018、0019），部署時跑 `db:migrate`
+2. ~~修 #207~~ ✅ Unicode slug 404 已修（route param decode＋301 redirect encode，E2E `unicode-slug.spec.ts` 正反向驗證）
 3. 部署到公司內部伺服器：`.env` 填正式值（含 SMTP_* 讓 Email 通知/歡迎信生效）、`docker compose up -d --build`
 4. 串接真實 AI 端點（ANTHROPIC_API_KEY + local BGE-M3）；MCP 依 docs/guides/mcp-server.md 讓 Claude 接上知識庫（每人自建 API token）

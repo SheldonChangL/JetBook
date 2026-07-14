@@ -18,7 +18,7 @@ import { RestoreVersionButton } from "./restore-version-button";
 import { VersionSidebar, type VersionListItem } from "./version-sidebar";
 import { Badge } from "@/components/ui/badge";
 import type { ProseMirrorDoc } from "@/lib/content/types";
-import { cn } from "@/lib/utils";
+import { cn, decodeRouteParam } from "@/lib/utils";
 
 const formatTime = (date: Date) =>
   new Intl.DateTimeFormat("zh-TW", { dateStyle: "medium", timeStyle: "short" }).format(date);
@@ -28,7 +28,10 @@ export async function generateMetadata({
 }: {
   params: Promise<{ spaceSlug: string; pageSlug: string }>;
 }): Promise<Metadata> {
-  const { spaceSlug, pageSlug } = await params;
+  const raw = await params;
+  // route param 為 percent-encoded；含 CJK 的 slug 須還原才比對得到 DB（issue #207）
+  const spaceSlug = decodeRouteParam(raw.spaceSlug);
+  const pageSlug = decodeRouteParam(raw.pageSlug);
   // 權限檢查同閱讀頁：無權限者連 <title> 都不得洩漏頁面存在性（§3.12）
   const session = await getCurrentSession();
   if (!session) return {};
@@ -62,7 +65,9 @@ export default async function PageHistoryPage({
   params: Promise<{ spaceSlug: string; pageSlug: string }>;
   searchParams: Promise<{ v?: string; tab?: string; from?: string; to?: string }>;
 }) {
-  const { spaceSlug, pageSlug } = await params;
+  const raw = await params;
+  const spaceSlug = decodeRouteParam(raw.spaceSlug);
+  const pageSlug = decodeRouteParam(raw.pageSlug);
   const { v, tab, from, to } = await searchParams;
   const { user } = await requireSession(`/s/${spaceSlug}/${pageSlug}/history`);
   const t = await getTranslations("versionHistory");
