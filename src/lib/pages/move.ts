@@ -25,8 +25,10 @@ export interface MovePageNodeInput {
 /**
  * 頁面搬移／排序（C-04，ADR-001 fractional index）：
  * - 只改動被搬移節點本身的 parent_id/position，兄弟節點零重排；
- * - 循環防護：同一交易內以 recursive CTE 確認 newParent 不在 pageId 子樹（含自身），
- *   違反即丟 PageMoveCycleError；
+ * - 循環防護：交易開頭以每空間 advisory lock（pg_advisory_xact_lock）序列化同空間全部 reparent
+ *   （issue #224；環的所有邊都是同空間 parent 連結，故 per-space 序列化即完備——列鎖版對
+ *   多節點環的不相交鎖集合會失效），再於同一交易內以 recursive CTE 確認 newParent 不在
+ *   pageId 子樹（含自身），違反即丟 PageMoveCycleError；
  * - beforeId/afterId 指定目標父節點下的錨點兄弟，positionBetween 取鄰位中間鍵。
  * 呼叫端（server action）負責 session／authz（lib/authz 唯一入口）。
  */
@@ -35,8 +37,24 @@ export async function movePageNode(input: MovePageNodeInput): Promise<{ position
   if (newParentId === pageId) throw new PageMoveCycleError();
 
   return db.transaction(async (tx) => {
+    // 循環防護第一道（issue #224）：每空間 advisory lock 序列化同空間的全部 reparent。
+    // READ COMMITTED 下無鎖時，並行 reparent 各自讀到彼此舊 parent_id、都通過下方 cycle check、
+    // 更新不同列不互相阻塞，提交後成環（兩節點互掛，或多節點如 A→B、C→D 各自鎖集合不相交的
+    // 4 節點環——故列鎖不完備）。環的所有邊都是 parent 連結、parent 必同空間，per-space 一把鎖
+    // 即完備；後取鎖者待前者提交後重讀最新已提交狀態，cycle check 必能偵測到環並 rollback。
+    // 取捨：同空間 reparent 全序列化，但 reparent 屬低頻操作，成本可接受。
+    // pg_advisory_xact_lock 交易結束自動釋放，無需手動解鎖。
+    const before = await tx.query.pages.findFirst({ where: eq(pages.id, pageId) });
+    if (!before || before.deletedAt) throw new Error("NOT_FOUND");
+    await tx.execute(
+      sql`SELECT pg_advisory_xact_lock(hashtextextended(${before.spaceId}::text, 0))`,
+    );
+
+    // 取鎖後重讀：堵住「讀 spaceId 後、取鎖前」頁面被並發跨空間搬走／刪除的 TOCTOU 窗口。
     const page = await tx.query.pages.findFirst({ where: eq(pages.id, pageId) });
-    if (!page || page.deletedAt) throw new Error("NOT_FOUND");
+    if (!page || page.deletedAt || page.spaceId !== before.spaceId) {
+      throw new Error("NOT_FOUND");
+    }
     if (input.expectedSpaceId && page.spaceId !== input.expectedSpaceId) {
       throw new Error("NOT_FOUND");
     }
