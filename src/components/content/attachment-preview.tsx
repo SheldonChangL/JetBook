@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { Download, Eye, Loader2 } from "lucide-react";
 import { useTranslations } from "next-intl";
 import { Modal, ModalContent } from "@/components/ui/modal";
@@ -45,44 +45,51 @@ export function AttachmentPreviewButton({
   const t = useTranslations("content.attachment");
   const [open, setOpen] = useState(false);
   const [state, setState] = useState<PreviewState>("probing");
-  const tries = useRef(0);
   const displayName = fileName || t("unnamed");
   const previewUrl = attachmentPreviewUrl(attachmentId);
 
-  const probe = useCallback(async () => {
+  const probeStatus = useCallback(async (): Promise<PreviewState> => {
     try {
       // 用 GET 而非 HEAD：202/錯誤回應帶 JSON body，HEAD 帶 body 會被 Chrome 以
       // 協定違規中止（ERR_ABORTED）。拿到 status 後立即取消 body，不實際下載 PDF。
       const res = await fetch(previewUrl);
       void res.body?.cancel().catch(() => undefined);
-      if (res.status === 200) return setState("ready");
-      if (res.status === 202) {
-        if (tries.current >= POLL_MAX_TRIES) return setState("unavailable");
-        tries.current += 1;
-        return setState("pending");
-      }
-      setState("unavailable");
+      if (res.status === 200) return "ready";
+      if (res.status === 202) return "pending";
+      return "unavailable";
     } catch {
-      setState("unavailable");
+      return "unavailable";
     }
   }, [previewUrl]);
 
-  // 開啟時探測；轉檔中每 POLL_INTERVAL_MS 重測（關閉即停）
+  // 開啟時探測；202 每 POLL_INTERVAL_MS 重測（關閉即停）。輪詢以遞迴 setTimeout 驅動、
+  // 不依賴 state 變化觸發（連續 202 時 setState 同值會被 React bail out，effect 不重跑）。
   useEffect(() => {
     if (!open) return;
-    if (state === "probing") void probe();
-    if (state === "pending") {
-      const timer = setTimeout(() => void probe(), POLL_INTERVAL_MS);
-      return () => clearTimeout(timer);
-    }
-  }, [open, state, probe]);
+    let cancelled = false;
+    let timer: ReturnType<typeof setTimeout> | undefined;
+    let tries = 0;
+    const run = async () => {
+      const status = await probeStatus();
+      if (cancelled) return;
+      if (status === "pending" && tries < POLL_MAX_TRIES) {
+        tries += 1;
+        setState("pending");
+        timer = setTimeout(() => void run(), POLL_INTERVAL_MS);
+        return;
+      }
+      setState(status === "pending" ? "unavailable" : status);
+    };
+    void run();
+    return () => {
+      cancelled = true;
+      if (timer) clearTimeout(timer);
+    };
+  }, [open, probeStatus]);
 
   const handleOpenChange = (next: boolean) => {
     setOpen(next);
-    if (next) {
-      tries.current = 0;
-      setState("probing");
-    }
+    if (next) setState("probing");
   };
 
   return (

@@ -66,9 +66,10 @@ export async function resolveAttachmentPreview(
     where: eq(attachmentPreviews.attachmentId, attachment.id),
   });
   if (!preview) {
-    // 功能啟用前上傳的既有附件：lazy 補排轉檔（singletonKey 防重複），回 202 供輪詢
-    await triggerConvertAttachmentPreview(attachment.id);
-    return { ok: false, status: 202 };
+    // 功能啟用前上傳的既有附件：lazy 補排轉檔（singletonKey 防重複），回 202 供輪詢；
+    // enqueue 失敗（佇列異常）誠實回 404，不讓前端輪詢一個不存在的 job
+    const enqueued = await triggerConvertAttachmentPreview(attachment.id);
+    return { ok: false, status: enqueued ? 202 : 404 };
   }
   if (preview.status === "pending") return { ok: false, status: 202 };
   if (preview.status === "ready" && preview.storageKey) {
@@ -79,6 +80,15 @@ export async function resolveAttachmentPreview(
       sizeBytes: preview.sizeBytes,
     };
   }
-  // failed（或 ready 但缺 key 的異常列）：無法預覽 → 404，前端引導下載
+  // failed：轉檔服務暫時故障（如 Gotenberg 重啟期間重試耗盡）不該讓附件永久無法預覽——
+  // 失敗已逾冷卻期時 lazy 重排一次（singletonKey 防重複），否則 404 引導下載
+  const FAILED_RETRY_COOLDOWN_MS = 10 * 60 * 1000;
+  if (
+    preview.status === "failed" &&
+    Date.now() - preview.updatedAt.getTime() > FAILED_RETRY_COOLDOWN_MS
+  ) {
+    const enqueued = await triggerConvertAttachmentPreview(attachment.id);
+    if (enqueued) return { ok: false, status: 202 };
+  }
   return { ok: false, status: 404 };
 }

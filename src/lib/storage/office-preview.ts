@@ -80,6 +80,10 @@ export async function convertAttachmentPreview(
     return;
   }
 
+  // 記住既有衍生檔（重轉時舊檔失去列引用，完成後回收，避免 storage 洩漏）
+  const prior = await db.query.attachmentPreviews.findFirst({
+    where: eq(attachmentPreviews.attachmentId, attachmentId),
+  });
   await upsertPreview(attachmentId, { status: "pending" });
   const storage = getStorageProvider();
 
@@ -92,7 +96,9 @@ export async function convertAttachmentPreview(
       new Blob([new Uint8Array(source)]),
       `source${fileExtension(attachment.fileName)}`,
     );
-    const res = await fetch(new URL("/forms/libreoffice/convert", converterUrl), {
+    // 相對解析保留 converterUrl 的 path 前綴（反向代理子路徑部署）
+    const base = converterUrl.endsWith("/") ? converterUrl : `${converterUrl}/`;
+    const res = await fetch(new URL("forms/libreoffice/convert", base), {
       method: "POST",
       body: form,
       signal: AbortSignal.timeout(CONVERT_TIMEOUT_MS),
@@ -118,10 +124,18 @@ export async function convertAttachmentPreview(
       await storage.delete(derivedKey).catch(() => undefined);
       throw error;
     }
+    // 舊衍生檔已失去列引用（storageKey 被覆寫），此刻回收
+    if (prior?.storageKey && prior.storageKey !== derivedKey) {
+      await storage.delete(prior.storageKey).catch(() => undefined);
+    }
     logger.info({ attachmentId, derivedKey, sizeBytes: pdf.length }, "office 附件轉 PDF 完成");
   } catch (error) {
     const message = error instanceof Error ? error.message.slice(0, 500) : "unknown";
     await upsertPreview(attachmentId, { status: "failed", error: message }).catch(() => undefined);
+    // failed 列的 storageKey 為 null：舊衍生檔（若有）同樣失去引用，一併回收
+    if (prior?.storageKey) {
+      await getStorageProvider().delete(prior.storageKey).catch(() => undefined);
+    }
     logger.error({ err: error, attachmentId }, "office 附件轉 PDF 失敗");
     throw error;
   }

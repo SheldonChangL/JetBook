@@ -76,7 +76,7 @@ export interface ConvertAttachmentPreviewJob {
  * enqueue 失敗而失敗；singletonKey 防同一附件重複排程（含 preview 端點的
  * lazy 補排）。轉檔服務未設定時呼叫端不應 enqueue（由呼叫端判斷）。
  */
-export async function triggerConvertAttachmentPreview(attachmentId: string): Promise<void> {
+export async function triggerConvertAttachmentPreview(attachmentId: string): Promise<boolean> {
   try {
     const boss = await getBoss();
     await boss.createQueue(JOBS.convertAttachmentPreview);
@@ -85,8 +85,10 @@ export async function triggerConvertAttachmentPreview(attachmentId: string): Pro
       { attachmentId } satisfies ConvertAttachmentPreviewJob,
       { retryLimit: 3, retryDelay: 30, retryBackoff: true, singletonKey: attachmentId },
     );
+    return true;
   } catch (error) {
     logger.error({ err: error, attachmentId }, "enqueue convert-attachment-preview 失敗（不阻塞上傳）");
+    return false;
   }
 }
 
