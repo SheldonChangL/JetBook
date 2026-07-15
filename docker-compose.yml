@@ -36,7 +36,7 @@ services:
       db:
         condition: service_healthy
     volumes:
-      - uploads:/data/uploads
+      - ${UPLOADS_SOURCE:-uploads}:/data/uploads
 
   worker:
     build: .
@@ -53,7 +53,7 @@ services:
       db:
         condition: service_healthy
     volumes:
-      - uploads:/data/uploads
+      - ${UPLOADS_SOURCE:-uploads}:/data/uploads
 
   # Office 附件轉 PDF 預覽（M4-12，issue #216）：內建 LibreOffice 的 stateless 轉檔服務。
   # 啟用：.env 設 PREVIEW_CONVERTER_URL=http://gotenberg:3000；未設定時本服務閒置、
@@ -104,10 +104,13 @@ services:
     volumes:
       - backups:/backups
       # 附件來源唯讀掛載：備份不可寫壞正式資料
-      - uploads:/data/uploads:ro
+      - ${UPLOADS_SOURCE:-uploads}:/data/uploads:ro
 
 volumes:
   pgdata:
+  # 附件儲存來源：預設用此 named volume（位於 /var/lib/docker/volumes/jetbook_uploads/_data）。
+  # 要改存到自指定的主機目錄：於 .env 設 UPLOADS_SOURCE=/你的/絕對路徑（會變 bind mount）；
+  # 注意 bind mount 不繼承 image 的 owner，須先 `sudo mkdir -p <路徑> && sudo chown -R 1001:1001 <路徑>`。
   uploads:
   # 備份存放區。正式環境應改綁至「不同實體主機」的儲存（NFR-DATA-03）——
   # 見 runbook「異機保存」段落；此處 named volume 為單機基準。
