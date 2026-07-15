@@ -7,6 +7,7 @@ import { Modal, ModalContent } from "@/components/ui/modal";
 import {
   attachmentFileUrl,
   attachmentPreviewUrl,
+  isPreviewableAttachment,
 } from "@/components/editor/attachment/attachment-utils";
 import { useAttachmentPreview } from "./use-attachment-preview";
 
@@ -41,8 +42,8 @@ export function AttachmentPreviewButton({
   const [open, setOpen] = useState(false);
   const displayName = fileName || t("unnamed");
   const previewUrl = attachmentPreviewUrl(attachmentId);
-  // 探測只在 Modal 開啟時進行（active=open）；共用 hook（與內嵌文件檢視同一邏輯）。
-  const state = useAttachmentPreview(previewUrl, open);
+  // 探測只在 Modal 開啟時進行（active=open）；PDF 免探測（skipProbing）直接顯示。共用 hook。
+  const state = useAttachmentPreview(previewUrl, open, isPreviewableAttachment(fileName));
 
   const handleOpenChange = (next: boolean) => {
     setOpen(next);

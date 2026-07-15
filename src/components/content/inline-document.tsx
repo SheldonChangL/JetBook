@@ -6,6 +6,7 @@ import {
   attachmentFileUrl,
   attachmentPreviewUrl,
   formatFileSize,
+  isPreviewableAttachment,
 } from "@/components/editor/attachment/attachment-utils";
 import { useAttachmentPreview } from "./use-attachment-preview";
 
@@ -29,7 +30,8 @@ export function InlineDocument({
 }) {
   const t = useTranslations("content.attachment");
   const previewUrl = attachmentPreviewUrl(attachmentId);
-  const state = useAttachmentPreview(previewUrl, true);
+  // PDF 原生 inline、免探測（skipProbing）；Office 需探測（202 轉檔中輪詢）。
+  const state = useAttachmentPreview(previewUrl, true, isPreviewableAttachment(fileName));
   const displayName = fileName || t("unnamed");
   const size = formatFileSize(sizeBytes);
 
