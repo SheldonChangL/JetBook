@@ -3,7 +3,7 @@ import { eq } from "drizzle-orm";
 import { db } from "@/lib/db";
 import { pages, spaces } from "@/lib/db/schema";
 import { can, type Actor } from "@/lib/authz/permission";
-import { markdownToDoc } from "@/lib/content/markdown-to-doc";
+import { internalAttachmentImageResolver, markdownToDoc } from "@/lib/content/markdown-to-doc";
 import { createPageInTx } from "@/lib/pages/create";
 import { writePageContentTx } from "@/lib/pages/content-write";
 import { HasChildrenError, PageMoveCycleError, VersionConflictError } from "@/lib/pages/errors";
@@ -83,7 +83,8 @@ export async function apiCreatePage(user: Actor, input: ApiCreatePageInput): Pro
     }
   }
 
-  const doc = markdownToDoc(input.markdown);
+  // 內部附件 URL（/api/files/<id>）→ image 節點（往返無失真、閱讀端內嵌）；外部維持降級為連結
+  const doc = markdownToDoc(input.markdown, { resolveImageSrc: internalAttachmentImageResolver });
   let page: typeof pages.$inferSelect;
   let versionNo: number;
   try {
@@ -168,7 +169,10 @@ export async function apiUpdatePage(user: Actor, input: ApiUpdatePageInput): Pro
   }
   const shouldRelease = !before.lockedByMe;
 
-  const doc = input.markdown !== undefined ? markdownToDoc(input.markdown) : null;
+  const doc =
+    input.markdown !== undefined
+      ? markdownToDoc(input.markdown, { resolveImageSrc: internalAttachmentImageResolver })
+      : null;
   let result: { versionNo: number; title: string; slug: string; titleChanged: boolean };
   try {
     result = await db.transaction(async (tx) => {

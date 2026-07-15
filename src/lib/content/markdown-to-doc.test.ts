@@ -1,5 +1,10 @@
 import { describe, it, expect } from "vitest";
-import { markdownToDoc, markdownToBlockNodes, looksLikeMarkdown } from "./markdown-to-doc";
+import {
+  markdownToDoc,
+  markdownToBlockNodes,
+  looksLikeMarkdown,
+  internalAttachmentImageResolver,
+} from "./markdown-to-doc";
 import type { ProseMirrorNode } from "./types";
 
 /** node.content（斷言存在），配合 noUncheckedIndexedAccess。 */
@@ -377,6 +382,54 @@ describe("markdownToDoc — 圖片解析器（J-02 opt-in）", () => {
     markdownToDoc("![a](x.png)", { resolveImageSrc: () => "/api/files/x" });
     const doc = markdownToDoc("![a](x.png)");
     expect(doc.content?.[0]?.type).toBe("paragraph");
+  });
+});
+
+describe("internalAttachmentImageResolver（API 寫入路徑：內部附件 URL → image）", () => {
+  const UID = "65584dfd-a4b9-42d0-b0a4-3d4a6eec6273";
+
+  it("辨識 /api/files/<uuid> 並回 canonical 形態", () => {
+    expect(internalAttachmentImageResolver(`/api/files/${UID}`)).toBe(`/api/files/${UID}`);
+    // 大寫 UUID 正規化為小寫；尾隨 query/fragment 去除
+    expect(internalAttachmentImageResolver(`/api/files/${UID.toUpperCase()}?v=2`)).toBe(
+      `/api/files/${UID}`,
+    );
+  });
+
+  it("外部 URL 與非附件路徑回 null（維持降級為連結）", () => {
+    expect(internalAttachmentImageResolver("https://redmine.example/a.jpg")).toBeNull();
+    expect(internalAttachmentImageResolver("/api/files/not-a-uuid")).toBeNull();
+    expect(internalAttachmentImageResolver("/api/other/" + UID)).toBeNull();
+    expect(internalAttachmentImageResolver("")).toBeNull();
+  });
+
+  it("內部圖片 markdown → block image 節點（往返可還原）", () => {
+    const md = `![Screenshot](/api/files/${UID})`;
+    const doc = markdownToDoc(md, { resolveImageSrc: internalAttachmentImageResolver });
+    expect(doc.content).toEqual([
+      { type: "image", attrs: { src: `/api/files/${UID}`, alt: "Screenshot" } },
+    ]);
+  });
+
+  it("外部圖片 markdown 仍降級為連結（未經匯入）", () => {
+    const doc = markdownToDoc("![外部](https://redmine.example/a.jpg)", {
+      resolveImageSrc: internalAttachmentImageResolver,
+    });
+    const first = doc.content?.[0];
+    expect(first?.type).toBe("paragraph");
+    expect(first?.content?.[0]?.marks?.[0]?.type).toBe("link");
+  });
+
+  it("一般連結（無驚嘆號）不被當成圖片", () => {
+    const doc = markdownToDoc(`[報告](/api/files/${UID})`, {
+      resolveImageSrc: internalAttachmentImageResolver,
+    });
+    const first = doc.content?.[0];
+    expect(first?.type).toBe("paragraph");
+    expect(first?.content?.[0]?.marks?.[0]).toEqual({
+      type: "link",
+      attrs: { href: `/api/files/${UID}` },
+    });
   });
 });
 

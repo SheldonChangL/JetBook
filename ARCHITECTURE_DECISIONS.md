@@ -18,6 +18,7 @@
 | ADR-009 | LLM Provider 抽象層不暴露 sampling 參數 | 已接受 | C6 |
 | ADR-010 | v1 採直接編輯，無草稿/發布閘門 | 已接受 | C2 |
 | ADR-011 | Space 授權主體泛化：新增 `space_member_groups`，有效角色取最高 | 已接受 | C5 |
+| ADR-012 | 伺服器端 URL 圖片匯入：allowlist + SSRF 防護的受控 egress，重用附件管線 | 已接受 | — |
 
 ---
 
@@ -336,3 +337,26 @@ UI 移除發布按鈕、草稿側欄、「僅發布版」篩選；`pages` 表**�
 - **得**：`can()`／`getAccessiblePageIds()` 仍為唯一入口，RAG 權限過濾同一條 SQL 路徑自動涵蓋群組，N-04 隔離不需另立邏輯。
 - **失**：有效角色解析從「單列成員查詢」變為 union 多來源後取最高，單 space 判定多一次小查詢——在內網規模下可忽略；熱點時可加成員↔space 的物化視圖，屬可後補最佳化。
 - **關聯**：巢狀群組（群組含群組）非 v1 範圍；如日後需要，於 `group_members` 之上加遞迴解析並以新 ADR 記錄。
+
+## ADR-012：伺服器端 URL 圖片匯入採 allowlist ＋ SSRF 防護的受控 egress，重用既有附件管線
+
+- **狀態**：已接受
+- **日期**：2026-07-15
+- **對應審查編號**：—（issue #237）
+
+### 背景
+
+MCP `create_page`/`update_page` 傳入的外部圖片 Markdown（如 Redmine 附件 URL）閱讀端不會內嵌——閱讀渲染僅接受同源附件 URL（`/api/files/<id>`，見 `render-content.tsx`）；且 `markdownToDoc` 對外部圖片一律降級為連結。使用者需求是把外部文件的圖片正式收進 JetBook 成為永久附件並內嵌顯示，不可依賴短效外部 URL。這引入了 web 服務**主動對外連線下載**（outbound egress）這一先前不存在的能力，屬安全模型變更，故立 ADR。
+
+### 決策
+
+1. **寫入路徑修復**：`apiCreatePage`/`apiUpdatePage` 呼叫 `markdownToDoc` 時帶入 `internalAttachmentImageResolver`——只認 `/api/files/<uuid>` 形態的圖片並產生 block image 節點（`read_page` 完整往返、閱讀端內嵌）；外部 URL 維持降級為連結（不改既有安全渲染模型）。
+2. **新增 MCP 工具 `import_attachment_from_url`**：伺服器端下載 → magic bytes 內容驗證 → 重用既有 `saveAttachment` 儲存管線（雙白名單＋UUID 檔名＋sha256＋StorageProvider＋DB，DB 失敗自動回收檔案），**不另建平行附件系統**。位元組全程伺服器端串流，不經模型（無 base64）。
+3. **SSRF 受控 egress**（`lib/storage/ssrf.ts` 純邏輯 ＋ `import-url.ts` 編排）：來源 host 須落在 `JETBOOK_ATTACHMENT_IMPORT_HOSTS` allowlist（預設空＝全拒）；只允許 http/https；DNS 解析後逐一驗證 IP，硬性封鎖 loopback／link-local（含 cloud metadata）／multicast／保留位；私有網段僅在 host 經 allowlist 授權時可達（內網 Redmine）；每次 redirect 逐跳重驗協定／host／IP，限制跳數、逾時與最大檔案大小；連線 pin 到已驗證 IP（TLS 仍以 hostname 驗憑證）以降低 DNS rebinding。來源憑證／signed URL 不入日誌（只記 host）。
+
+### 取捨與後果
+
+- **得**：外部圖片成為 JetBook 管理的永久附件，權限、GC、預覽、備份沿用既有機制；閱讀端渲染模型不放寬（仍只內嵌同源附件），零新增 XSS 面。
+- **得**：egress 預設拒絕、以部署設定（env）明確開放，符合 deny-by-default 與 12-factor；SSRF 純邏輯可單元測試，網路依賴以注入 transport/resolver 測試。
+- **失／限制**：allowlist 以 host 精確比對（不展開子網域），新增來源需改 env；跨程序 DNS rebinding 僅以「連線 pin＋逐跳重驗」緩解，未做完整 pinned-connect 的 TLS 重驗（內網受信來源情境下可接受）。
+- **關聯**：不接受任意 Authorization header——需登入的來源改用來源系統（如 Redmine MCP）產生的短效下載 URL。未來換 S3/MinIO StorageProvider 時本路徑不變。

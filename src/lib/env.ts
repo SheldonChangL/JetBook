@@ -1,6 +1,7 @@
 import "server-only";
 import { z } from "zod";
 import { parseEmbedDomains } from "./content/embed";
+import { parseImportHosts } from "./storage/ssrf";
 
 /**
  * 環境變數唯一入口（12-factor）。
@@ -26,6 +27,17 @@ const envSchema = z.object({
   UPLOAD_DIR: z.string().default("./data/uploads"),
   /** 單檔上傳大小上限（MB） */
   MAX_UPLOAD_MB: z.coerce.number().int().positive().default(50),
+  /**
+   * 伺服器端圖片匯入（import_attachment_from_url）的來源 host allowlist（逗號分隔，如
+   * "redmine.jet-opto.com.tw"）。**未設定＝空白名單：一律拒絕匯入**（預設拒絕，SSRF 防護）。
+   * 列入白名單即代表管理者信任該來源，允許其解析到私有網段位址（內網 Redmine 即此情境）；
+   * 但 loopback／link-local（含 cloud metadata）／multicast 等一律硬性封鎖，不受白名單影響。
+   * 轉換後為正規化的 host 陣列（見 lib/storage/ssrf.ts 的 parseImportHosts）。
+   */
+  JETBOOK_ATTACHMENT_IMPORT_HOSTS: z
+    .string()
+    .optional()
+    .transform((v) => parseImportHosts(v)),
   /**
    * Office 附件轉 PDF 預覽的轉檔服務（M4-12，issue #216）：Gotenberg HTTP API 位址
    * （compose sidecar 為 http://gotenberg:3000）。未設定＝Office 預覽停用，
