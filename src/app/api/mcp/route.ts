@@ -304,7 +304,12 @@ const handler = createMcpHandler(
         const text =
           rows.length === 0
             ? "沒有可存取的空間。"
-            : rows.map((s) => `- ${s.name}（slug: ${s.slug}）${s.description ? ` — ${s.description}` : ""}`).join("\n");
+            : rows
+                .map(
+                  (s) =>
+                    `- ${s.name}（slug: ${s.slug}）${s.description ? ` — ${s.description}` : ""}\n  spaceId: ${s.id}`,
+                )
+                .join("\n");
         return { content: [{ type: "text" as const, text }] };
       },
     );
