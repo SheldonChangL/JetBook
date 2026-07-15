@@ -6,6 +6,7 @@ import {
   Heading1,
   Heading2,
   Heading3,
+  Image as ImageIcon,
   Info,
   List,
   ListChecks,
@@ -210,6 +211,17 @@ export const SLASH_MENU_ITEMS: readonly SlashMenuItem[] = [
     keywords: ["嵌入", "內嵌", "影片", "iframe", "embed", "youtube", "figma", "video"],
     command: ({ editor, range }) =>
       editor.chain().focus().deleteRange(range).setEmbed().run(),
+  },
+  {
+    id: "image",
+    group: "advanced",
+    icon: ImageIcon,
+    keywords: ["圖片", "圖像", "照片", "插圖", "image", "picture", "photo", "img"],
+    // 先移除觸發字元，再開圖片選擇器（openPicker 由 PageEditor 填入 image storage）
+    command: ({ editor, range }) => {
+      editor.chain().focus().deleteRange(range).run();
+      editor.storage.image.openPicker(editor.state.selection.from);
+    },
   },
   {
     id: "attachment",

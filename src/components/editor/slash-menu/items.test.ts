@@ -142,6 +142,7 @@ describe("filterSlashMenuItems（F-EDIT-02 中英文關鍵字過濾）", () => {
       "stepper",
       "mermaid",
       "embed",
+      "image",
       "attachment",
     ]);
     for (const item of SLASH_MENU_ITEMS) {

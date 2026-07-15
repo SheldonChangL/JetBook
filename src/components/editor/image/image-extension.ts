@@ -16,6 +16,8 @@ export interface ImageUploadStorage {
   pageId: string | null;
   uploadingLabel: string;
   onError: (file: File, code: UploadErrorCode) => void;
+  /** slash「圖片」→ 開圖片選擇器（由 PageEditor 填入；於指令當下讀取，與 attachment 對稱，#243）。 */
+  openPicker: (pos: number) => void;
 }
 
 declare module "@tiptap/core" {
@@ -63,6 +65,7 @@ export function createImageExtension() {
         pageId: null,
         uploadingLabel: "",
         onError: () => {},
+        openPicker: () => {},
       };
     },
 

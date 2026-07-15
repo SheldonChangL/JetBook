@@ -814,6 +814,15 @@ html.dark {
     text-decoration: underline;
   }
 
+  /* 編輯器空狀態提示（B，#243）：空白頁第一個節點以 data-placeholder 顯示（僅編輯器有 is-editor-empty） */
+  .prose-editor :where(.is-editor-empty:first-child)::before {
+    content: attr(data-placeholder);
+    color: var(--text-tertiary);
+    float: left;
+    height: 0;
+    pointer-events: none;
+  }
+
   /* 附件內嵌文件檢視（#241；PDF／Office 轉檔）：頂列檔名+下載 + 固定高度可捲動 iframe */
   .prose-editor :where(.content-document) {
     margin: 1rem 0;
@@ -863,16 +872,23 @@ html.dark {
     background: var(--bg-hover);
     text-decoration: underline;
   }
+  /* 可視區：較大預設高度 + 可垂直拖曳調整（resize handle 於右下角）。 */
+  .prose-editor :where(.content-document__viewport) {
+    height: min(80vh, 900px);
+    min-height: 320px;
+    resize: vertical;
+    overflow: hidden;
+  }
   .prose-editor :where(.content-document__frame) {
     display: block;
     width: 100%;
-    height: 600px;
+    height: 100%;
     border: 0;
     background: var(--bg-raised);
   }
   .prose-editor :where(.content-document__status) {
     display: flex;
-    height: 240px;
+    height: 100%;
     flex-direction: column;
     align-items: center;
     justify-content: center;

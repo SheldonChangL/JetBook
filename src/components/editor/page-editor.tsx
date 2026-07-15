@@ -9,9 +9,11 @@ import { renamePage, savePage, setPageIcon } from "@/actions/page";
 import { heartbeatLockAction, releaseLockAction } from "@/actions/lock";
 import { buildExtensions } from "./extensions";
 import { TableMenu } from "./table-menu";
+import { InsertMenu } from "./insert-menu";
 import { AiAssistMenu } from "./ai-assist/ai-assist-menu";
 import { startImageUpload } from "./image/image-upload";
 import {
+  IMAGE_MIME_TYPES,
   isRetryableUploadError,
   uploadErrorMessageKey,
   type UploadErrorCode,
@@ -74,7 +76,7 @@ export function PageEditor({
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const editor = useEditor({
-    extensions: buildExtensions({ spaceId }),
+    extensions: buildExtensions({ spaceId, placeholder: t("placeholder") }),
     content: initialContent ?? undefined,
     immediatelyRender: false,
     editorProps: {
@@ -130,7 +132,35 @@ export function PageEditor({
     retryRef.current = uploadImageAtSelection;
   }, [uploadImageAtSelection]);
 
-  // 把上傳設定填入 image extension 的 storage，供 drop/貼上 plugin 於事件當下讀取
+  // slash「圖片」→ 開圖片選擇器（僅圖片 MIME；比照附件「檔案」，#243 提升可發現性）
+  const openImagePicker = useCallback(
+    (pos: number) => {
+      const input = document.createElement("input");
+      input.type = "file";
+      input.multiple = true;
+      input.accept = IMAGE_MIME_TYPES.join(",");
+      input.addEventListener("change", () => {
+        const files = input.files;
+        const ed = editorRef.current;
+        if (!files || files.length === 0 || !ed) return;
+        for (const file of files) {
+          startImageUpload({
+            editor: ed,
+            file,
+            pos,
+            spaceId,
+            pageId,
+            uploadingLabel: t("image.uploading"),
+            onError: showUploadError,
+          });
+        }
+      });
+      input.click();
+    },
+    [spaceId, pageId, t, showUploadError],
+  );
+
+  // 把上傳設定填入 image extension 的 storage，供 drop/貼上 plugin 與 slash「圖片」於事件當下讀取
   useEffect(() => {
     if (!editor) return;
     const storage = editor.storage.image;
@@ -138,7 +168,8 @@ export function PageEditor({
     storage.pageId = pageId;
     storage.uploadingLabel = t("image.uploading");
     storage.onError = showUploadError;
-  }, [editor, spaceId, pageId, t, showUploadError]);
+    storage.openPicker = openImagePicker;
+  }, [editor, spaceId, pageId, t, showUploadError, openImagePicker]);
 
   // 附件上傳（D-08）：錯誤提示與 image 一致（可重試者附重試鈕，走 selection 重傳）
   const attachmentRetryRef = useRef<(file: File) => void>(() => {});
@@ -382,6 +413,7 @@ export function PageEditor({
       ) : null}
 
       <EditorContent editor={editor} />
+      <InsertMenu editor={editor} />
       <TableMenu editor={editor} />
       <AiAssistMenu editor={editor} pageId={pageId} enabled={aiEnabled && !lockLost} />
     </div>

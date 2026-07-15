@@ -1,4 +1,5 @@
 import StarterKit from "@tiptap/starter-kit";
+import Placeholder from "@tiptap/extension-placeholder";
 import TaskItem from "@tiptap/extension-task-item";
 import TaskList from "@tiptap/extension-task-list";
 import CodeBlockLowlight from "@tiptap/extension-code-block-lowlight";
@@ -61,16 +62,29 @@ const CodeBlock = CodeBlockLowlight.extend({
  * D-13 加入：Mermaid 圖表區塊（atom 節點，即時預覽、client 端渲染、語法錯誤不崩頁）。
  * D-11 加入：@mention（成員，char `@`）與頁面連結（char `[[`）兩個 inline atom 節點。
  * D-14 加入：Embed 嵌入區塊（atom 節點，白名單內 iframe 嵌入、名單外退化連結卡片）。
+ * B（issue #243）加入：空狀態提示（官方 Placeholder extension）——空白頁顯示可編輯提示。
  *
  * R1 降險：一律採用現成 TipTap extension，不自研核心編輯行為。
  *
  * @param spaceId 目前所在 Space；@mention／頁面連結 suggestion 的候選查詢以此為範圍（權限在 lib 層過濾）。
+ * @param placeholder 空白編輯器的提示文字（i18n，由 PageEditor 傳入）；省略＝不顯示提示。
  */
-export function buildExtensions({ spaceId }: { spaceId: string }): Extensions {
+export function buildExtensions({
+  spaceId,
+  placeholder,
+}: {
+  spaceId: string;
+  placeholder?: string;
+}): Extensions {
   return [
     StarterKit.configure({
       heading: { levels: [1, 2, 3] }, // 統一 H1–H3（C11）
       codeBlock: false, // 由 CodeBlockLowlight 取代
+    }),
+    // B（#243）：空狀態提示。空白頁第一個節點以 data-placeholder 顯示（CSS .is-editor-empty::before）。
+    Placeholder.configure({
+      placeholder: placeholder ?? "",
+      emptyEditorClass: "is-editor-empty",
     }),
     CodeBlock.configure({ lowlight }),
     TaskList,

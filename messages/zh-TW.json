@@ -558,6 +558,8 @@
     "back": "返回",
     "done": "完成編輯",
     "titlePlaceholder": "輸入標題…",
+    "placeholder": "開始輸入內容，或按 /（斜線）插入區塊…",
+    "insertBlock": "插入區塊（開啟指令選單）",
     "iconPicker": "設定頁面圖示",
     "iconError": "圖示更新失敗，請稍後再試",
     "saving": "儲存中…",
@@ -687,6 +689,10 @@
         "embed": {
           "label": "嵌入內容",
           "desc": "貼上 URL 嵌入影片或設計稿"
+        },
+        "image": {
+          "label": "圖片",
+          "desc": "上傳並插入圖片"
         },
         "attachment": {
           "label": "檔案",
@@ -1138,7 +1144,9 @@
       "previewClose": "關閉預覽",
       "previewFrameTitle": "PDF 預覽：{fileName}",
       "previewConverting": "文件轉換中，請稍候…",
-      "previewUnavailable": "無法預覽此檔案，請下載後開啟"
+      "previewUnavailable": "無法預覽此檔案，請下載後開啟",
+      "openInNewTab": "新分頁開啟",
+      "openInNewTabAria": "在新分頁開啟 {fileName}"
     },
     "embed": {
       "frameTitle": "{host} 的嵌入內容",

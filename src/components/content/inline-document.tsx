@@ -1,6 +1,6 @@
 "use client";
 
-import { Download, Loader2, Paperclip } from "lucide-react";
+import { Download, ExternalLink, Loader2, Paperclip } from "lucide-react";
 import { useTranslations } from "next-intl";
 import {
   attachmentFileUrl,
@@ -41,6 +41,18 @@ export function InlineDocument({
         <Paperclip aria-hidden className="content-document__icon" />
         <span className="content-document__name">{displayName}</span>
         {size ? <span className="content-document__size">{size}</span> : null}
+        {state === "ready" ? (
+          <a
+            href={previewUrl}
+            target="_blank"
+            rel="noreferrer noopener"
+            className="content-document__download"
+            aria-label={t("openInNewTabAria", { fileName: displayName })}
+          >
+            <ExternalLink aria-hidden className="size-4" />
+            <span>{t("openInNewTab")}</span>
+          </a>
+        ) : null}
         <a
           href={attachmentFileUrl(attachmentId)}
           download={fileName || undefined}
@@ -51,22 +63,25 @@ export function InlineDocument({
           <span>{t("download")}</span>
         </a>
       </div>
-      {state === "ready" ? (
-        <iframe
-          src={previewUrl}
-          title={t("previewFrameTitle", { fileName: displayName })}
-          className="content-document__frame"
-        />
-      ) : state === "probing" || state === "pending" ? (
-        <div className="content-document__status">
-          <Loader2 aria-hidden className="size-6 animate-spin" />
-          <p>{t("previewConverting")}</p>
-        </div>
-      ) : (
-        <div className="content-document__status">
-          <p>{t("previewUnavailable")}</p>
-        </div>
-      )}
+      {/* 可視區：預設較大、可垂直拖曳調整（見 globals.css .content-document__viewport） */}
+      <div className="content-document__viewport">
+        {state === "ready" ? (
+          <iframe
+            src={previewUrl}
+            title={t("previewFrameTitle", { fileName: displayName })}
+            className="content-document__frame"
+          />
+        ) : state === "probing" || state === "pending" ? (
+          <div className="content-document__status">
+            <Loader2 aria-hidden className="size-6 animate-spin" />
+            <p>{t("previewConverting")}</p>
+          </div>
+        ) : (
+          <div className="content-document__status">
+            <p>{t("previewUnavailable")}</p>
+          </div>
+        )}
+      </div>
     </div>
   );
 }
