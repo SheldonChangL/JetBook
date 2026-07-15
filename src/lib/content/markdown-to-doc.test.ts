@@ -5,7 +5,8 @@ import {
   looksLikeMarkdown,
   internalAttachmentImageResolver,
 } from "./markdown-to-doc";
-import type { ProseMirrorNode } from "./types";
+import type { ProseMirrorDoc, ProseMirrorNode } from "./types";
+import { docToMarkdown } from "./serialize";
 
 /** node.content（斷言存在），配合 noUncheckedIndexedAccess。 */
 function kids(node: ProseMirrorNode): ProseMirrorNode[] {
@@ -223,6 +224,44 @@ describe("markdownToDoc — 程式碼區塊", () => {
   it("程式碼內容保留原樣，不當作 markdown 解析", () => {
     const node = firstBlock("```md\n# 井號不是標題\n- 減號不是清單\n```");
     expect(node.content).toEqual([{ type: "text", text: "# 井號不是標題\n- 減號不是清單" }]);
+  });
+});
+
+describe("markdownToDoc — Mermaid 圍籬（#245，與 serialize 對稱往返）", () => {
+  it("```mermaid 圍籬 → mermaid 節點（source = 圍籬內容）", () => {
+    expect(firstBlock("```mermaid\ngraph TD\n  A --> B\n```")).toEqual({
+      type: "mermaid",
+      attrs: { source: "graph TD\n  A --> B" },
+    });
+  });
+
+  it("語言比對不分大小寫（```Mermaid 亦轉圖表節點）", () => {
+    expect(firstBlock("```Mermaid\nflowchart LR\n  X --> Y\n```")).toEqual({
+      type: "mermaid",
+      attrs: { source: "flowchart LR\n  X --> Y" },
+    });
+  });
+
+  it("空 ```mermaid 圍籬 → source 空字串（不炸、閱讀端不輸出）", () => {
+    expect(firstBlock("```mermaid\n```")).toEqual({ type: "mermaid", attrs: { source: "" } });
+  });
+
+  it("其餘語言仍為 codeBlock（不誤判含 mermaid 字樣的語言）", () => {
+    expect(firstBlock("```mermaidjs\ngraph TD\n```")).toEqual({
+      type: "codeBlock",
+      attrs: { language: "mermaidjs" },
+      content: [{ type: "text", text: "graph TD" }],
+    });
+  });
+
+  it("mermaid 節點 → docToMarkdown → markdownToDoc 往返回到 mermaid 節點", () => {
+    const source = "sequenceDiagram\n  甲->>乙: 請求\n  乙-->>甲: 回應";
+    const doc: ProseMirrorDoc = {
+      type: "doc",
+      content: [{ type: "mermaid", attrs: { source } }],
+    };
+    const md = docToMarkdown(doc);
+    expect(markdownToDoc(md)).toEqual(doc);
   });
 });
 

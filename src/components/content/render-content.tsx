@@ -7,6 +7,7 @@ import { HeadingAnchor } from "@/components/content/heading-anchor";
 import { codeLanguageLabel } from "@/lib/content/lowlight";
 import { highlightToReact } from "@/lib/content/highlight-to-react";
 import { normalizeCalloutKind } from "@/lib/content/callout";
+import { MERMAID_NODE_NAME } from "@/lib/content/mermaid";
 import { isEmbedUrlAllowed, normalizeEmbedUrl, parseHttpUrl } from "@/lib/content/embed";
 import { CALLOUT_ICONS } from "@/components/content/callout-icons";
 import { CodeBlockReader } from "./code-block-reader";
@@ -195,6 +196,19 @@ function renderChildren(nodes: ProseMirrorNode[] | undefined, ctx: RenderCtx): R
   return (nodes ?? []).map((node, i) => renderNode(node, i, ctx));
 }
 
+/**
+ * D-13：Mermaid 圖表區塊渲染（client 元件，mermaid 依賴 DOM；語法錯誤顯示錯誤框不崩頁）。
+ * `mermaid` 節點與舊資料的 `codeBlock`(language=mermaid)（#245）共用同一渲染。空原始碼不輸出。
+ */
+function renderMermaidBlock(source: string, key: number): ReactNode {
+  if (!source.trim()) return <Fragment key={key} />;
+  return (
+    <div key={key} className="jb-mermaid" data-mermaid="">
+      <MermaidDiagram source={source} />
+    </div>
+  );
+}
+
 function renderInline(nodes: ProseMirrorNode[] | undefined, ctx: RenderCtx): ReactNode {
   return (nodes ?? []).map((node, i) => {
     if (node.type === "text") return renderMarks(node.text ?? "", node.marks, i);
@@ -259,6 +273,11 @@ function renderNode(node: ProseMirrorNode, key: number, ctx: RenderCtx): ReactNo
     case "codeBlock": {
       const code = (node.content ?? []).map((c) => c.text ?? "").join("");
       const language = (node.attrs?.language as string | null | undefined) ?? null;
+      // 舊資料相容（#245）：轉換器修正前，```mermaid 圍籬被存為 codeBlock(language=mermaid)。
+      // 閱讀端一律以圖表渲染，使既有頁面免逐頁重存即正確顯示（新內容已存為 mermaid 節點）。
+      if (language && language.toLowerCase() === MERMAID_NODE_NAME) {
+        return renderMermaidBlock(code, key);
+      }
       return (
         <CodeBlockReader
           key={key}
@@ -317,14 +336,8 @@ function renderNode(node: ProseMirrorNode, key: number, ctx: RenderCtx): ReactNo
       );
     }
     case "mermaid": {
-      // D-13：閱讀端以 client 元件渲染圖表（mermaid 依賴 DOM）；語法錯誤顯示錯誤框不崩頁。
       const source = typeof node.attrs?.source === "string" ? node.attrs.source : "";
-      if (!source.trim()) return <Fragment key={key} />;
-      return (
-        <div key={key} className="jb-mermaid" data-mermaid="">
-          <MermaidDiagram source={source} />
-        </div>
-      );
+      return renderMermaidBlock(source, key);
     }
     case "embed": {
       // D-14：閱讀端依白名單決定 iframe 嵌入或退化連結卡片（判斷於此當下推導，不信任文件內舊狀態）。

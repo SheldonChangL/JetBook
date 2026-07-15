@@ -1,5 +1,6 @@
 import { marked, type Token, type Tokens } from "marked";
 import type { ProseMirrorDoc, ProseMirrorMark, ProseMirrorNode } from "./types";
+import { MERMAID_NODE_NAME } from "./mermaid";
 
 /**
  * Markdown → TipTap/ProseMirror JSON（D-10，F-EDIT-05）。
@@ -7,8 +8,8 @@ import type { ProseMirrorDoc, ProseMirrorMark, ProseMirrorNode } from "./types";
  * 以 marked 的 lexer 取得 AST，再走訪 token 樹產出 canonical JSON（ADR-002）。
  * 純函式、零 UI 相依：編輯器 handlePaste（貼上多段 Markdown）與 J-01 匯入共用同一入口。
  *
- * 對應區塊：標題(H1–H3)、段落、引用、程式碼區塊、清單/巢狀清單、任務清單、
- *          表格、水平線；行內：粗/斜/刪除線/行內碼/連結、硬換行。
+ * 對應區塊：標題(H1–H3)、段落、引用、程式碼區塊、Mermaid 圖表（```mermaid 圍籬）、
+ *          清單/巢狀清單、任務清單、表格、水平線；行內：粗/斜/刪除線/行內碼/連結、硬換行。
  * 刻意排除：圖片（本專案 image 節點僅渲染同源上傳檔，外部 markdown 圖片會在閱讀端被擋，
  *          故 `![alt](url)` 一律降級為連結以免內容遺失）；區塊級 raw HTML 以純文字保留。
  *
@@ -281,6 +282,13 @@ function blockTokensToNodes(tokens: Token[] | undefined): ProseMirrorNode[] {
       case "code": {
         const c = token as Tokens.Code;
         const language = (c.lang ?? "").trim().split(/\s+/)[0] || null;
+        // D-13：```mermaid 圍籬 → mermaid 圖表節點（canonical），與 serialize.ts 對稱往返。
+        // 使所有 Markdown 入口（編輯器貼上、J-01/J-02 匯入、MCP/REST 寫入）的圖表皆存為
+        // mermaid 節點並於閱讀端渲染，而非降級為程式碼區塊。語言比對不分大小寫。
+        if (language && language.toLowerCase() === MERMAID_NODE_NAME) {
+          out.push({ type: MERMAID_NODE_NAME, attrs: { source: c.text } });
+          break;
+        }
         const node: ProseMirrorNode = { type: "codeBlock", attrs: { language } };
         if (c.text.length > 0) node.content = [{ type: "text", text: c.text }];
         out.push(node);
