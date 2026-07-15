@@ -1,11 +1,8 @@
 "use server";
 
-import { eq } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
 import { headers } from "next/headers";
 import { z } from "zod";
-import { db } from "@/lib/db";
-import { spaces } from "@/lib/db/schema";
 import { requireSession } from "@/lib/auth/current";
 import { assertCan, assertOrgAdmin } from "@/lib/authz/permission";
 import { createSpaceCore } from "@/lib/spaces/create";
@@ -15,6 +12,7 @@ import {
   setSpaceGroupRole,
   setSpaceMemberRole,
   softDeleteSpace,
+  updateSpaceFields,
 } from "@/lib/spaces/manage";
 import { ipFromHeaders, writeAudit } from "@/lib/audit";
 import { logger } from "@/lib/logger";
@@ -59,7 +57,7 @@ export async function updateSpace(input: z.infer<typeof updateSchema>) {
   const data = updateSchema.parse(input);
   await assertCan(user, "space.manage", { type: "space", spaceId: data.spaceId });
   const { spaceId, ...fields } = data;
-  await db.update(spaces).set(fields).where(eq(spaces.id, spaceId));
+  await updateSpaceFields(spaceId, fields);
   await writeAudit({
     actorId: user.id,
     action: "space.update",

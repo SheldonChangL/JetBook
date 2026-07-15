@@ -15,6 +15,8 @@ import {
   SPACE_DESCRIPTION_MAX_CHARS,
   SPACE_NAME_MAX_CHARS,
   apiCreateSpace,
+  apiSetSpaceMember,
+  apiUpdateSpace,
 } from "@/lib/api/space-write";
 import { mcpListSpaces, mcpReadPage, mcpSearchPages } from "@/lib/mcp/tools";
 
@@ -202,7 +204,7 @@ const handler = createMcpHandler(
 
     server.tool(
       "create_space",
-      "建立新的知識空間。slug 由系統自動產生（重名自動加尾碼）；建立者自動成為該空間管理員。需要 write scope 的 token。",
+      "建立新的知識空間。slug 由系統自動產生（重名自動加尾碼）；建立者自動成為該空間管理員。可設 visibility 決定誰看得到（省略＝private 僅成員可見）。需要 write scope 的 token。回傳 spaceId 與可見度。",
       {
         name: z.string().trim().min(1).max(SPACE_NAME_MAX_CHARS).describe("空間名稱"),
         description: z
@@ -211,19 +213,122 @@ const handler = createMcpHandler(
           .max(SPACE_DESCRIPTION_MAX_CHARS)
           .optional()
           .describe("空間描述（選填）"),
+        visibility: z
+          .enum(["private", "org_read", "org_write"])
+          .optional()
+          .describe(
+            "可見度（省略＝private）：private＝僅成員可見；org_read＝全組織可讀；org_write＝全組織可讀寫",
+          ),
       },
-      async ({ name, description }, extra) => {
+      async ({ name, description, visibility }, extra) => {
         const gate = writeGate(extra);
         if (!gate.ok) return gate.result;
-        const space = await apiCreateSpace(actorFrom(extra), { name, description });
+        const space = await apiCreateSpace(actorFrom(extra), { name, description, visibility });
         return {
           content: [
             {
               type: "text" as const,
-              text: `已建立空間「${space.name}」\nspaceId: ${space.id}\nslug: ${space.slug}`,
+              text: `已建立空間「${space.name}」\nspaceId: ${space.id}\nslug: ${space.slug}\n可見度: ${space.visibility}`,
             },
           ],
         };
+      },
+    );
+
+    server.tool(
+      "update_space",
+      "更新既有空間的設定：name（改名）、description（改描述，傳 null 清除）、icon（傳 null 清除）、visibility（可見度）——至少提供一項。spaceId 取自 list_spaces／search_pages／read_page。需空間管理員權限與 write scope 的 token。",
+      {
+        spaceId: z.string().uuid().describe("目標空間 id（UUID）"),
+        name: z
+          .string()
+          .trim()
+          .min(1)
+          .max(SPACE_NAME_MAX_CHARS)
+          .optional()
+          .describe("新名稱；省略＝不變"),
+        description: z
+          .string()
+          .trim()
+          .max(SPACE_DESCRIPTION_MAX_CHARS)
+          .nullable()
+          .optional()
+          .describe("新描述；null＝清除；省略＝不變"),
+        icon: z
+          .string()
+          .trim()
+          .max(16)
+          .nullable()
+          .optional()
+          .describe("新 emoji 圖示；null＝清除；省略＝不變"),
+        visibility: z
+          .enum(["private", "org_read", "org_write"])
+          .optional()
+          .describe("可見度：private／org_read／org_write；省略＝不變"),
+      },
+      async ({ spaceId, name, description, icon, visibility }, extra) => {
+        const gate = writeGate(extra);
+        if (!gate.ok) return gate.result;
+        if (
+          name === undefined &&
+          description === undefined &&
+          icon === undefined &&
+          visibility === undefined
+        ) {
+          return mcpError("name／description／icon／visibility 至少需提供一項。");
+        }
+        const outcome = await apiUpdateSpace(actorFrom(extra), {
+          spaceId,
+          name,
+          description,
+          icon,
+          visibility,
+        });
+        if (!outcome.ok) return mcpError("空間不存在或無管理權限。");
+        const s = outcome.space;
+        return {
+          content: [
+            {
+              type: "text" as const,
+              text: `已更新空間「${s.name}」\nspaceId: ${s.id}\nslug: ${s.slug}\n可見度: ${s.visibility}`,
+            },
+          ],
+        };
+      },
+    );
+
+    server.tool(
+      "set_space_member",
+      "設定、變更或移除空間成員（以 email 指定使用者）。role＝admin／editor／commenter／viewer 加入或變更角色；role＝none 移除成員。spaceId 取自 list_spaces／search_pages／read_page。需空間管理員權限與 write scope 的 token。不可移除或降級空間最後一位管理員。",
+      {
+        spaceId: z.string().uuid().describe("目標空間 id（UUID）"),
+        email: z.string().trim().min(1).describe("使用者 email（需與系統中的帳號相符）"),
+        role: z
+          .enum(["admin", "editor", "commenter", "viewer", "none"])
+          .describe(
+            "角色：admin（管理）／editor（編輯）／commenter（評論）／viewer（唯讀）；none＝移除該成員",
+          ),
+      },
+      async ({ spaceId, email, role }, extra) => {
+        const gate = writeGate(extra);
+        if (!gate.ok) return gate.result;
+        const outcome = await apiSetSpaceMember(actorFrom(extra), {
+          spaceId,
+          email,
+          role: role === "none" ? null : role,
+        });
+        if (!outcome.ok) {
+          if (outcome.error === "USER_NOT_FOUND")
+            return mcpError(`找不到 email 為 ${email} 的使用者（需為系統中的啟用帳號）。`);
+          if (outcome.error === "LAST_ADMIN")
+            return mcpError("不可移除或降級空間的最後一位管理員。");
+          return mcpError("空間不存在或無管理權限。");
+        }
+        const text =
+          outcome.role === null
+            ? `已將 ${outcome.email} 移出空間。`
+            : `已設定 ${outcome.email} 的角色為 ${outcome.role}。`;
+        return { content: [{ type: "text" as const, text }] };
       },
     );
 

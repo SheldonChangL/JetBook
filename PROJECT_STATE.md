@@ -52,6 +52,7 @@ Next.js（App Router、TS strict）全端 + PostgreSQL 16/pgvector/pgroonga + Do
 
 ### M4 後續修正（2026-07-15，使用回饋）
 - [x] MCP 空間工具鏈補齊 spaceId：`list_spaces`（原本漏印，導致 `create_page`/`move_page` 拿不到目標空間 id 而斷鏈）、`search_pages`、`read_page` 皆回傳 spaceId，任一唯讀結果即可直接餵寫入工具，免再繞一次 list_spaces；`SearchHit` 於 SQL 層加 `s.id`（純新增欄位，web 搜尋與 REST `/api/v1/search` 不受影響）；MCP 整合測試補 spaceId 斷言＋真 MCP client 實測三工具皆含 spaceId — PR #235
+- [x] 空間管理 API 完整化（MCP + REST 對等）：`create_space` 加 `visibility`（省略＝private，一次建出可共享空間）；新增 `update_space`（改 name／description／icon／visibility）與 `set_space_member`（以 email 加／改／移除成員角色，role=none 移除；不可移除最後一位 admin）；共用 lib 核心（`updateSpaceFields`／`setSpaceMemberRole`，web action 一併改用避免漂移）、權限一律 `can(space.manage)`、不存在/無權統一 NOT_FOUND_OR_FORBIDDEN 防枚舉；REST 新增 `PATCH /api/v1/spaces/{slug}`、`PUT /api/v1/spaces/{slug}/members` 並更新 OpenAPI；整合測試 +8（含 undefined 部分更新不清空、LAST_ADMIN 409、防枚舉 404）＋真 MCP client 實測三工具往返 — PR（本次）
 
 ### 尚未完成（v1 之後）
 - **#93 M4 backlog**：變更請求、行內評論、webhooks（暫停）、PDF 匯出、KaTeX、多欄、snippets、內容分析等——其餘候選項依回饋再拆

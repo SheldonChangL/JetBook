@@ -9,6 +9,7 @@ import {
   spaces,
   users,
   type SpaceRole,
+  type SpaceVisibility,
 } from "@/lib/db/schema";
 import { highestRole } from "@/lib/authz/policy";
 import { writeAudit } from "@/lib/audit";
@@ -60,6 +61,31 @@ export async function listActiveUsers(): Promise<CandidateUser[]> {
     .from(users)
     .where(eq(users.isActive, true))
     .orderBy(asc(users.name));
+}
+
+/** 以 email 找啟用中使用者（API 加成員用，大小寫不敏感）；查無回 null。 */
+export async function findActiveUserByEmail(email: string): Promise<{ id: string } | null> {
+  const [row] = await db
+    .select({ id: users.id })
+    .from(users)
+    .where(and(sql`lower(${users.email}) = lower(${email})`, eq(users.isActive, true)))
+    .limit(1);
+  return row ?? null;
+}
+
+export interface SpaceUpdateFields {
+  name?: string;
+  description?: string | null;
+  icon?: string | null;
+  visibility?: SpaceVisibility;
+}
+
+/**
+ * 更新 space 欄位（名稱／描述／icon／可見度）——web action 與 API 寫入共用的唯一更新路徑，
+ * 只寫入有提供的欄位（description／icon 可設 null 清除）。權限斷言與稽核由呼叫端薄殼負責。
+ */
+export async function updateSpaceFields(spaceId: string, fields: SpaceUpdateFields): Promise<void> {
+  await db.update(spaces).set(fields).where(eq(spaces.id, spaceId));
 }
 
 // ── 群組掛載（K-03 主體泛化 C5） ─────────────────────────────────────

@@ -25,7 +25,7 @@ export const openApiSpec = {
       post: {
         summary: "建立空間（M4-13，需 write scope）",
         description:
-          "建立新的知識空間；slug 由系統自動產生（重名自動加尾碼），建立者自動成為該空間管理員。",
+          "建立新的知識空間；slug 由系統自動產生（重名自動加尾碼），建立者自動成為該空間管理員。visibility 省略＝private。",
         requestBody: {
           required: true,
           content: {
@@ -36,15 +36,84 @@ export const openApiSpec = {
                 properties: {
                   name: { type: "string", maxLength: 100 },
                   description: { type: "string", maxLength: 500 },
+                  visibility: {
+                    type: "string",
+                    enum: ["private", "org_read", "org_write"],
+                    description: "可見度（省略＝private）",
+                  },
                 },
               },
             },
           },
         },
         responses: {
-          "201": { description: "已建立（id、slug、name）" },
+          "201": { description: "已建立（id、slug、name、visibility）" },
           "400": { description: "body 格式錯誤" },
           "403": { description: "token 無 write scope" },
+        },
+      },
+    },
+    "/api/v1/spaces/{slug}": {
+      patch: {
+        summary: "更新空間設定（需 write scope + 空間管理員）",
+        description:
+          "更新空間的 name／description／icon／visibility，至少提供一項（description／icon 傳 null 清除）。不存在或無管理權一律 404。",
+        parameters: [{ name: "slug", in: "path", required: true, schema: { type: "string" } }],
+        requestBody: {
+          required: true,
+          content: {
+            "application/json": {
+              schema: {
+                type: "object",
+                properties: {
+                  name: { type: "string", maxLength: 100 },
+                  description: { type: "string", maxLength: 500, nullable: true },
+                  icon: { type: "string", maxLength: 16, nullable: true },
+                  visibility: { type: "string", enum: ["private", "org_read", "org_write"] },
+                },
+              },
+            },
+          },
+        },
+        responses: {
+          "200": { description: "已更新（id、slug、name、visibility）" },
+          "400": { description: "body 格式錯誤或未提供任何欄位" },
+          "403": { description: "token 無 write scope" },
+          "404": { description: "空間不存在或無管理權限" },
+        },
+      },
+    },
+    "/api/v1/spaces/{slug}/members": {
+      put: {
+        summary: "設定/移除空間成員（需 write scope + 空間管理員）",
+        description:
+          "以 email 指定使用者設定角色（admin／editor／commenter／viewer）或移除（role=none）。不可移除或降級最後一位管理員。",
+        parameters: [{ name: "slug", in: "path", required: true, schema: { type: "string" } }],
+        requestBody: {
+          required: true,
+          content: {
+            "application/json": {
+              schema: {
+                type: "object",
+                required: ["email", "role"],
+                properties: {
+                  email: { type: "string", description: "使用者 email（需為系統中的啟用帳號）" },
+                  role: {
+                    type: "string",
+                    enum: ["admin", "editor", "commenter", "viewer", "none"],
+                    description: "none＝移除成員",
+                  },
+                },
+              },
+            },
+          },
+        },
+        responses: {
+          "200": { description: "已設定（email、role；role=null 表已移除）" },
+          "400": { description: "body 格式錯誤" },
+          "403": { description: "token 無 write scope" },
+          "404": { description: "空間不存在、無管理權限，或查無該 email 的啟用帳號" },
+          "409": { description: "不可移除或降級最後一位管理員" },
         },
       },
     },
