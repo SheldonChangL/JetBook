@@ -71,7 +71,7 @@ const handler = createMcpHandler(
   (server) => {
     server.tool(
       "search_pages",
-      "搜尋 JetBook 知識庫（全文檢索，支援中文）。回傳符合的頁面清單（pageId、標題、空間、內容片段）；之後可用 read_page 讀取完整內容。",
+      "搜尋 JetBook 知識庫（全文檢索，支援中文）。回傳符合的頁面清單（pageId、spaceId、標題、空間、內容片段）；之後可用 read_page 讀取完整內容，或直接以 spaceId 呼叫 create_page 在同一空間建頁。",
       {
         query: z.string().min(1).describe("搜尋關鍵字"),
         limit: z.number().int().min(1).max(20).optional().describe("回傳筆數上限（預設 10）"),
@@ -84,7 +84,7 @@ const handler = createMcpHandler(
         const text = hits
           .map(
             (h, i) =>
-              `${i + 1}. ${h.title}（空間：${h.spaceName}）\n   pageId: ${h.pageId}\n   ${h.snippet}`,
+              `${i + 1}. ${h.title}（空間：${h.spaceName}）\n   pageId: ${h.pageId}\n   spaceId: ${h.spaceId}\n   ${h.snippet}`,
           )
           .join("\n\n");
         return { content: [{ type: "text" as const, text }] };
@@ -93,7 +93,7 @@ const handler = createMcpHandler(
 
     server.tool(
       "read_page",
-      "讀取 JetBook 單一頁面的完整內容（Markdown）。pageId 取自 search_pages 的結果。",
+      "讀取 JetBook 單一頁面的完整內容（Markdown）。pageId 取自 search_pages 的結果。回傳的 meta 含 pageId 與 spaceId，可直接用於 create_page（同空間建子頁：parentId 帶本頁 pageId）或 move_page。",
       { pageId: z.string().uuid().describe("頁面 id（UUID）") },
       async ({ pageId }, extra) => {
         const page = await mcpReadPage(actorFrom(extra), pageId);
@@ -103,16 +103,19 @@ const handler = createMcpHandler(
             isError: true,
           };
         }
-        const text = `# ${page.title}\n（空間：${page.spaceName}；版本：${page.versionNo}；更新：${page.updatedAt.toISOString()}）\n\n${page.contentMd}`;
+        const text = `# ${page.title}\n（空間：${page.spaceName}；spaceId：${page.spaceId}；pageId：${page.id}；版本：${page.versionNo}；更新：${page.updatedAt.toISOString()}）\n\n${page.contentMd}`;
         return { content: [{ type: "text" as const, text }] };
       },
     );
 
     server.tool(
       "create_page",
-      "在指定空間建立新頁面（Markdown 內容）。spaceId 取自 list_spaces；需要 write scope 的 token。回傳新頁面的 pageId 與網址路徑。",
+      "在指定空間建立新頁面（Markdown 內容）。spaceId 取自 list_spaces、search_pages 或 read_page；需要 write scope 的 token。回傳新頁面的 pageId 與網址路徑。",
       {
-        spaceId: z.string().uuid().describe("目標空間 id（UUID，取自 list_spaces）"),
+        spaceId: z
+          .string()
+          .uuid()
+          .describe("目標空間 id（UUID，取自 list_spaces／search_pages／read_page）"),
         title: z.string().trim().min(1).max(API_PAGE_TITLE_MAX_CHARS).describe("頁面標題"),
         markdown: z.string().min(1).max(API_WRITE_MARKDOWN_MAX_CHARS).describe("頁面內容（Markdown）"),
         parentId: z.string().uuid().optional().describe("父頁面 id（省略＝根層）"),
@@ -233,7 +236,7 @@ const handler = createMcpHandler(
           .string()
           .uuid()
           .optional()
-          .describe("目的地空間 id（跨空間搬移；取自 list_spaces）"),
+          .describe("目的地空間 id（跨空間搬移；取自 list_spaces／search_pages／read_page）"),
         newParentId: z
           .string()
           .uuid()

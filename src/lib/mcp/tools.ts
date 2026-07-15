@@ -15,6 +15,7 @@ import { listAccessibleSpaces } from "@/lib/spaces/queries";
 export interface McpSearchHit {
   pageId: string;
   title: string;
+  spaceId: string;
   spaceName: string;
   spaceSlug: string;
   slug: string;
@@ -31,6 +32,7 @@ export async function mcpSearchPages(
   return hits.map((h) => ({
     pageId: h.pageId,
     title: h.title,
+    spaceId: h.spaceId,
     spaceName: h.spaceName,
     spaceSlug: h.spaceSlug,
     slug: h.slug,
@@ -41,6 +43,7 @@ export async function mcpSearchPages(
 export interface McpPage {
   id: string;
   title: string;
+  spaceId: string;
   spaceName: string;
   contentMd: string;
   updatedAt: Date;
@@ -57,6 +60,7 @@ export async function mcpReadPage(user: Actor, pageId: string): Promise<McpPage 
   return {
     id: page.id,
     title: page.title,
+    spaceId: page.spaceId,
     spaceName: space?.name ?? "",
     contentMd: page.contentMd,
     updatedAt: page.updatedAt,

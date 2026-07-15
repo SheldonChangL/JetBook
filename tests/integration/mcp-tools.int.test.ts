@@ -22,6 +22,8 @@ describe("MCP 工具（M4-07，issue #198）", () => {
     const caller = await seedUser();
     const hits = await mcpSearchPages(caller, marker);
     expect(hits.map((h) => h.pageId)).toEqual([openPage.id]);
+    // spaceId 隨結果回傳，供 create_page/move_page 免再呼叫 list_spaces（減少往返）
+    expect(hits[0]?.spaceId).toBe(openSpace.id);
     expect(hits[0]?.snippet).not.toMatch(/<[^>]+>/);
   });
 
@@ -34,6 +36,8 @@ describe("MCP 工具（M4-07，issue #198）", () => {
     await addMember(space.id, member.id, "viewer");
     const ok = await mcpReadPage(member, page.id);
     expect(ok?.title).toBe("MCP 讀取頁");
+    // 讀取結果自帶 spaceId，供同空間建子頁/搬移免再呼叫 list_spaces
+    expect(ok?.spaceId).toBe(space.id);
 
     const outsider = await seedUser();
     expect(await mcpReadPage(outsider, page.id)).toBeNull();
