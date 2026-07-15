@@ -19,6 +19,7 @@ import {
   apiUpdateSpace,
 } from "@/lib/api/space-write";
 import { mcpListSpaces, mcpReadPage, mcpSearchPages } from "@/lib/mcp/tools";
+import { importAttachmentFromUrl } from "@/lib/storage/import-url";
 
 /**
  * MCP Server（M4-07，F-API-04）：streamable HTTP（/api/mcp），stateless、可平移 K8s。
@@ -196,6 +197,52 @@ const handler = createMcpHandler(
             {
               type: "text" as const,
               text: `已更新「${p.title}」（版本 ${p.versionNo}）\n路徑: /s/${p.spaceSlug}/${p.slug}`,
+            },
+          ],
+        };
+      },
+    );
+
+    server.tool(
+      "import_attachment_from_url",
+      "將外部圖片（如 Redmine 附件）伺服器端下載並存為 JetBook 永久附件，綁定到指定頁面，回傳可直接使用的內部 Markdown（![alt](/api/files/<id>)）。用途：把頁面內的外部圖片連結換成永久內嵌圖片——先以本工具逐一匯入取得內部 Markdown，再用 update_page 將頁面內容中的外部圖片語法替換為回傳的內部 Markdown。僅支援管理者允許清單內的來源網域（SSRF 防護），且僅接受 JPEG／PNG／GIF／WebP。不接受任意 Authorization header：若來源需登入，請改用來源系統產生的短效下載 URL。需要 write scope 的 token。",
+      {
+        pageId: z.string().uuid().describe("要綁定附件的頁面 id（UUID）；需對該頁有寫入權限"),
+        sourceUrl: z
+          .string()
+          .min(1)
+          .describe("圖片來源 URL（http/https；host 須在 JETBOOK_ATTACHMENT_IMPORT_HOSTS 允許清單內）"),
+        filename: z
+          .string()
+          .trim()
+          .max(255)
+          .optional()
+          .describe("建議檔名（副檔名會依實際內容自動校正）；省略＝image"),
+        altText: z.string().trim().max(500).optional().describe("Markdown 圖片 alt 文字"),
+        expectedContentType: z
+          .string()
+          .trim()
+          .max(100)
+          .optional()
+          .describe("預期 Content-Type（如 image/jpeg）；提供時須與實際內容一致，否則拒絕"),
+      },
+      async ({ pageId, sourceUrl, filename, altText, expectedContentType }, extra) => {
+        const gate = writeGate(extra);
+        if (!gate.ok) return gate.result;
+        const outcome = await importAttachmentFromUrl(actorFrom(extra), {
+          pageId,
+          sourceUrl,
+          filename,
+          altText,
+          expectedContentType,
+        });
+        if (!outcome.ok) return mcpError(outcome.message);
+        const a = outcome.attachment;
+        return {
+          content: [
+            {
+              type: "text" as const,
+              text: `已匯入附件「${a.filename}」（${a.contentType}，${a.size} bytes）\nattachmentId: ${a.attachmentId}\nurl: ${a.url}\n可貼入頁面的 Markdown:\n${a.markdown}`,
             },
           ],
         };

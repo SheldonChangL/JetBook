@@ -31,6 +31,26 @@ export interface MarkdownToDocOptions {
 }
 
 /**
+ * JetBook 內部附件 URL（`/api/files/<uuid>`）的辨識式：閱讀端 render-content.tsx 只渲染
+ * 以 `/api/files/` 開頭的 image 節點 src，故此為「可內嵌顯示」的唯一 URL 形態。允許
+ * 尾隨 query/fragment（下載 API 忽略之），正規化回 canonical 形態以保證往返穩定。
+ */
+const INTERNAL_ATTACHMENT_URL =
+  /^\/api\/files\/([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12})(?:[?#].*)?$/;
+
+/**
+ * API 寫入路徑（apiCreatePage／apiUpdatePage）用的圖片解析器：只認 JetBook 內部附件
+ * URL（`/api/files/<uuid>`）並回傳其 canonical 形態，使 `![alt](/api/files/<id>)` 產生
+ * block image 節點（往返無失真、閱讀端內嵌顯示）；其餘（外部 http、相對路徑等）回 null，
+ * 維持既有「降級為連結」行為（外部圖片請先經 import_attachment_from_url 轉為永久附件）。
+ * 純函式：不做 DB 查詢（同步解析器），實際權限於 `/api/files/[id]` 下載時逐檔強制。
+ */
+export function internalAttachmentImageResolver(href: string): string | null {
+  const match = INTERNAL_ATTACHMENT_URL.exec(href.trim());
+  return match ? `/api/files/${match[1]!.toLowerCase()}` : null;
+}
+
+/**
  * 現行轉換的圖片解析器（模組層同步上下文）。轉換器為純同步遞迴、單執行緒，
  * 逐次轉換前設定、try/finally 清除；避免把 options 逐一穿透數層內部函式。
  */
