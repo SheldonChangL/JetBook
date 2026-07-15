@@ -814,6 +814,73 @@ html.dark {
     text-decoration: underline;
   }
 
+  /* 附件內嵌文件檢視（#241；PDF／Office 轉檔）：頂列檔名+下載 + 固定高度可捲動 iframe */
+  .prose-editor :where(.content-document) {
+    margin: 1rem 0;
+    border: 1px solid var(--border-default);
+    border-radius: var(--radius-md);
+    overflow: hidden;
+    background: var(--bg-raised);
+  }
+  .prose-editor :where(.content-document__bar) {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    padding: 0.5rem 0.75rem;
+    border-bottom: 1px solid var(--border-default);
+  }
+  .prose-editor :where(.content-document__icon) {
+    flex: 0 0 auto;
+    width: 1.1rem;
+    height: 1.1rem;
+    color: var(--text-secondary);
+  }
+  .prose-editor :where(.content-document__name) {
+    flex: 1 1 auto;
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    color: var(--text-primary);
+  }
+  .prose-editor :where(.content-document__size) {
+    flex: 0 0 auto;
+    font-size: var(--text-caption);
+    color: var(--text-tertiary);
+  }
+  .prose-editor :where(a.content-document__download) {
+    display: inline-flex;
+    flex: 0 0 auto;
+    align-items: center;
+    gap: 0.375rem;
+    padding: 0.375rem 0.75rem;
+    border-radius: var(--radius-sm);
+    font-size: var(--text-body-ui);
+    color: var(--primary);
+    text-decoration: none;
+  }
+  .prose-editor :where(a.content-document__download:hover) {
+    background: var(--bg-hover);
+    text-decoration: underline;
+  }
+  .prose-editor :where(.content-document__frame) {
+    display: block;
+    width: 100%;
+    height: 600px;
+    border: 0;
+    background: var(--bg-raised);
+  }
+  .prose-editor :where(.content-document__status) {
+    display: flex;
+    height: 240px;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 0.75rem;
+    color: var(--text-secondary);
+    background: var(--bg-raised);
+  }
+
   /* 分頁區塊（D-12；編輯與閱讀共用 .jb-tabs 結構）：標籤列切換 + 面板顯隱。 */
   .prose-editor .jb-tabs {
     margin: 1rem 0;
