@@ -1,7 +1,7 @@
 import "server-only";
 import { eq } from "drizzle-orm";
 import { db } from "@/lib/db";
-import { spaceMembers, spaces } from "@/lib/db/schema";
+import { spaceMembers, spaces, type SpaceVisibility } from "@/lib/db/schema";
 
 /**
  * Space 建立核心（M4-13，issue #218）：web action（actions/space.ts）與
@@ -35,6 +35,8 @@ export interface CreateSpaceCoreInput {
   name: string;
   description?: string;
   icon?: string;
+  /** 省略＝沿用 schema 預設 private（與 web 建立流程一致）。 */
+  visibility?: SpaceVisibility;
 }
 
 /** Postgres unique 違反（23505）：uniqueSpaceSlug 為交易外 check-then-insert，並發同名建立可能撞索引。 */

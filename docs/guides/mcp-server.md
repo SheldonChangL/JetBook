@@ -5,7 +5,8 @@ JetBook 內建 MCP（Model Context Protocol）Server，讓 Claude 等 AI 助理�
 - **端點**：`https://<你的 JetBook 網域>/api/mcp`（streamable HTTP）
 - **認證**：HTTP Bearer——個人 API token（JetBook「個人設定 → API Token」建立，`jbk_` 開頭）
 - **唯讀工具**：`search_pages`（全文搜尋）、`read_page`（讀取頁面 Markdown）、`list_spaces`（列出可存取空間）
-- **寫入工具**（M4-09/M4-13/M4-14/M4-15，需建立時勾選「允許寫入」的 token）：`create_page`（建立頁面）、`update_page`（部分更新：markdown 全量取代內容／title 改名，至少提供一項；`expectedVersion` 選填做樂觀鎖）、`create_space`（建立空間；slug 自動產生，建立者自動成為該空間管理員）、`move_page`（同空間換父層或跨空間搬移整支子樹；循環防護、附件歸屬同步轉移）、`delete_page`（**破壞性**：軟刪除進回收桶 30 天可還原；有子頁需明確帶 `recursive=true`，AI 助理應先向使用者確認）。寫入經標準儲存管線：自動版本快照（可還原）、嵌入索引；他人編輯中（軟性鎖）會被拒絕。
+- **寫入工具**（需建立時勾選「允許寫入」的 token）：`create_page`（建立頁面）、`update_page`（部分更新：markdown 全量取代內容／title 改名，至少提供一項；`expectedVersion` 選填做樂觀鎖）、`create_space`（建立空間；slug 自動產生，建立者自動成為該空間管理員；`visibility` 選填 private／org_read／org_write，省略＝private）、`update_space`（更新空間 name／description／icon／visibility，需空間管理員）、`set_space_member`（以 email 加入／變更／移除空間成員角色 admin／editor／commenter／viewer／none，需空間管理員；不可移除最後一位管理員）、`move_page`（同空間換父層或跨空間搬移整支子樹；循環防護、附件歸屬同步轉移）、`delete_page`（**破壞性**：軟刪除進回收桶 30 天可還原；有子頁需明確帶 `recursive=true`，AI 助理應先向使用者確認）。寫入經標準儲存管線：自動版本快照（可還原）、嵌入索引；他人編輯中（軟性鎖）會被拒絕。
+- **唯讀工具**補充：`list_spaces`／`search_pages`／`read_page` 皆回傳 `spaceId`，可直接餵給 `create_page`／`update_space`／`move_page`／`set_space_member`，無需額外查詢。
 
 ## 安全鐵律
 

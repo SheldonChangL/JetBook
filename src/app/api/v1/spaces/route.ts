@@ -31,12 +31,14 @@ export async function GET(request: Request) {
 const postSchema = z.object({
   name: z.string().trim().min(1).max(SPACE_NAME_MAX_CHARS),
   description: z.string().trim().max(SPACE_DESCRIPTION_MAX_CHARS).optional(),
+  visibility: z.enum(["private", "org_read", "org_write"]).optional(),
 });
 
 /**
  * POST /api/v1/spaces：建立空間（M4-13，issue #218）。
  * scope=write；slug 自動產生（重名自動加尾碼）、建立者成為該空間 admin
  * ——皆由 lib/api/space-write（→ createSpaceCore 唯一建立路徑）負責。
+ * visibility 選填（省略＝private）。
  */
 export async function POST(request: Request) {
   const result = await requireApiAuth(request, "write");
@@ -45,7 +47,13 @@ export async function POST(request: Request) {
   const body = postSchema.safeParse(await request.json().catch(() => null));
   if (!body.success) {
     return NextResponse.json(
-      { error: { code: "INVALID_BODY", message: "body 需含 name（1–100 字）；description 選填（≤500 字）" } },
+      {
+        error: {
+          code: "INVALID_BODY",
+          message:
+            "body 需含 name（1–100 字）；description 選填（≤500 字）；visibility 選填（private／org_read／org_write）",
+        },
+      },
       { status: 400 },
     );
   }
