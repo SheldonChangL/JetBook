@@ -5,6 +5,7 @@ import { getAccessiblePageIds, type Actor } from "@/lib/authz/permission";
 
 export interface SearchHit {
   pageId: string;
+  spaceId: string;
   spaceSlug: string;
   spaceName: string;
   slug: string;
@@ -61,6 +62,7 @@ export async function fullTextSearch(
   // pgroonga_snippet_html 產生高亮片段。權限以 id in (...) 於 SQL 層限定。
   const rows = await db.execute<{
     page_id: string;
+    space_id: string;
     space_slug: string;
     space_name: string;
     slug: string;
@@ -71,6 +73,7 @@ export async function fullTextSearch(
   }>(sql`
     SELECT
       p.id AS page_id,
+      s.id AS space_id,
       s.slug AS space_slug,
       s.name AS space_name,
       p.slug AS slug,
@@ -96,6 +99,7 @@ export async function fullTextSearch(
 
   return rows.rows.map((r) => ({
     pageId: r.page_id,
+    spaceId: r.space_id,
     spaceSlug: r.space_slug,
     spaceName: r.space_name,
     slug: r.slug,

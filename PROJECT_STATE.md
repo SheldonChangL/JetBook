@@ -50,6 +50,9 @@ Next.js（App Router、TS strict）全端 + PostgreSQL 16/pgvector/pgroonga + Do
 - [x] #225 回收桶還原孤兒：`restoreTrashPage` reparent-to-root 條件補 `parent.spaceId !== page.spaceId`，跨空間搬移遺留的軟刪子孫還原後掛回來源空間根層（不成兩邊樹皆不可見的孤兒）；整合測試 +1（重現場景） — PR #231
 - [x] #224 並發 reparent 成環：`movePageNode` 交易開頭以每空間 `pg_advisory_xact_lock` 序列化同空間全部 reparent（取鎖後重讀防 TOCTOU）；覆蓋兩節點互掛與多節點（不相交鎖集合）環——列鎖方案於 review 被反例駁回後改採；整合測試 +2（8 輪 flake 保險） — PR #232
 
+### M4 後續修正（2026-07-15，使用回饋）
+- [x] MCP 空間工具鏈補齊 spaceId：`list_spaces`（原本漏印，導致 `create_page`/`move_page` 拿不到目標空間 id 而斷鏈）、`search_pages`、`read_page` 皆回傳 spaceId，任一唯讀結果即可直接餵寫入工具，免再繞一次 list_spaces；`SearchHit` 於 SQL 層加 `s.id`（純新增欄位，web 搜尋與 REST `/api/v1/search` 不受影響）；MCP 整合測試補 spaceId 斷言＋真 MCP client 實測三工具皆含 spaceId — PR #235
+
 ### 尚未完成（v1 之後）
 - **#93 M4 backlog**：變更請求、行內評論、webhooks（暫停）、PDF 匯出、KaTeX、多欄、snippets、內容分析等——其餘候選項依回饋再拆
 - 真實 LLM/Embedding 端點串接為部署設定（本機開發以 mock 驗證介面）；上線時以 /admin/ai 測試連線驗證
