@@ -1,19 +1,15 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 import { Download, Eye, Loader2 } from "lucide-react";
 import { useTranslations } from "next-intl";
 import { Modal, ModalContent } from "@/components/ui/modal";
 import {
   attachmentFileUrl,
   attachmentPreviewUrl,
+  isPreviewableAttachment,
 } from "@/components/editor/attachment/attachment-utils";
-
-/** Office 轉檔輪詢間隔／上限（202 → 3s 一次，最多 2 分鐘後視為失敗提示下載）。 */
-const POLL_INTERVAL_MS = 3000;
-const POLL_MAX_TRIES = 40;
-
-type PreviewState = "probing" | "ready" | "pending" | "unavailable";
+import { useAttachmentPreview } from "./use-attachment-preview";
 
 /**
  * Office 附件預覽是否啟用（M4-12）：root layout 依 env 在 <body data-office-preview>
@@ -44,52 +40,13 @@ export function AttachmentPreviewButton({
 }) {
   const t = useTranslations("content.attachment");
   const [open, setOpen] = useState(false);
-  const [state, setState] = useState<PreviewState>("probing");
   const displayName = fileName || t("unnamed");
   const previewUrl = attachmentPreviewUrl(attachmentId);
-
-  const probeStatus = useCallback(async (): Promise<PreviewState> => {
-    try {
-      // 用 GET 而非 HEAD：202/錯誤回應帶 JSON body，HEAD 帶 body 會被 Chrome 以
-      // 協定違規中止（ERR_ABORTED）。拿到 status 後立即取消 body，不實際下載 PDF。
-      const res = await fetch(previewUrl);
-      void res.body?.cancel().catch(() => undefined);
-      if (res.status === 200) return "ready";
-      if (res.status === 202) return "pending";
-      return "unavailable";
-    } catch {
-      return "unavailable";
-    }
-  }, [previewUrl]);
-
-  // 開啟時探測；202 每 POLL_INTERVAL_MS 重測（關閉即停）。輪詢以遞迴 setTimeout 驅動、
-  // 不依賴 state 變化觸發（連續 202 時 setState 同值會被 React bail out，effect 不重跑）。
-  useEffect(() => {
-    if (!open) return;
-    let cancelled = false;
-    let timer: ReturnType<typeof setTimeout> | undefined;
-    let tries = 0;
-    const run = async () => {
-      const status = await probeStatus();
-      if (cancelled) return;
-      if (status === "pending" && tries < POLL_MAX_TRIES) {
-        tries += 1;
-        setState("pending");
-        timer = setTimeout(() => void run(), POLL_INTERVAL_MS);
-        return;
-      }
-      setState(status === "pending" ? "unavailable" : status);
-    };
-    void run();
-    return () => {
-      cancelled = true;
-      if (timer) clearTimeout(timer);
-    };
-  }, [open, probeStatus]);
+  // 探測只在 Modal 開啟時進行（active=open）；PDF 免探測（skipProbing）直接顯示。共用 hook。
+  const state = useAttachmentPreview(previewUrl, open, isPreviewableAttachment(fileName));
 
   const handleOpenChange = (next: boolean) => {
     setOpen(next);
-    if (next) setState("probing");
   };
 
   return (
