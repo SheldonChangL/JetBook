@@ -46,6 +46,10 @@ Next.js（App Router、TS strict）全端 + PostgreSQL 16/pgvector/pgroonga + Do
 - [x] #215 M4-11 PDF 附件線上預覽：/api/files/[id]/preview（僅 PDF inline、nosniff、下載端點不動）；附件卡片＋搜尋結果預覽 Modal；整合測試 +4＋瀏覽器實測 — PR #228
 - [x] #216 M4-12 Office 轉 PDF 預覽：Gotenberg sidecar（env-gated 優雅降級）＋attachment_previews 表（migration 0020）＋pg-boss 轉檔 job（lazy 補排、failed 冷卻自癒、衍生檔生命週期含 GC 連動）；前端轉換中輪詢；整合測試 +5＋Gotenberg 真實轉檔＋瀏覽器全循環實測 — PR #229
 
+### M4 缺口修復（2026-07-14，#224/#225，M4-14 review 衍生；Opus 實作＋交叉 review）
+- [x] #225 回收桶還原孤兒：`restoreTrashPage` reparent-to-root 條件補 `parent.spaceId !== page.spaceId`，跨空間搬移遺留的軟刪子孫還原後掛回來源空間根層（不成兩邊樹皆不可見的孤兒）；整合測試 +1（重現場景） — PR #231
+- [x] #224 並發 reparent 成環：`movePageNode` 交易開頭以每空間 `pg_advisory_xact_lock` 序列化同空間全部 reparent（取鎖後重讀防 TOCTOU）；覆蓋兩節點互掛與多節點（不相交鎖集合）環——列鎖方案於 review 被反例駁回後改採；整合測試 +2（8 輪 flake 保險） — PR #232
+
 ### M4 後續修正（2026-07-15，使用回饋）
 - [x] MCP 空間工具鏈補齊 spaceId：`list_spaces`（原本漏印，導致 `create_page`/`move_page` 拿不到目標空間 id 而斷鏈）、`search_pages`、`read_page` 皆回傳 spaceId，任一唯讀結果即可直接餵寫入工具，免再繞一次 list_spaces；`SearchHit` 於 SQL 層加 `s.id`（純新增欄位，web 搜尋與 REST `/api/v1/search` 不受影響）；MCP 整合測試補 spaceId 斷言＋真 MCP client 實測三工具皆含 spaceId — PR #235
 
@@ -57,9 +61,9 @@ Next.js（App Router、TS strict）全端 + PostgreSQL 16/pgvector/pgroonga + Do
 ## GitHub 執行狀態
 
 - Repo：https://github.com/SheldonChangL/JetBook（private）
-- Issues：共 92（91 已關閉＋#93 M4 backlog；task ID ↔ issue 編號對照見 docs/plans/issue-plan.md）
-- Milestones：M0 10/10 ✅／M1 42/42 ✅／M2 16/16 ✅／M3 23/23 ✅／M4（backlog，僅 #93）
-- 工作流：branch `feature/issue-<n>-<slug>` → PR（Fixes #n）→ squash merge（使用者已授權 self-merge）；PR #89–#188
+- Issues：唯一開放為 #93（M4 backlog 彙總）；M4 已交付 #192–#199、#207、#211/#212、#215/#216、#218/#219/#220、#222、#224/#225（task ID ↔ issue 對照見 docs/plans/issue-plan.md）
+- Milestones：M0 10/10 ✅／M1 42/42 ✅／M2 16/16 ✅／M3 23/23 ✅／M4 已交付 15 功能＋多項修復（backlog 追蹤 #93）
+- 工作流：branch `feature/issue-<n>-<slug>` → PR（Fixes #n）→ squash merge（使用者已授權 self-merge）；最新 PR #232
 
 ## 已完成
 
@@ -117,5 +121,5 @@ Space 封存/軟刪、跨 Space 移動複製、死鏈標示、附件 GC、Tabs/�
 
 1. 部署到公司內部伺服器：`.env` 填正式值（含 SMTP_*；要開 Office 預覽加 `PREVIEW_CONVERTER_URL=http://gotenberg:3000`）、`docker compose up -d --build`、跑 `db:migrate`（0020）
 2. 串接真實 AI 端點（ANTHROPIC_API_KEY + local BGE-M3）；MCP 依 docs/guides/mcp-server.md 讓 Claude 接上知識庫（每人自建 API token；寫入需勾選 write scope）
-3. 既有缺口修復（M4-14 review 發現）：#224 並發 reparent 成環、#225 跨空間搬移後回收桶還原孤兒
-4. 其餘 backlog 候選見 #93（變更請求、行內評論、webhooks、PDF 匯出、KaTeX 等，依回饋再拆）
+3. 其餘 backlog 候選見 #93（變更請求、行內評論、webhooks、PDF 匯出、KaTeX 等，依回饋再拆）
+4. 未拆 issue 的殘餘觀察（#232 review 記錄）：跨空間子樹搬移與同空間 reparent 交錯可能產生「parent 在他空間」的懸掛連結（非環、屬 #225 家族），需要時再開 issue
