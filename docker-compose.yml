@@ -22,6 +22,8 @@ services:
       PORT: "3000"
       # 容器內以服務名連 db（.env 的 DATABASE_URL 供本機 CLI/遷移工具用 localhost）
       DATABASE_URL: postgresql://${POSTGRES_USER:-jetbook}:${POSTGRES_PASSWORD}@db:5432/${POSTGRES_DB:-jetbook}
+      # 附件儲存根：對齊下方 uploads volume 掛載點（絕對路徑）；覆寫 .env 的本機開發預設 ./data/uploads
+      UPLOAD_DIR: /data/uploads
     expose:
       - "3000"
     healthcheck:
@@ -45,6 +47,8 @@ services:
         required: true
     environment:
       DATABASE_URL: postgresql://${POSTGRES_USER:-jetbook}:${POSTGRES_PASSWORD}@db:5432/${POSTGRES_DB:-jetbook}
+      # 附件儲存根：與 web 一致，對齊 uploads volume 掛載點（zip 匯入等 worker 路徑亦寫此）
+      UPLOAD_DIR: /data/uploads
     depends_on:
       db:
         condition: service_healthy

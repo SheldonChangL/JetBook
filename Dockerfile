@@ -31,6 +31,9 @@ COPY --from=build --chown=nextjs:nodejs /app/.next/static ./.next/static
 COPY --from=build --chown=nextjs:nodejs /app/public ./public
 # worker（H-01）：同 image、不同 command（compose worker 服務用 node dist/worker.js）
 COPY --from=build --chown=nextjs:nodejs /app/dist ./dist
+# 附件儲存根目錄（M-01）：先以 root 建好並交給執行帳號，讓 compose 掛載的 named volume
+# 首次掛載即繼承可寫 owner（1001:1001）。UPLOAD_DIR 於 compose 設為 /data/uploads（見 docker-compose.yml）。
+RUN mkdir -p /data/uploads && chown -R nextjs:nodejs /data
 USER nextjs
 EXPOSE 3000
 CMD ["node", "server.js"]
