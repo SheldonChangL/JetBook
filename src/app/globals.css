@@ -1632,3 +1632,24 @@ html[data-ui-version="archive"] .archive-canvas {
   background-image: linear-gradient(to bottom, transparent 31px, var(--archive-canvas-rule) 32px);
   background-size: 100% 32px;
 }
+
+.ui-archive-only {
+  display: none;
+}
+
+html[data-ui-version="archive"] .ui-legacy-only {
+  display: none;
+}
+
+html[data-ui-version="archive"] .ui-archive-only {
+  display: block;
+}
+
+html[data-ui-version="archive"] .offline-banner {
+  justify-content: flex-start;
+  border-color: var(--archive-rail-border);
+  color: var(--archive-rail-text-active);
+  background: var(--archive-rail);
+  font-family: var(--font-mono);
+  letter-spacing: 0.02em;
+}

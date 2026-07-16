@@ -5,6 +5,7 @@ import { useTranslations } from "next-intl";
 import { AlertTriangle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { EmptyState } from "@/components/ui/empty-state";
+import { ArchiveSystemState } from "@/components/layout/archive-system-state";
 
 /** 500 錯誤頁（G-04，設計規範 §3.12）：錯誤代碼（digest 供回報）＋重新整理。 */
 export default function ErrorPage({
@@ -21,17 +22,33 @@ export default function ErrorPage({
   }, [error]);
 
   return (
-    <main className="flex min-h-dvh items-center justify-center bg-base">
-      <EmptyState
-        icon={<AlertTriangle />}
-        title={t("title")}
-        description={error.digest ? t("digest", { digest: error.digest }) : t("description")}
-        action={
-          <Button variant="primary" onClick={() => window.location.reload()}>
-            {t("reload")}
-          </Button>
-        }
-      />
-    </main>
+    <>
+      <main className="ui-legacy-only flex min-h-dvh items-center justify-center bg-base">
+        <EmptyState
+          icon={<AlertTriangle />}
+          title={t("title")}
+          description={error.digest ? t("digest", { digest: error.digest }) : t("description")}
+          action={
+            <Button variant="primary" onClick={() => window.location.reload()}>
+              {t("reload")}
+            </Button>
+          }
+        />
+      </main>
+      <main className="ui-archive-only">
+        <ArchiveSystemState
+          code={t("code")}
+          icon={<AlertTriangle />}
+          title={t("title")}
+          description={error.digest ? t("digest", { digest: error.digest }) : t("description")}
+          fullViewport
+          action={
+            <Button variant="primary" onClick={() => window.location.reload()}>
+              {t("reload")}
+            </Button>
+          }
+        />
+      </main>
+    </>
   );
 }
