@@ -2,6 +2,13 @@
 
 > Issue #249 第一輪設計探索。兩個方案只用於選定正式 UI 方向；本目錄沒有修改任何 `src/` 產品元件。
 
+## 選案結果
+
+- **選定方向：Archive Studio／知識工坊。** 使用者於 2026-07-16 確認，後續 UI Design v2 與六個順序實作 PR 均以此方向為準。
+- Optic Grid 保留為探索紀錄，不混入正式資訊架構，避免形成未驗證的第三套方案。
+- 過渡期採 Strangler／feature-flag 遷移：Legacy 與 Archive Studio presentation layer 並存；正式 URL、Server Action、REST、MCP、SSE、資料 schema、權限與主題偏好格式維持不變。
+- Archive Studio 預設關閉並逐頁 opt-in；提供全域 rollout kill switch 與使用者切換，任一遷移切片可立即回到 Legacy UI。舊 presentation layer 僅在功能覆蓋、E2E 與零使用量驗證完成後移除。
+
 ## 固定條件
 
 - 畫布：1440 × 900 px。

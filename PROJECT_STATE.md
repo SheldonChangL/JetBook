@@ -9,7 +9,7 @@ Next.js（App Router、TS strict）全端 + PostgreSQL 16/pgvector/pgroonga + Do
 
 ## 目前階段
 
-**v1 商品化完成 ✅（2026-07-13）。** M0–M3 全部 91 個 issue 關閉並合併；目前開放 #93 M4 backlog 與 #249 UI Design v2 選案。
+**v1 商品化完成 ✅（2026-07-13）。** M0–M3 全部 91 個 issue 關閉並合併；目前開放 #93 M4 backlog 與 #249 UI Design v2 設計交付。
 
 ### 出貨閘門與終驗證據（全數實測通過）
 - **N-02 MVP E2E 冒煙**：Playwright 全旅程（登入→建空間→建頁→編輯→閱讀→搜尋→私有隔離→登出），CI 綠（PR #151、#186 head run）
@@ -66,9 +66,10 @@ Next.js（App Router、TS strict）全端 + PostgreSQL 16/pgvector/pgroonga + Do
 - [x] 在 `feature/issue-249-ui-redesign-mockups` 交付兩套全新方向：Optic Grid／稜光格線與 Archive Studio／知識工坊；各含 Dashboard、閱讀、編輯、搜尋＋AI 的淺／深色版，共 16 張 1440×900 PNG
 - [x] 新增可切換方案／畫面／主題的離線 HTML 索引、方案比較與完整功能覆蓋矩陣；深淺模式內容與狀態完全一致，瀏覽器驗證零 console error／warning，並支援 reduced-motion
 - [x] 本階段僅新增 `docs/design/mockups-v2/`，未修改正式產品 `src/`；選定方向後才拆六個順序 issue／PR 實作
+- [x] 使用者選定 **Archive Studio／知識工坊**；正式實作採 Legacy／Archive presentation layer 並存、全域 kill switch＋使用者 cookie 切換的漸進遷移策略，未完成覆蓋前不移除舊 UI
 
 ### 尚未完成（v1 之後）
-- **#249 UI Design v2**：mockup 已交付，等待選定 Optic Grid 或 Archive Studio 後進入正式 UI 實作
+- **UI Design v2**：Archive Studio 已選定；依六個順序 issue／PR 實作，第一批為 token、基礎元件、Legacy 回退機制、App/Admin Shell、登入與錯誤頁
 - **#93 M4 backlog**：變更請求、行內評論、webhooks（暫停）、PDF 匯出、KaTeX、多欄、snippets、內容分析等——其餘候選項依回饋再拆
 - 真實 LLM/Embedding 端點串接為部署設定（本機開發以 mock 驗證介面）；上線時以 /admin/ai 測試連線驗證
 
@@ -134,8 +135,8 @@ Space 封存/軟刪、跨 Space 移動複製、死鏈標示、附件 GC、Tabs/�
 
 ## 下一步
 
-1. 檢視 `docs/design/mockups-v2/` 並選定 Optic Grid 或 Archive Studio；選案前不修改正式產品 UI
-2. 選案後將方向寫入 UI Design v2，依六個順序 issue／PR 逐步遷移 token、Shell、內容工作區、編輯器、搜尋／AI 與管理後台
+1. 合併 #249 設計 PR；建立 UI Design v2 第一批 issue，實作 Archive Studio token、Legacy 回退機制、Shell、登入與錯誤頁
+2. 後續依六個順序 issue／PR 逐步遷移內容工作區、編輯器、搜尋／AI 與管理後台；每批以使用者切換與全域 kill switch 驗證可回退
 3. 部署到公司內部伺服器：`.env` 填正式值（含 SMTP_*；要開 Office 預覽加 `PREVIEW_CONVERTER_URL=http://gotenberg:3000`）、`docker compose up -d --build`、跑 `db:migrate`（0020）
 4. 串接真實 AI 端點（ANTHROPIC_API_KEY + local BGE-M3）；MCP 依 docs/guides/mcp-server.md 讓 Claude 接上知識庫（每人自建 API token；寫入需勾選 write scope）
 5. 其餘 backlog 候選見 #93（變更請求、行內評論、webhooks、PDF 匯出、KaTeX 等，依回饋再拆）
