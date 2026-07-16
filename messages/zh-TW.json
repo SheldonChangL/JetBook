@@ -797,6 +797,14 @@
       "zoom": "點擊放大圖片",
       "close": "關閉",
       "preview": "圖片預覽"
+    },
+    "mermaid": {
+      "zoom": "點擊放大檢視圖表",
+      "close": "關閉",
+      "zoomIn": "放大",
+      "zoomOut": "縮小",
+      "reset": "重設縮放",
+      "scale": "{value}%"
     }
   },
   "comments": {

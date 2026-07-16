@@ -4,19 +4,23 @@ import { useEffect, useState } from "react";
 import { useTranslations } from "next-intl";
 import { normalizeMermaidSource } from "@/lib/content/mermaid";
 import { renderMermaid } from "@/components/editor/mermaid/render-mermaid";
+import { MermaidZoom } from "./mermaid-zoom";
 
 /**
  * Mermaid 圖表渲染元件（D-13，F-EDIT-14）——編輯端預覽與閱讀端共用。
  * - client-only：mermaid 依賴 DOM，於 useEffect 內動態載入渲染，SSR 期間先顯示載入狀態。
  * - 語法錯誤不崩頁：捕捉 render 例外並改顯示錯誤框（F-EDIT-14 驗收）。
  * - `debounceMs`：編輯端傳入防抖延遲（邊打字邊預覽），閱讀端為靜態內容不需防抖（預設 0）。
+ * - `zoomable`：閱讀端啟用「點擊放大檢視」（#247）；編輯端預設關閉，行為不變。
  */
 export function MermaidDiagram({
   source,
   debounceMs = 0,
+  zoomable = false,
 }: {
   source: string;
   debounceMs?: number;
+  zoomable?: boolean;
 }) {
   const t = useTranslations("editor.mermaid");
   const code = normalizeMermaidSource(source).trim();
@@ -72,6 +76,14 @@ export function MermaidDiagram({
   }
 
   if (svg) {
+    // 閱讀端：包成可點擊放大的 lightbox（#247）；編輯端維持靜態預覽。
+    if (zoomable) {
+      return (
+        <div className="jb-mermaid__preview">
+          <MermaidZoom svg={svg} label={t("diagramLabel")} />
+        </div>
+      );
+    }
     return (
       <div
         className="jb-mermaid__preview"
