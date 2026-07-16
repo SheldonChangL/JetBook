@@ -13,3 +13,7 @@ export function resolveUiVersion(
   if (cookieValue === "legacy" || cookieValue === "archive") return cookieValue;
   return rollout === "on" ? "archive" : "legacy";
 }
+
+export function canSwitchUiVersion(rollout: UiV2Rollout): boolean {
+  return rollout !== "off";
+}

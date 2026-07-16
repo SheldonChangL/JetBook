@@ -233,6 +233,9 @@
     "userMenu": "使用者選單",
     "personalSettings": "個人設定",
     "adminConsole": "管理後台",
+    "switchToArchive": "切換到知識工坊介面",
+    "switchToLegacy": "切回舊版介面",
+    "uiSwitching": "切換介面中…",
     "logout": "登出",
     "aiAssistant": "AI 助手（⌘J）",
     "offlineBanner": "網路連線中斷，請勿關閉分頁，系統將自動重試儲存"

@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { resolveUiVersion } from "./ui-version";
+import { canSwitchUiVersion, resolveUiVersion } from "./ui-version";
 
 describe("resolveUiVersion", () => {
   it("forces Legacy when rollout is off, even with an Archive cookie", () => {
@@ -24,5 +24,16 @@ describe("resolveUiVersion", () => {
   it("keeps the Legacy escape hatch when rollout is on", () => {
     expect(resolveUiVersion("on", "legacy")).toBe("legacy");
     expect(resolveUiVersion("on", "archive")).toBe("archive");
+  });
+});
+
+describe("canSwitchUiVersion", () => {
+  it("hides the user switch while the global kill switch is off", () => {
+    expect(canSwitchUiVersion("off")).toBe(false);
+  });
+
+  it("allows a user choice during opt-in and on rollout", () => {
+    expect(canSwitchUiVersion("opt-in")).toBe(true);
+    expect(canSwitchUiVersion("on")).toBe(true);
   });
 });

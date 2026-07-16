@@ -9,16 +9,18 @@ import { countUnread, listNotifications } from "@/lib/notifications";
 import { listCollections } from "@/lib/spaces/collections";
 import { groupSpacesByCollection } from "@/lib/spaces/grouping";
 import { listAccessibleSpaces } from "@/lib/spaces/queries";
+import { getUiVersion, isUiVersionSwitcherEnabled } from "@/lib/ui-version-server";
 import { AppShell } from "@/components/layout/app-shell";
 
 export default async function AppLayout({ children }: { children: ReactNode }) {
   const { user } = await requireSession();
   const t = await getTranslations("shell");
-  const [spaces, collections, notifications, unreadNotifications] = await Promise.all([
+  const [spaces, collections, notifications, unreadNotifications, uiVersion] = await Promise.all([
     listAccessibleSpaces(user),
     listCollections(),
     listNotifications(user.id),
     countUnread(user.id),
+    getUiVersion(),
   ]);
 
   // 側欄「我的空間」依 collection 分組，未分組排最後（C-09）。
@@ -69,6 +71,8 @@ export default async function AppLayout({ children }: { children: ReactNode }) {
       embeddingConfigured={isEmbeddingConfigured()}
       notifications={notifications}
       unreadNotifications={unreadNotifications}
+      uiVersion={uiVersion}
+      uiVersionSwitchEnabled={isUiVersionSwitcherEnabled()}
     >
       {children}
     </AppShell>

@@ -9,6 +9,7 @@ import { IconButton } from "@/components/ui/icon-button";
 import { Kbd } from "@/components/ui/kbd";
 import { AiChatDrawer } from "@/components/ai/ai-chat-drawer";
 import type { NotificationView } from "@/lib/notifications";
+import type { UiVersion } from "@/lib/ui-version";
 import { CommandPalette } from "./command-palette";
 import { NotificationBell } from "./notification-bell";
 import { OfflineBanner } from "./offline-banner";
@@ -29,6 +30,8 @@ export interface AppShellProps {
   notifications?: NotificationView[];
   /** 未讀通知數（鈴鐺徽章初值）。 */
   unreadNotifications?: number;
+  uiVersion?: UiVersion;
+  uiVersionSwitchEnabled?: boolean;
 }
 
 /**
@@ -44,6 +47,8 @@ export function AppShell({
   embeddingConfigured = false,
   notifications = [],
   unreadNotifications = 0,
+  uiVersion = "legacy",
+  uiVersionSwitchEnabled = false,
 }: AppShellProps) {
   const t = useTranslations("shell");
   const [collapsed, setCollapsed] = useState(false);
@@ -130,7 +135,13 @@ export function AppShell({
           ) : null}
           <NotificationBell initialItems={notifications} initialUnread={unreadNotifications} />
           <ThemeToggle />
-          <UserMenu name={user.name} email={user.email} isAdmin={user.isAdmin} />
+          <UserMenu
+            name={user.name}
+            email={user.email}
+            isAdmin={user.isAdmin}
+            uiVersion={uiVersion}
+            uiVersionSwitchEnabled={uiVersionSwitchEnabled}
+          />
         </div>
       </header>
 
