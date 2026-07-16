@@ -204,7 +204,7 @@ function renderMermaidBlock(source: string, key: number): ReactNode {
   if (!source.trim()) return <Fragment key={key} />;
   return (
     <div key={key} className="jb-mermaid" data-mermaid="">
-      <MermaidDiagram source={source} />
+      <MermaidDiagram source={source} zoomable />
     </div>
   );
 }

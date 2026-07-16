@@ -1237,6 +1237,114 @@ html.dark {
     overflow-x: auto;
   }
 
+  /* Mermaid 點擊放大檢視（#247，閱讀端）：內嵌觸發器 + Portal lightbox */
+  .prose-editor :where(button.jb-mermaid__zoom-trigger) {
+    display: block;
+    width: 100%;
+    padding: 0;
+    border: none;
+    background: none;
+    cursor: zoom-in;
+  }
+  /* lightbox 經 Radix Portal 掛在 body，樣式不可 scope 於 .prose-editor */
+  .jb-mermaid-zoom__overlay {
+    position: fixed;
+    inset: 0;
+    z-index: 50;
+    background: rgb(0 0 0 / 0.8);
+  }
+  .jb-mermaid-zoom__content {
+    position: fixed;
+    inset: 0;
+    z-index: 50;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 1rem;
+  }
+  .jb-mermaid-zoom__viewport {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 100%;
+    height: 100%;
+    overflow: hidden;
+    touch-action: none;
+    cursor: grab;
+  }
+  .jb-mermaid-zoom__viewport:active {
+    cursor: grabbing;
+  }
+  .jb-mermaid-zoom__pan {
+    /* flex: none 必要：viewport 為 flex，否則放大後的 stage 會被 flex-shrink 壓回容器寬度而無法真正放大 */
+    flex: none;
+    will-change: transform;
+  }
+  .jb-mermaid-zoom__stage {
+    box-sizing: border-box;
+    padding: 1rem;
+    border-radius: var(--radius-md);
+    background: var(--bg-raised);
+  }
+  /* 縮放＝改變此 SVG 的佈局寬度使其向量重繪（銳利）；!important 蓋過 mermaid 內嵌
+     style 的 max-width 限制，才能放大超過內在尺寸。 */
+  .jb-mermaid-zoom__stage svg {
+    display: block;
+    width: 100% !important;
+    height: auto !important;
+    max-width: none !important;
+  }
+  .jb-mermaid-zoom__toolbar {
+    position: fixed;
+    bottom: 1.25rem;
+    left: 50%;
+    transform: translateX(-50%);
+    z-index: 51;
+    display: flex;
+    align-items: center;
+    gap: 0.25rem;
+    padding: 0.375rem 0.5rem;
+    border-radius: 9999px;
+    background: rgb(0 0 0 / 0.6);
+  }
+  .jb-mermaid-zoom__toolbar button {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 2rem;
+    height: 2rem;
+    border-radius: var(--radius-sm);
+    color: #fff;
+    transition: background-color 0.15s;
+  }
+  .jb-mermaid-zoom__toolbar button:hover {
+    background: rgb(255 255 255 / 0.2);
+  }
+  .jb-mermaid-zoom__scale {
+    min-width: 3rem;
+    text-align: center;
+    font-size: var(--text-caption);
+    color: #fff;
+    font-variant-numeric: tabular-nums;
+  }
+  .jb-mermaid-zoom__close {
+    position: fixed;
+    top: 1rem;
+    right: 1rem;
+    z-index: 51;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0.5rem;
+    border-radius: 9999px;
+    background: rgb(0 0 0 / 0.5);
+    color: #fff;
+    transition: background-color 0.15s;
+  }
+  .jb-mermaid-zoom__close:hover {
+    background: rgb(0 0 0 / 0.7);
+  }
+
   /* Embed 嵌入區塊（D-14，F-EDIT-15） */
   .prose-editor .jb-embed {
     margin: 1rem 0;
