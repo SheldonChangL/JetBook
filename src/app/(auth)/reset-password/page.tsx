@@ -2,6 +2,8 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { getTranslations } from "next-intl/server";
 import { validatePasswordResetToken } from "@/lib/auth/password-reset";
+import { getUiVersion } from "@/lib/ui-version-server";
+import { AuthFrame } from "@/components/layout/auth-frame";
 import { ResetPasswordForm } from "./reset-password-form";
 
 export async function generateMetadata(): Promise<Metadata> {
@@ -18,38 +20,31 @@ export default async function ResetPasswordPage({
 }: {
   searchParams: Promise<{ token?: string }>;
 }) {
-  const tCommon = await getTranslations("common");
   const tAuth = await getTranslations("auth");
   const { token } = await searchParams;
   const valid = token ? await validatePasswordResetToken(token) : null;
+  const uiVersion = await getUiVersion();
 
   return (
-    <main className="flex min-h-dvh flex-col items-center justify-center bg-sidebar px-4">
-      <div className="w-full max-w-[400px] rounded-lg border border-edge bg-raised p-8 shadow-lg">
-        <div className="mb-6 flex flex-col items-center gap-1">
-          <h1 className="text-h2 text-fg">{tCommon("appName")}</h1>
-          <p className="text-caption text-fg-tertiary">{tAuth("resetTitle")}</p>
-        </div>
-        {valid && token ? (
-          <ResetPasswordForm token={token} />
-        ) : (
-          <div className="flex flex-col gap-4">
-            <div
-              role="alert"
-              className="rounded-sm border border-danger/30 bg-danger-tint px-3 py-2 text-body-ui text-danger"
-            >
-              {tAuth("resetTokenInvalid")}
-            </div>
-            <Link
-              href="/forgot-password"
-              className="text-center text-body-ui text-primary hover:underline"
-            >
-              {tAuth("resetRequestAgain")}
-            </Link>
+    <AuthFrame uiVersion={uiVersion} title={tAuth("resetTitle")}>
+      {valid && token ? (
+        <ResetPasswordForm token={token} />
+      ) : (
+        <div className="flex flex-col gap-4">
+          <div
+            role="alert"
+            className="rounded-sm border border-danger/30 bg-danger-tint px-3 py-2 text-body-ui text-danger"
+          >
+            {tAuth("resetTokenInvalid")}
           </div>
-        )}
-      </div>
-      <p className="mt-6 text-caption text-fg-tertiary">{tAuth("copyright")}</p>
-    </main>
+          <Link
+            href="/forgot-password"
+            className="text-center text-body-ui text-primary hover:underline"
+          >
+            {tAuth("resetRequestAgain")}
+          </Link>
+        </div>
+      )}
+    </AuthFrame>
   );
 }

@@ -2,6 +2,8 @@ import type { Metadata } from "next";
 import { Suspense } from "react";
 import { getTranslations } from "next-intl/server";
 import { isOidcEnabled } from "@/lib/auth/oidc";
+import { getUiVersion } from "@/lib/ui-version-server";
+import { AuthFrame } from "@/components/layout/auth-frame";
 import { LoginForm } from "./login-form";
 
 export async function generateMetadata(): Promise<Metadata> {
@@ -11,21 +13,14 @@ export async function generateMetadata(): Promise<Metadata> {
 
 /** 登入頁（設計規範 §3.1）：全螢幕置中 400px 卡片，無 App Shell。 */
 export default async function LoginPage() {
-  const tCommon = await getTranslations("common");
   const tAuth = await getTranslations("auth");
+  const uiVersion = await getUiVersion();
 
   return (
-    <main className="flex min-h-dvh flex-col items-center justify-center bg-sidebar px-4">
-      <div className="w-full max-w-[400px] rounded-lg border border-edge bg-raised p-8 shadow-lg">
-        <div className="mb-6 flex flex-col items-center gap-1">
-          <h1 className="text-h2 text-fg">{tCommon("appName")}</h1>
-          <p className="text-caption text-fg-tertiary">{tAuth("tagline")}</p>
-        </div>
-        <Suspense>
-          <LoginForm oidcEnabled={isOidcEnabled()} />
-        </Suspense>
-      </div>
-      <p className="mt-6 text-caption text-fg-tertiary">{tAuth("copyright")}</p>
-    </main>
+    <AuthFrame uiVersion={uiVersion} title={tAuth("loginTitle")} legacySubtitle={tAuth("tagline")}>
+      <Suspense>
+        <LoginForm oidcEnabled={isOidcEnabled()} />
+      </Suspense>
+    </AuthFrame>
   );
 }

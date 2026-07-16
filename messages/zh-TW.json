@@ -103,6 +103,10 @@
   "auth": {
     "loginTitle": "登入",
     "tagline": "凱銳光電內部知識庫",
+    "archiveKicker": "JETBOOK / KNOWLEDGE ARCHIVE",
+    "archiveAccess": "AUTHORIZED KNOWLEDGE ACCESS",
+    "archiveTitle": "讓產品文件、工程流程與團隊經驗保持可查、可讀、可延續。",
+    "archiveDescription": "在同一個工作區整理文件、追蹤版本、討論內容，並透過權限隔離的 AI 檢索知識。",
     "email": "公司信箱",
     "password": "密碼",
     "showPassword": "顯示密碼",
