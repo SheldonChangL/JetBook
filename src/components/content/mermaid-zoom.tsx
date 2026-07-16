@@ -1,25 +1,40 @@
 "use client";
 
-import { useCallback, useRef, useState } from "react";
+import { useCallback, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { Dialog as DialogPrimitive } from "radix-ui";
 import { useTranslations } from "next-intl";
 import { RotateCcw, X, ZoomIn, ZoomOut } from "lucide-react";
 
 /**
  * 閱讀端 Mermaid 圖表放大檢視（#247）。
- * 點擊內嵌圖表 → 開啟 lightbox Modal（Radix Dialog：focus trap／Esc／鎖捲動），
- * Modal 內以純 CSS transform 縮放＋平移（滾輪縮放、拖曳平移、+/− 與重設鈕），
- * 「放大圖表本身」而非依賴瀏覽器整頁縮放，且不影響頁面版面。零新增相依。
+ * 點擊內嵌圖表 → 開啟 lightbox Modal（Radix Dialog：focus trap／Esc／鎖捲動）。
  *
- * SVG 由 MermaidDiagram 於 client 端渲染完成後以字串傳入；此處於觸發器與 Modal
- * 各注入一份（dangerouslySetInnerHTML），內容同源、已由 mermaid 產生。
+ * 縮放採「改變 SVG 佈局尺寸」而非 CSS `transform: scale()`：後者放大的是已光柵化的圖層
+ * （點陣），SVG 會變模糊；改 SVG 版面寬度則讓瀏覽器以向量重繪，任意倍率皆銳利。
+ * 平移才用 `translate`（不影響清晰度）。開啟時自動 fit 到視窗，讓小圖也看得清。零新增相依。
+ *
+ * SVG 由 MermaidDiagram 於 client 端渲染完成後以字串傳入；同源、已由 mermaid 產生。
  */
 
-const MIN_SCALE = 0.5;
-const MAX_SCALE = 8;
+const MIN_SCALE = 0.1;
+const MAX_SCALE = 10;
 const STEP = 1.25;
 
 const clampScale = (value: number): number => Math.min(MAX_SCALE, Math.max(MIN_SCALE, value));
+
+/** 由 SVG 字串解析內在尺寸（viewBox 優先，退回 max-width，再退回預設）。純讀取、不改字串。 */
+function parseSvgSize(svg: string): { w: number; h: number } {
+  const vb = /viewBox="([^"]+)"/i.exec(svg);
+  if (vb) {
+    const parts = vb[1]!.trim().split(/[\s,]+/).map(Number);
+    if (parts.length === 4 && parts[2]! > 0 && parts[3]! > 0) {
+      return { w: parts[2]!, h: parts[3]! };
+    }
+  }
+  const mw = /max-width:\s*([\d.]+)px/i.exec(svg);
+  const w = mw ? Number(mw[1]) : 800;
+  return { w: w > 0 ? w : 800, h: 0 };
+}
 
 export function MermaidZoom({ svg, label }: { svg: string; label: string }) {
   const t = useTranslations("reading.mermaid");
@@ -27,21 +42,30 @@ export function MermaidZoom({ svg, label }: { svg: string; label: string }) {
   const [scale, setScale] = useState(1);
   const [tx, setTx] = useState(0);
   const [ty, setTy] = useState(0);
+  const viewportRef = useRef<HTMLDivElement | null>(null);
   const dragRef = useRef<{ x: number; y: number; tx: number; ty: number } | null>(null);
 
-  const reset = useCallback(() => {
-    setScale(1);
+  const base = useMemo(() => parseSvgSize(svg), [svg]);
+
+  /** 依當前視窗算出「fit 到視窗」的縮放倍率（寬與高皆納入）。 */
+  const computeFit = useCallback((): number => {
+    const vp = viewportRef.current;
+    if (!vp || base.w <= 0) return 1;
+    let s = (vp.clientWidth * 0.92) / base.w;
+    if (base.h > 0) s = Math.min(s, (vp.clientHeight * 0.9) / base.h);
+    return clampScale(s);
+  }, [base]);
+
+  const fitToView = useCallback(() => {
+    setScale(computeFit());
     setTx(0);
     setTy(0);
-  }, []);
+  }, [computeFit]);
 
-  const handleOpenChange = useCallback(
-    (next: boolean) => {
-      setOpen(next);
-      if (!next) reset(); // 關閉即重設縮放/平移，下次開啟回到預設
-    },
-    [reset],
-  );
+  // 開啟時（Radix 掛載 portal、viewport 就緒後）自動 fit；useLayoutEffect 避免先閃一下再校正。
+  useLayoutEffect(() => {
+    if (open) fitToView();
+  }, [open, fitToView]);
 
   const zoomIn = useCallback(() => setScale((s) => clampScale(s * STEP)), []);
   const zoomOut = useCallback(() => setScale((s) => clampScale(s / STEP)), []);
@@ -74,7 +98,7 @@ export function MermaidZoom({ svg, label }: { svg: string; label: string }) {
   }, []);
 
   return (
-    <DialogPrimitive.Root open={open} onOpenChange={handleOpenChange}>
+    <DialogPrimitive.Root open={open} onOpenChange={setOpen}>
       <DialogPrimitive.Trigger asChild>
         <button
           type="button"
@@ -88,6 +112,7 @@ export function MermaidZoom({ svg, label }: { svg: string; label: string }) {
         <DialogPrimitive.Content aria-describedby={undefined} className="jb-mermaid-zoom__content">
           <DialogPrimitive.Title className="sr-only">{label}</DialogPrimitive.Title>
           <div
+            ref={viewportRef}
             className="jb-mermaid-zoom__viewport"
             onWheel={onWheel}
             onPointerDown={onPointerDown}
@@ -96,10 +121,16 @@ export function MermaidZoom({ svg, label }: { svg: string; label: string }) {
             onPointerCancel={onPointerUp}
           >
             <div
-              className="jb-mermaid-zoom__stage"
-              style={{ transform: `translate(${tx}px, ${ty}px) scale(${scale})` }}
-              dangerouslySetInnerHTML={{ __html: svg }}
-            />
+              className="jb-mermaid-zoom__pan"
+              style={{ transform: `translate(${tx}px, ${ty}px)` }}
+            >
+              {/* 寬度＝內在寬 × 倍率（px）：SVG 以向量重繪於此寬度，放大不糊 */}
+              <div
+                className="jb-mermaid-zoom__stage"
+                style={{ width: `${Math.round(base.w * scale)}px` }}
+                dangerouslySetInnerHTML={{ __html: svg }}
+              />
+            </div>
           </div>
           <div className="jb-mermaid-zoom__toolbar" role="toolbar" aria-label={label}>
             <button type="button" onClick={zoomOut} aria-label={t("zoomOut")}>
@@ -111,7 +142,7 @@ export function MermaidZoom({ svg, label }: { svg: string; label: string }) {
             <button type="button" onClick={zoomIn} aria-label={t("zoomIn")}>
               <ZoomIn aria-hidden className="size-4" />
             </button>
-            <button type="button" onClick={reset} aria-label={t("reset")}>
+            <button type="button" onClick={fitToView} aria-label={t("reset")}>
               <RotateCcw aria-hidden className="size-4" />
             </button>
           </div>

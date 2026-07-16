@@ -1275,18 +1275,24 @@ html.dark {
   .jb-mermaid-zoom__viewport:active {
     cursor: grabbing;
   }
-  .jb-mermaid-zoom__stage {
-    padding: 1.5rem;
-    border-radius: var(--radius-md);
-    background: var(--bg-raised);
-    transform-origin: center center;
+  .jb-mermaid-zoom__pan {
+    /* flex: none 必要：viewport 為 flex，否則放大後的 stage 會被 flex-shrink 壓回容器寬度而無法真正放大 */
+    flex: none;
     will-change: transform;
   }
+  .jb-mermaid-zoom__stage {
+    box-sizing: border-box;
+    padding: 1rem;
+    border-radius: var(--radius-md);
+    background: var(--bg-raised);
+  }
+  /* 縮放＝改變此 SVG 的佈局寬度使其向量重繪（銳利）；!important 蓋過 mermaid 內嵌
+     style 的 max-width 限制，才能放大超過內在尺寸。 */
   .jb-mermaid-zoom__stage svg {
     display: block;
-    max-width: 86vw;
-    max-height: 78vh;
-    height: auto;
+    width: 100% !important;
+    height: auto !important;
+    max-width: none !important;
   }
   .jb-mermaid-zoom__toolbar {
     position: fixed;
