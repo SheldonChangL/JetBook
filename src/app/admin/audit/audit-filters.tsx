@@ -128,7 +128,9 @@ export function AuditFilters({
                   >
                     <span
                       className={`flex size-4 shrink-0 items-center justify-center rounded-xs border ${
-                        checked ? "border-primary bg-primary text-white" : "border-edge-strong"
+                        checked
+                          ? "border-primary bg-primary text-on-primary"
+                          : "border-edge-strong"
                       }`}
                     >
                       {checked ? <Check aria-hidden className="size-3" /> : null}

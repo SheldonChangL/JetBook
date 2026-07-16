@@ -144,7 +144,7 @@ export function AiAssistMenu({ editor, pageId, enabled }: AiAssistMenuProps) {
                   type="button"
                   disabled={!canApply}
                   onClick={replaceSelection}
-                  className="rounded-sm bg-ai px-2 py-1 text-caption font-medium text-white hover:opacity-90 disabled:opacity-40"
+                  className="rounded-sm bg-ai px-2 py-1 text-caption font-medium text-on-ai hover:opacity-90 disabled:opacity-40"
                 >
                   {t("replace")}
                 </button>

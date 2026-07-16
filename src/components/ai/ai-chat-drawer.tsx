@@ -254,7 +254,7 @@ export function AiChatDrawer({ open, onOpenChange }: AiChatDrawerProps) {
                   onClick={submit}
                   aria-label={t("send")}
                   title={t("send")}
-                  className="inline-flex size-8 shrink-0 items-center justify-center rounded-sm bg-ai text-white transition-[filter] hover:brightness-110"
+                  className="inline-flex size-8 shrink-0 items-center justify-center rounded-sm bg-ai text-on-ai transition-[filter] hover:brightness-110"
                 >
                   <ArrowUp aria-hidden className="size-4" />
                 </button>
