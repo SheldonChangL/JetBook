@@ -11,6 +11,7 @@ import { groupSpacesByCollection } from "@/lib/spaces/grouping";
 import { listAccessibleSpaces } from "@/lib/spaces/queries";
 import { getUiVersion, isUiVersionSwitcherEnabled } from "@/lib/ui-version-server";
 import { AppShell } from "@/components/layout/app-shell";
+import { ArchiveAppShell } from "@/components/layout/archive-app-shell";
 
 export default async function AppLayout({ children }: { children: ReactNode }) {
   const { user } = await requireSession();
@@ -63,8 +64,10 @@ export default async function AppLayout({ children }: { children: ReactNode }) {
 
   // 主題 class 由 root layout 依 DB 偏好在 SSR 直接掛載（G-03），此處不再於 client 校正，
   // 以尊重「localStorage 覆蓋 > SSR class > 系統」精度，避免整頁重載時覆寫本機偏好。
+  const Shell = uiVersion === "archive" ? ArchiveAppShell : AppShell;
+
   return (
-    <AppShell
+    <Shell
       user={{ name: user.name, email: user.email, isAdmin: isOrgAdmin(user) }}
       sidebar={sidebar}
       llmConfigured={isLlmConfigured()}
@@ -75,7 +78,7 @@ export default async function AppLayout({ children }: { children: ReactNode }) {
       uiVersionSwitchEnabled={isUiVersionSwitcherEnabled()}
     >
       {children}
-    </AppShell>
+    </Shell>
   );
 }
 

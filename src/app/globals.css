@@ -1620,9 +1620,15 @@ html.dark[data-ui-version="archive"] {
     *,
     *::before,
     *::after {
+      scroll-behavior: auto !important;
       animation-duration: 0.01ms !important;
       animation-iteration-count: 1 !important;
       transition-duration: 0.01ms !important;
     }
   }
+}
+
+html[data-ui-version="archive"] .archive-canvas {
+  background-image: linear-gradient(to bottom, transparent 31px, var(--archive-canvas-rule) 32px);
+  background-size: 100% 32px;
 }

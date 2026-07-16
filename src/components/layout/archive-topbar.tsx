@@ -22,7 +22,8 @@ export function ArchiveTopbar({
   dockCollapsed,
   uiVersion,
   uiVersionSwitchEnabled,
-  onOpenDock,
+  onOpenMobileDock,
+  onExpandDock,
   onOpenSearch,
   onToggleAi,
 }: {
@@ -34,7 +35,8 @@ export function ArchiveTopbar({
   dockCollapsed: boolean;
   uiVersion: UiVersion;
   uiVersionSwitchEnabled: boolean;
-  onOpenDock: () => void;
+  onOpenMobileDock: () => void;
+  onExpandDock: () => void;
   onOpenSearch: () => void;
   onToggleAi: () => void;
 }) {
@@ -43,13 +45,13 @@ export function ArchiveTopbar({
 
   return (
     <header className="flex h-14 shrink-0 items-center gap-2 border-b border-edge bg-raised px-2 sm:px-4">
-      <IconButton label={t("toggleSidebar")} onClick={onOpenDock} className="lg:hidden">
+      <IconButton label={t("toggleSidebar")} onClick={onOpenMobileDock} className="lg:hidden">
         <Menu className="size-5" />
       </IconButton>
       {dockCollapsed ? (
         <IconButton
           label={t("toggleSidebar")}
-          onClick={onOpenDock}
+          onClick={onExpandDock}
           className="hidden lg:inline-flex"
         >
           <PanelLeftOpen className="size-4" />
