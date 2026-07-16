@@ -238,6 +238,9 @@
     "uiSwitching": "切換介面中…",
     "archiveRail": "知識工坊命令列",
     "archivePrimaryNav": "主要導覽",
+    "archiveKicker": "KNOWLEDGE ARCHIVE",
+    "archiveDock": "SPACE DOCK",
+    "create": "建立",
     "logout": "登出",
     "aiAssistant": "AI 助手（⌘J）",
     "offlineBanner": "網路連線中斷，請勿關閉分頁，系統將自動重試儲存"
