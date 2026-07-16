@@ -1,0 +1,55 @@
+<!doctype html>
+<html lang="zh-Hant-TW">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta
+      name="description"
+      content="JetBook UI redesign comparison: Optic Grid and Archive Studio"
+    />
+    <title>JetBook UI Redesign — Mockups v2</title>
+    <link rel="stylesheet" href="styles.css" />
+    <script src="mockups.js" defer></script>
+  </head>
+  <body>
+    <header class="viewer-toolbar" aria-label="Mockup 比較控制列">
+      <div class="viewer-title">
+        <span class="viewer-kicker">JETBOOK / UI EXPLORATION</span>
+        <strong>全介面重新設計 · Mockups v2</strong>
+      </div>
+
+      <div class="viewer-controls">
+        <fieldset>
+          <legend>設計方案</legend>
+          <button type="button" data-control="scheme" data-value="optic">Optic Grid</button>
+          <button type="button" data-control="scheme" data-value="archive">Archive Studio</button>
+        </fieldset>
+
+        <fieldset>
+          <legend>代表畫面</legend>
+          <button type="button" data-control="screen" data-value="dashboard">Dashboard</button>
+          <button type="button" data-control="screen" data-value="reading">閱讀</button>
+          <button type="button" data-control="screen" data-value="editor">編輯</button>
+          <button type="button" data-control="screen" data-value="search">搜尋＋AI</button>
+        </fieldset>
+
+        <fieldset>
+          <legend>顯示模式</legend>
+          <button type="button" data-control="theme" data-value="light">淺色</button>
+          <button type="button" data-control="theme" data-value="dark">深色</button>
+        </fieldset>
+      </div>
+
+      <nav class="viewer-links" aria-label="設計文件">
+        <a href="comparison.md">方案比較</a>
+        <a href="feature-coverage.md">功能覆蓋</a>
+      </nav>
+    </header>
+
+    <main id="mock-root" aria-live="polite"></main>
+
+    <noscript>
+      <p class="noscript">請啟用 JavaScript 以切換 JetBook mockup 方案、畫面與主題。</p>
+    </noscript>
+  </body>
+</html>

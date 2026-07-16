@@ -9,7 +9,7 @@ Next.js（App Router、TS strict）全端 + PostgreSQL 16/pgvector/pgroonga + Do
 
 ## 目前階段
 
-**v1 商品化完成 ✅（2026-07-13）。** M0–M3 全部 91 個 issue 關閉並合併（唯一開放 issue 為 #93 M4 backlog 追蹤；全 repo 共 92 issues）。
+**v1 商品化完成 ✅（2026-07-13）。** M0–M3 全部 91 個 issue 關閉並合併；目前開放 #93 M4 backlog 與 #249 UI Design v2 選案。
 
 ### 出貨閘門與終驗證據（全數實測通過）
 - **N-02 MVP E2E 冒煙**：Playwright 全旅程（登入→建空間→建頁→編輯→閱讀→搜尋→私有隔離→登出），CI 綠（PR #151、#186 head run）
@@ -61,7 +61,14 @@ Next.js（App Router、TS strict）全端 + PostgreSQL 16/pgvector/pgroonga + Do
 - [x] #245 修正 ```mermaid Markdown 圍籬未渲染（顯示為程式碼區塊）：根因＝`markdownToDoc` 對所有圍籬一律產 `codeBlock`，與 `serialize.ts`（mermaid 節點→```mermaid）不對稱，故 Markdown 入口（編輯器貼上、J-01/J-02 匯入、MCP/REST 寫入）的圖表都被存成 codeBlock(language=mermaid)。修正＝(1) 轉換器將 ```mermaid 圍籬轉為 `mermaid` 節點（canonical、對稱往返、涵蓋所有寫入路徑、語言不分大小寫）；(2) 閱讀端 fallback 對既有 `codeBlock`(language=mermaid) 也以圖表渲染，使既有頁面部署後免逐頁重存即正確顯示。單元測試 +5（圍籬→節點、大小寫、空圍籬、mermaidjs 不誤判、docToMarkdown↔markdownToDoc 往返）；lint/typecheck/test 519/build 全綠。in-browser 因本地驗證 db 密碼與現行 .env 不符（長跑容器）未於本機驅動，交部署後確認 — PR #246（已合併）
 - [x] #247 閱讀端 Mermaid 圖表點擊放大檢視：新元件 `mermaid-zoom.tsx`（Radix Dialog lightbox，比照既有圖片 lightbox）——點圖開放大 Modal，開啟自動 fit 視窗、+/−/滾輪縮放、拖曳平移、%讀數。**縮放採「改 SVG 佈局寬度」而非 CSS transform:scale**（transform 放大的是已光柵化圖層＝糊；mermaid 用 foreignObject HTML 標籤，改佈局寬度會觸發整個 SVG 重繪＝銳利，`!important` 蓋過 mermaid 內嵌 max-width）；平移才用 translate；pan 容器 `flex:none`（否則 flex-shrink 壓回容器寬度無法放大）。`MermaidDiagram` 加 `zoomable`（閱讀端啟用、編輯端預設關閉行為不變）；深色 overlay＋`--bg-raised` 卡片兩色系皆可讀；零新增相依；i18n `reading.mermaid.*`。lint/typecheck/test 519/build 全綠。**放大清晰度已於隔離 harness（scratchpad，專案自帶 mermaid + 相同 config）瀏覽器實測**：確認 mermaid 輸出 foreignObject、寫法在 3x 下文字銳利、並藉此抓出 flex-shrink bug；React 串接於真 app 待部署後確認 — PR #248
 
+### UI Design v2 探索（2026-07-16，#249）
+
+- [x] 在 `feature/issue-249-ui-redesign-mockups` 交付兩套全新方向：Optic Grid／稜光格線與 Archive Studio／知識工坊；各含 Dashboard、閱讀、編輯、搜尋＋AI 的淺／深色版，共 16 張 1440×900 PNG
+- [x] 新增可切換方案／畫面／主題的離線 HTML 索引、方案比較與完整功能覆蓋矩陣；深淺模式內容與狀態完全一致，瀏覽器驗證零 console error／warning，並支援 reduced-motion
+- [x] 本階段僅新增 `docs/design/mockups-v2/`，未修改正式產品 `src/`；選定方向後才拆六個順序 issue／PR 實作
+
 ### 尚未完成（v1 之後）
+- **#249 UI Design v2**：mockup 已交付，等待選定 Optic Grid 或 Archive Studio 後進入正式 UI 實作
 - **#93 M4 backlog**：變更請求、行內評論、webhooks（暫停）、PDF 匯出、KaTeX、多欄、snippets、內容分析等——其餘候選項依回饋再拆
 - 真實 LLM/Embedding 端點串接為部署設定（本機開發以 mock 驗證介面）；上線時以 /admin/ai 測試連線驗證
 
@@ -69,9 +76,9 @@ Next.js（App Router、TS strict）全端 + PostgreSQL 16/pgvector/pgroonga + Do
 ## GitHub 執行狀態
 
 - Repo：https://github.com/SheldonChangL/JetBook（private）
-- Issues：唯一開放為 #93（M4 backlog 彙總）；M4 已交付 #192–#199、#207、#211/#212、#215/#216、#218/#219/#220、#222、#224/#225（task ID ↔ issue 對照見 docs/plans/issue-plan.md）
+- Issues：開放 #93（M4 backlog 彙總）與 #249（UI Design v2 mockup／選案）；M4 已交付 #192–#199、#207、#211/#212、#215/#216、#218/#219/#220、#222、#224/#225（task ID ↔ issue 對照見 docs/plans/issue-plan.md）
 - Milestones：M0 10/10 ✅／M1 42/42 ✅／M2 16/16 ✅／M3 23/23 ✅／M4 已交付 15 功能＋多項修復（backlog 追蹤 #93）
-- 工作流：branch `feature/issue-<n>-<slug>` → PR（Fixes #n）→ squash merge（使用者已授權 self-merge）；最新 PR #232
+- 工作流：branch `feature/issue-<n>-<slug>` → PR（Fixes #n）→ squash merge（使用者已授權 self-merge）；目前分支 `feature/issue-249-ui-redesign-mockups`，active issue #249，最新已合併 PR #248
 
 ## 已完成
 
@@ -127,7 +134,9 @@ Space 封存/軟刪、跨 Space 移動複製、死鏈標示、附件 GC、Tabs/�
 
 ## 下一步
 
-1. 部署到公司內部伺服器：`.env` 填正式值（含 SMTP_*；要開 Office 預覽加 `PREVIEW_CONVERTER_URL=http://gotenberg:3000`）、`docker compose up -d --build`、跑 `db:migrate`（0020）
-2. 串接真實 AI 端點（ANTHROPIC_API_KEY + local BGE-M3）；MCP 依 docs/guides/mcp-server.md 讓 Claude 接上知識庫（每人自建 API token；寫入需勾選 write scope）
-3. 其餘 backlog 候選見 #93（變更請求、行內評論、webhooks、PDF 匯出、KaTeX 等，依回饋再拆）
-4. 未拆 issue 的殘餘觀察（#232 review 記錄）：跨空間子樹搬移與同空間 reparent 交錯可能產生「parent 在他空間」的懸掛連結（非環、屬 #225 家族），需要時再開 issue
+1. 檢視 `docs/design/mockups-v2/` 並選定 Optic Grid 或 Archive Studio；選案前不修改正式產品 UI
+2. 選案後將方向寫入 UI Design v2，依六個順序 issue／PR 逐步遷移 token、Shell、內容工作區、編輯器、搜尋／AI 與管理後台
+3. 部署到公司內部伺服器：`.env` 填正式值（含 SMTP_*；要開 Office 預覽加 `PREVIEW_CONVERTER_URL=http://gotenberg:3000`）、`docker compose up -d --build`、跑 `db:migrate`（0020）
+4. 串接真實 AI 端點（ANTHROPIC_API_KEY + local BGE-M3）；MCP 依 docs/guides/mcp-server.md 讓 Claude 接上知識庫（每人自建 API token；寫入需勾選 write scope）
+5. 其餘 backlog 候選見 #93（變更請求、行內評論、webhooks、PDF 匯出、KaTeX 等，依回饋再拆）
+6. 未拆 issue 的殘餘觀察（#232 review 記錄）：跨空間子樹搬移與同空間 reparent 交錯可能產生「parent 在他空間」的懸掛連結（非環、屬 #225 家族），需要時再開 issue
