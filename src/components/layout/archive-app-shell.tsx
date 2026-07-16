@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useTranslations } from "next-intl";
 import { PanelLeftClose } from "lucide-react";
 import { AiChatDrawer } from "@/components/ai/ai-chat-drawer";
@@ -31,6 +31,7 @@ export function ArchiveAppShell({
   const [mobileOpen, setMobileOpen] = useState(false);
   const [paletteOpen, setPaletteOpen] = useState(false);
   const [aiOpen, setAiOpen] = useState(false);
+  const mobileDockTriggerRef = useRef<HTMLButtonElement>(null);
 
   useEffect(() => {
     setDockCollapsed(localStorage.getItem(SIDEBAR_KEY) === "1");
@@ -98,6 +99,7 @@ export function ArchiveAppShell({
             dockCollapsed={dockCollapsed}
             uiVersion={uiVersion}
             uiVersionSwitchEnabled={uiVersionSwitchEnabled}
+            mobileDockTriggerRef={mobileDockTriggerRef}
             onOpenMobileDock={() => setMobileOpen(true)}
             onExpandDock={expandDock}
             onOpenSearch={() => setPaletteOpen(true)}
@@ -131,6 +133,10 @@ export function ArchiveAppShell({
           title={t("archiveDock")}
           closeLabel={tc("close")}
           className="left-0 right-auto w-72 border-l-0 border-r border-edge lg:hidden"
+          onCloseAutoFocus={(event) => {
+            event.preventDefault();
+            mobileDockTriggerRef.current?.focus();
+          }}
         >
           <div className="px-2 py-3">{sidebar}</div>
         </DrawerContent>

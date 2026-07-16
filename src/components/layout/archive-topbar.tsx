@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import type { Ref } from "react";
 import { useTranslations } from "next-intl";
 import { Menu, PanelLeftOpen, Plus, Search, Sparkles } from "lucide-react";
 import { ArchiveMark } from "@/components/brand/archive-mark";
@@ -22,6 +23,7 @@ export function ArchiveTopbar({
   dockCollapsed,
   uiVersion,
   uiVersionSwitchEnabled,
+  mobileDockTriggerRef,
   onOpenMobileDock,
   onExpandDock,
   onOpenSearch,
@@ -35,6 +37,7 @@ export function ArchiveTopbar({
   dockCollapsed: boolean;
   uiVersion: UiVersion;
   uiVersionSwitchEnabled: boolean;
+  mobileDockTriggerRef: Ref<HTMLButtonElement>;
   onOpenMobileDock: () => void;
   onExpandDock: () => void;
   onOpenSearch: () => void;
@@ -45,7 +48,12 @@ export function ArchiveTopbar({
 
   return (
     <header className="flex h-14 shrink-0 items-center gap-2 border-b border-edge bg-raised px-2 sm:px-4">
-      <IconButton label={t("toggleSidebar")} onClick={onOpenMobileDock} className="lg:hidden">
+      <IconButton
+        ref={mobileDockTriggerRef}
+        label={t("toggleSidebar")}
+        onClick={onOpenMobileDock}
+        className="lg:hidden"
+      >
         <Menu className="size-5" />
       </IconButton>
       {dockCollapsed ? (

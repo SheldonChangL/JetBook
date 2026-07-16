@@ -1,6 +1,6 @@
 "use client";
 
-import type { ButtonHTMLAttributes, ReactNode } from "react";
+import { forwardRef, type ButtonHTMLAttributes, type ReactNode } from "react";
 import { cn } from "@/lib/utils";
 import { Tooltip } from "@/components/ui/tooltip";
 
@@ -11,10 +11,14 @@ export interface IconButtonProps extends ButtonHTMLAttributes<HTMLButtonElement>
 }
 
 /** 32×32 icon 按鈕；label 必填（aria-label + tooltip，設計規範 §4.4）。 */
-export function IconButton({ label, className, children, ...props }: IconButtonProps) {
+export const IconButton = forwardRef<HTMLButtonElement, IconButtonProps>(function IconButton(
+  { label, className, children, ...props },
+  ref,
+) {
   return (
     <Tooltip content={label}>
       <button
+        ref={ref}
         type="button"
         aria-label={label}
         className={cn(
@@ -27,4 +31,4 @@ export function IconButton({ label, className, children, ...props }: IconButtonP
       </button>
     </Tooltip>
   );
-}
+});
