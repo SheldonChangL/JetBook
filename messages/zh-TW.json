@@ -279,6 +279,7 @@
   },
   "admin": {
     "title": "管理後台",
+    "archiveKicker": "ADMIN ARCHIVE",
     "navUsers": "使用者",
     "navGroups": "群組",
     "navSystem": "系統狀態",
