@@ -7,7 +7,7 @@ import { Pencil, Trash2 } from "lucide-react";
 import { deleteGroupAction, updateGroupAction } from "@/actions/group";
 import { Button } from "@/components/ui/button";
 import { Input, Textarea } from "@/components/ui/input";
-import { Modal, ModalContent } from "@/components/ui/modal";
+import { Modal, ModalContent, ModalTrigger } from "@/components/ui/modal";
 import { useToast } from "@/components/ui/toast";
 
 /** 群組列操作（F-ADMIN-02）：重新命名（名稱／描述）、刪除（含確認）。 */
@@ -76,24 +76,12 @@ export function GroupRowActions({
 
   return (
     <>
-      <Button
-        variant="ghost"
-        size="sm"
-        onClick={() => onEditOpenChange(true)}
-        aria-label={t("edit")}
-      >
-        <Pencil aria-hidden className="size-4" />
-      </Button>
-      <Button
-        variant="ghost"
-        size="sm"
-        onClick={() => setDeleteOpen(true)}
-        aria-label={t("delete")}
-      >
-        <Trash2 aria-hidden className="size-4" />
-      </Button>
-
       <Modal open={editOpen} onOpenChange={onEditOpenChange}>
+        <ModalTrigger asChild>
+          <Button variant="ghost" size="sm" aria-label={t("edit")}>
+            <Pencil aria-hidden className="size-4" />
+          </Button>
+        </ModalTrigger>
         <ModalContent
           size="sm"
           title={t("editGroupTitle")}
@@ -135,6 +123,11 @@ export function GroupRowActions({
       </Modal>
 
       <Modal open={deleteOpen} onOpenChange={setDeleteOpen}>
+        <ModalTrigger asChild>
+          <Button variant="ghost" size="sm" aria-label={t("delete")}>
+            <Trash2 aria-hidden className="size-4" />
+          </Button>
+        </ModalTrigger>
         <ModalContent
           size="sm"
           title={t("deleteGroupTitle")}

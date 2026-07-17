@@ -81,7 +81,12 @@ export default async function AdminUsersPage({
         }}
       />
 
-      <div className="archive-admin-table-wrap overflow-x-auto rounded-md border border-edge">
+      <div
+        className="archive-admin-table-wrap overflow-x-auto rounded-md border border-edge"
+        role="region"
+        aria-label={t("usersTitle")}
+        tabIndex={0}
+      >
         <table className="archive-admin-table w-full text-body-ui">
           <thead>
             <tr className="border-b border-edge bg-sidebar text-left text-caption text-fg-tertiary">

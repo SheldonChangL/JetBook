@@ -2,7 +2,7 @@
 
 > 本矩陣以 2026-07-16 `main` 的路由、元件、`messages/zh-TW.json` 與 `PROJECT_STATE.md` 為來源。Mock 圖是代表畫面，不等於只改四頁；表內所有現有 UI 都必須在選案後的實作 issue 中得到對應設計。
 
-正式規格見 `docs/design/ui-design-v2.md`。Archive Studio 第一批 #251／PR #252 已建立可逆 rollout、語意 token、App／Admin Shell、Auth Frame 與 403／404／error／offline presentation；第二批 #253／PR #254 已覆蓋 Dashboard、Spaces／Collections、Space overview／page tree、回收桶與 Space settings；第三批 #255／PR #256 已完成閱讀、內容區塊、留言、版本、附件與預覽；第四批 #257／PR #258 已完成編輯器、衝突防護、AI 寫作與 import/export job presentation；第五批 #259 遷移搜尋、Cmd+K、AI、通知、個人設定、API Token 與 API Docs。管理後台與全站收尾仍在 slice 6，遷移完成前保留 Legacy。
+正式規格見 `docs/design/ui-design-v2.md`。Archive Studio 第一批 #251／PR #252 已建立可逆 rollout、語意 token、App／Admin Shell、Auth Frame 與 403／404／error／offline presentation；第二批 #253／PR #254 已覆蓋 Dashboard、Spaces／Collections、Space overview／page tree、回收桶與 Space settings；第三批 #255／PR #256 已完成閱讀、內容區塊、留言、版本、附件與預覽；第四批 #257／PR #258 已完成編輯器、衝突防護、AI 寫作與 import/export job presentation；第五批 #259／PR #260 已遷移搜尋、Cmd+K、AI、通知、個人設定、API Token 與 API Docs；第六批 #261 完成管理後台與全站 responsive／accessibility 收尾。矩陣內既有 UI 均已有 Archive presentation；過渡期仍刻意保留 Legacy 雙向切換與全域 kill switch。
 
 ## 正式實作對應（#253）
 
@@ -176,11 +176,25 @@
 | `/admin/users`       | 搜尋、狀態、分頁、create、org role、active、reset password                  | 矩陣                                       | 6          |
 | CSV user import      | Redmine 欄名、選檔、preview validation、批次結果、welcome mail              | 矩陣                                       | 6          |
 | `/admin/groups`      | list、create、rename、description、delete、row actions                      | 矩陣                                       | 6          |
-| `/admin/groups/[id]` | member search、add／remove、empty／error                                    | 矩陣                                       | 6          |
+| `/admin/groups/[id]` | member search、add／remove、CSV email import、empty／error                  | 矩陣                                       | 6          |
 | `/admin/spaces`      | soft-deleted Spaces、剩餘天數、restore、empty                               | 矩陣                                       | 6          |
 | `/admin/ai`          | provider masked config、test LLM／embedding、reindex、quota、usage chart    | Dashboard Inspector 語言＋矩陣             | 6          |
-| `/admin/audit`       | actor／action／resource／date filters、table、pagination、CSV export、empty | 矩陣                                       | 6          |
-| `/admin/system`      | service health、database、worker、backup、metrics、reindex status           | Dashboard Inspector＋矩陣                  | 6          |
+| `/admin/audit`       | actor／action／date filters、table、metadata、pagination、CSV export、empty  | 矩陣                                       | 6          |
+| `/admin/system`      | database／storage／LLM health、masked env、attachment usage、reindex status  | Dashboard Inspector＋矩陣                  | 6          |
+
+### Slice 6 實作對應（#261）
+
+| 覆蓋面 | 實際路由／元件 |
+| ------ | -------------- |
+| 使用者搜尋／篩選／分頁、建立、CSV preview／結果、角色、啟停與密碼重設 | `src/app/admin/users/`；沿用既有 admin actions、CSV parser、session invalidation 與最後一位管理員防護 |
+| 群組清單／建立／編輯／刪除、成員搜尋／加入／移除與 email 批次匯入 | `src/app/admin/groups/`、`src/app/admin/groups/[groupId]/`；群組與 Space 授權資料規則未改 |
+| 軟刪 Space 的剩餘天數、還原與空狀態 | `src/app/admin/spaces/page.tsx`、`restore-space-button.tsx`；仍使用既有 30 天保留規則 |
+| LLM／Embedding masked config、連線測試、用量、配額與全庫重嵌 | `src/app/admin/ai/`；provider、quota、job 與 audit 流程不變 |
+| actor／action／date 篩選、metadata 展開、分頁與 CSV 匯出 | `src/app/admin/audit/`；保留原 URL query、server-side filter 與 export route |
+| database／storage／LLM health、masked env、附件用量與重嵌狀態 | `src/app/admin/system/`；所有設定仍唯讀且只經 `src/lib/env.ts` 取得 |
+| Admin Shell、行動 drawer、light／dark、Legacy 往返與寬表鍵盤操作 | `src/components/layout/archive-admin-shell.tsx`、`src/app/globals.css`；320px 寬表為具名稱、可聚焦、可方向鍵橫向捲動的 region，不隱藏任何管理欄位或操作 |
+
+#261 的瀏覽器驗收以真實 admin 帳號與本機測試 PostgreSQL 執行：上述 6 個路由在 320／768／1024／1440、light／dark 共 48 個組合皆無文件水平溢位或頁面 console warning／error；另驗證 drawer／Modal focus trap 與 restore、使用者 CSV preview、群組建立／詳情／批次匯入／刪除、稽核 query 維持、Archive ⇄ Legacy 往返與 reduced-motion。
 
 ## 跨畫面狀態與驗收
 

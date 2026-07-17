@@ -139,7 +139,12 @@ export default async function AdminSystemPage() {
             {usage.perSpace.length === 0 ? (
               <p className="text-body-ui text-fg-tertiary">{t("storageUsageEmpty")}</p>
             ) : (
-              <div className="archive-admin-table-wrap overflow-x-auto rounded-md border border-edge">
+              <div
+                className="archive-admin-table-wrap overflow-x-auto rounded-md border border-edge"
+                role="region"
+                aria-label={t("storageUsagePerSpaceTitle")}
+                tabIndex={0}
+              >
                 <table className="archive-admin-table w-full min-w-[560px] border-collapse text-body-ui">
                   <thead>
                     <tr className="border-b border-edge bg-sidebar text-left text-fg-secondary">
