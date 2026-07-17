@@ -1,6 +1,6 @@
 # JetBook UI Design v2 — Archive Studio／知識工坊
 
-> 狀態：已選定，分六個順序 issue／PR 漸進實作。第一批 #251／PR #252 已完成；第二批 #253 實作中。原始兩案與 16 張 mock 見 `docs/design/mockups-v2/`。
+> 狀態：已選定；六個順序 issue／PR（#251–#262）均已完成。#263 依實際使用回饋再改善編輯工作區的人因與工具可發現性。原始兩案與 16 張 mock 見 `docs/design/mockups-v2/`。
 
 ## 1. 設計方向
 
@@ -18,7 +18,7 @@ JetBook 是工程師使用的活文件檔案室：以紙張、索引、檔案標
 ### Interaction thesis
 
 - Rail 與 Space Dock 分層；桌面可收合 Dock，行動版改用具 focus trap／restore 的 Drawer。
-- 閱讀進入編輯時維持文件位置，替換工具與 Inspector，避免重新定位。
+- 閱讀進入編輯後切換為 focus mode，暫時收起頁面樹；返回閱讀時立即恢復原導航脈絡。
 - Cmd+K 與 AI 共用探索工作層；來源、引用、附件預覽與錯誤保持在同一脈絡。
 - 動效只使用短距離 opacity／translate；`prefers-reduced-motion: reduce` 下停用。
 
@@ -112,6 +112,13 @@ Archive token 只在 `html[data-ui-version="archive"]` 覆寫現有語意別名�
 - 403、404、error 與 offline 使用 Archive 系統狀態；Legacy 分支保留既有呈現。
 - loading、empty、error、permission 與 offline 都必須有明確原因與下一步，不顯示空白容器。
 
+### Editor focus mode
+
+- 文件 Canvas 為唯一視覺主角；Archive 編輯路由不常駐 Space 頁面樹或右側 Inspector，Legacy 不受影響。
+- 頂列只保留返回、autosave、編輯鎖、按需展開的文件狀態與完成編輯。鎖定、版本、AI 與衝突說明收進具 Esc／focus restore 的 Popover。
+- 桌面在標題下提供區塊、圖片、附件、表格快捷插入；完整內容類型仍由 Slash menu 提供。選取文字時以官方 TipTap BubbleMenu 顯示粗體、斜體、刪除線、行內程式碼，AI 寫作維持獨立工作層。
+- `<768px` 改用固定底部工具列，正文保留底部安全距離；頁面樹不占用垂直寫作空間。
+
 ## 7. 無障礙與響應式驗收
 
 - 斷點：320、768、1024、1440 px；不得產生頁面水平溢位。
@@ -127,8 +134,8 @@ Archive token 只在 `html[data-ui-version="archive"]` 覆寫現有語意別名�
 1. Token、基礎元件、可逆 rollout、App／Admin Shell、Auth 與 system states。**已完成：#251／PR #252。**
 2. Dashboard、Spaces／Collections、頁面樹、回收桶與 Space 設定。**已完成：#253／PR #254。**
 3. 閱讀、內容區塊、留言、版本、附件與預覽。**已完成：#255／PR #256。**
-4. 編輯器、鎖定／衝突、完整區塊、AI 寫作與匯入。**進行中：#257。**
-5. 搜尋、Cmd+K、AI、通知、個人設定、API Token／Docs。
-6. 管理後台完整視覺、響應式收尾、無障礙與視覺回歸。
+4. 編輯器、鎖定／衝突、完整區塊、AI 寫作與匯入。**已完成：#257／PR #258；編輯體驗迭代：#263。**
+5. 搜尋、Cmd+K、AI、通知、個人設定、API Token／Docs。**已完成：#259／PR #260。**
+6. 管理後台完整視覺、響應式收尾、無障礙與視覺回歸。**已完成：#261／PR #262。**
 
 每批只能新增 Archive presentation 並重用既有內容／商業元件；舊 token 以相容別名保留，直到矩陣零遺留後才另開 removal issue。
