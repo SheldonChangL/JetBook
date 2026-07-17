@@ -1,6 +1,6 @@
 # JetBook UI Design v2 — Archive Studio／知識工坊
 
-> 狀態：已選定，分六個順序 issue／PR 漸進實作。第一批追蹤於 #251；原始兩案與 16 張 mock 見 `docs/design/mockups-v2/`。
+> 狀態：已選定，分六個順序 issue／PR 漸進實作。第一批 #251／PR #252 已完成；第二批 #253 實作中。原始兩案與 16 張 mock 見 `docs/design/mockups-v2/`。
 
 ## 1. 設計方向
 
@@ -124,8 +124,8 @@ Archive token 只在 `html[data-ui-version="archive"]` 覆寫現有語意別名�
 
 ## 8. 六批遷移順序
 
-1. Token、基礎元件、可逆 rollout、App／Admin Shell、Auth 與 system states。
-2. Dashboard、Spaces／Collections、頁面樹、回收桶與 Space 設定。
+1. Token、基礎元件、可逆 rollout、App／Admin Shell、Auth 與 system states。**已完成：#251／PR #252。**
+2. Dashboard、Spaces／Collections、頁面樹、回收桶與 Space 設定。**進行中：#253。**
 3. 閱讀、內容區塊、留言、版本、附件與預覽。
 4. 編輯器、鎖定／衝突、完整區塊、AI 寫作與匯入。
 5. 搜尋、Cmd+K、AI、通知、個人設定、API Token／Docs。

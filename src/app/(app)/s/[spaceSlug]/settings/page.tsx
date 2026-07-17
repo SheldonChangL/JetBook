@@ -61,8 +61,8 @@ export default async function SpaceSettingsPage({
   const groupCandidates = allGroups.map((g) => ({ id: g.id, name: g.name }));
 
   return (
-    <main className="mx-auto flex max-w-[880px] flex-col gap-8 px-6 py-8">
-      <header className="flex flex-col gap-2">
+    <main className="archive-settings-page mx-auto flex max-w-[880px] flex-col gap-8 px-6 py-8">
+      <header className="archive-settings-header flex flex-col gap-2">
         <Link
           href={`/s/${space.slug}`}
           className="inline-flex w-fit items-center gap-1 text-caption text-fg-tertiary transition-colors hover:text-fg"
@@ -80,42 +80,59 @@ export default async function SpaceSettingsPage({
         <p className="text-body-ui text-fg-secondary">{t("title")}</p>
       </header>
 
-      {space.archivedAt ? (
-        <p className="rounded-md border border-edge bg-warning-tint px-4 py-3 text-body-ui text-warning">
-          {t("archivedNotice")}
-        </p>
-      ) : null}
+      <div className="archive-settings-layout flex flex-col gap-8">
+        <nav className="archive-settings-nav ui-archive-only" aria-label={t("archiveNavLabel")}>
+          <ul>
+            <li><a href="#general-heading">{t("generalTitle")}</a></li>
+            <li><a href="#visibility-heading">{t("visibilityHeading")}</a></li>
+            <li><a href="#members-heading">{t("membersHeading")}</a></li>
+            <li><a href="#groups-heading">{t("groupsHeading")}</a></li>
+            <li><a href="#import-heading">{t("importHeading")}</a></li>
+            <li><a href="#export-heading">{t("exportHeading")}</a></li>
+            <li><a href="#archive-heading">{t("archiveHeading")}</a></li>
+            <li><a href="#delete-heading">{t("deleteHeading")}</a></li>
+          </ul>
+        </nav>
 
-      <GeneralSection
-        spaceId={space.id}
-        initialName={space.name}
-        initialDescription={space.description}
-        initialIcon={space.icon}
-      />
+        <div className="archive-settings-content flex min-w-0 flex-col gap-8">
+          {space.archivedAt ? (
+            <p className="rounded-md border border-edge bg-warning-tint px-4 py-3 text-body-ui text-warning">
+              {t("archivedNotice")}
+            </p>
+          ) : null}
 
-      <VisibilitySection spaceId={space.id} visibility={space.visibility} />
+          <GeneralSection
+            spaceId={space.id}
+            initialName={space.name}
+            initialDescription={space.description}
+            initialIcon={space.icon}
+          />
 
-      <MemberSection
-        spaceId={space.id}
-        currentUserId={user.id}
-        members={members}
-        groupMembers={groupMembers}
-        candidates={candidates}
-      />
+          <VisibilitySection spaceId={space.id} visibility={space.visibility} />
 
-      <GroupSection spaceId={space.id} groups={spaceGroups} candidates={groupCandidates} />
+          <MemberSection
+            spaceId={space.id}
+            currentUserId={user.id}
+            members={members}
+            groupMembers={groupMembers}
+            candidates={candidates}
+          />
 
-      <ImportSection spaceId={space.id} spaceSlug={space.slug} />
+          <GroupSection spaceId={space.id} groups={spaceGroups} candidates={groupCandidates} />
 
-      <ExportSection spaceId={space.id} />
+          <ImportSection spaceId={space.id} spaceSlug={space.slug} />
 
-      <ArchiveSection
-        spaceId={space.id}
-        spaceName={space.name}
-        archived={space.archivedAt !== null}
-      />
+          <ExportSection spaceId={space.id} />
 
-      <DeleteSection spaceId={space.id} spaceName={space.name} />
+          <ArchiveSection
+            spaceId={space.id}
+            spaceName={space.name}
+            archived={space.archivedAt !== null}
+          />
+
+          <DeleteSection spaceId={space.id} spaceName={space.name} />
+        </div>
+      </div>
     </main>
   );
 }

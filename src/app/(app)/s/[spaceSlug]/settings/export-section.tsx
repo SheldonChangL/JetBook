@@ -101,7 +101,7 @@ export function ExportSection({ spaceId }: { spaceId: string }) {
   }
 
   return (
-    <section aria-labelledby="export-heading" className="flex flex-col gap-3">
+    <section id="export" aria-labelledby="export-heading" className="flex flex-col gap-3">
       <div className="flex flex-col gap-1">
         <h2 id="export-heading" className="text-h4 text-fg">
           {t("exportHeading")}

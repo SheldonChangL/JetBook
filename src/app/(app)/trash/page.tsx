@@ -69,8 +69,9 @@ export default async function TrashPage({
   });
 
   return (
-    <div className="mx-auto max-w-4xl px-6 py-8">
-      <header className="mb-6">
+    <div className="archive-trash-page mx-auto max-w-4xl px-6 py-8">
+      <header className="archive-trash-header mb-6">
+        <p className="archive-trash-kicker ui-archive-only">{t("archiveKicker")}</p>
         <h1 className="text-h1 text-fg">{t("title")}</h1>
         <p className="mt-1 text-body-ui text-fg-secondary">
           {scopedSpaceName ? t("subtitleSpace", { space: scopedSpaceName }) : t("subtitleGlobal")}

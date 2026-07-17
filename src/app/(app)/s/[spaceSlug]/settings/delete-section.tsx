@@ -34,7 +34,7 @@ export function DeleteSection({ spaceId, spaceName }: { spaceId: string; spaceNa
   }
 
   return (
-    <section aria-labelledby="delete-heading" className="flex flex-col gap-3">
+    <section id="delete" aria-labelledby="delete-heading" className="flex flex-col gap-3">
       <div className="flex flex-col gap-1">
         <h2 id="delete-heading" className="text-h4 text-danger">
           {t("deleteHeading")}

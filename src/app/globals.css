@@ -1653,3 +1653,532 @@ html[data-ui-version="archive"] .offline-banner {
   font-family: var(--font-mono);
   letter-spacing: 0.02em;
 }
+
+/* UI v2 slice 2 — Dashboard：用索引列與紙張分隔取代 Legacy 卡片拼貼。 */
+html[data-ui-version="archive"] .archive-dashboard {
+  display: grid;
+  width: 100%;
+  max-width: 1120px;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1.12fr);
+  align-content: start;
+  gap: 34px;
+  padding: 44px;
+}
+
+html[data-ui-version="archive"] .archive-dashboard-header {
+  grid-column: 1 / -1;
+  padding-bottom: 2px;
+}
+
+html[data-ui-version="archive"] .archive-dashboard-kicker {
+  margin-bottom: 4px;
+  color: var(--primary);
+  font-family: var(--font-mono);
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.14em;
+}
+
+html[data-ui-version="archive"] .archive-dashboard-section {
+  min-width: 0;
+}
+
+html[data-ui-version="archive"] .archive-dashboard-section > h2 {
+  margin-bottom: 0;
+  padding-bottom: 10px;
+  border-bottom: 1px solid var(--border-default);
+  font-size: var(--text-h4);
+}
+
+html[data-ui-version="archive"] .archive-dashboard-reading,
+html[data-ui-version="archive"] .archive-dashboard-spaces {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+}
+
+html[data-ui-version="archive"] .archive-dashboard-reading-row,
+html[data-ui-version="archive"] .archive-dashboard-space-row {
+  min-height: 62px;
+  justify-content: center;
+  padding: 10px 0;
+  border-width: 0 0 1px;
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+}
+
+html[data-ui-version="archive"] .archive-dashboard-reading-row:hover,
+html[data-ui-version="archive"] .archive-dashboard-space-row:hover {
+  padding-inline: 10px;
+  border-color: var(--border-strong);
+  background: var(--bg-hover);
+}
+
+html[data-ui-version="archive"] .archive-dashboard-updates {
+  overflow: visible;
+  border-width: 0;
+  border-radius: 0;
+  background: transparent;
+}
+
+html[data-ui-version="archive"] .archive-dashboard-updates > li {
+  min-height: 47px;
+  padding-inline: 0;
+}
+
+@media (max-width: 767px) {
+  html[data-ui-version="archive"] .archive-dashboard {
+    display: flex;
+    gap: 32px;
+    padding: 28px 20px 40px;
+  }
+
+  html[data-ui-version="archive"] .archive-dashboard-updates > li {
+    align-items: flex-start;
+    flex-wrap: wrap;
+  }
+
+  html[data-ui-version="archive"] .archive-dashboard-updates > li > :last-child {
+    margin-left: 0;
+  }
+}
+
+/* UI v2 slice 2 — Trash：保留還原與 worker 清除期限，使用稽核式索引列。 */
+html[data-ui-version="archive"] .archive-trash-page {
+  width: 100%;
+  max-width: 1040px;
+  padding: 44px;
+}
+
+html[data-ui-version="archive"] .archive-trash-header {
+  margin-bottom: 28px;
+  padding-bottom: 20px;
+  border-bottom: 1px solid var(--border-strong);
+}
+
+html[data-ui-version="archive"] .archive-trash-kicker {
+  margin-bottom: 4px;
+  color: var(--primary);
+  font-family: var(--font-mono);
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.12em;
+}
+
+html[data-ui-version="archive"] .archive-trash-list {
+  overflow: visible;
+  border-width: 1px 0 0;
+  border-color: var(--border-strong);
+  border-radius: 0;
+}
+
+html[data-ui-version="archive"] .archive-trash-row {
+  min-height: 68px;
+  padding: 12px 0;
+  background: transparent;
+}
+
+html[data-ui-version="archive"] .archive-trash-row:hover {
+  padding-inline: 12px;
+  background: var(--bg-hover);
+}
+
+/* UI v2 slice 2 — Space settings：左側任務索引＋單一內容流，避免堆疊卡片。 */
+html[data-ui-version="archive"] .archive-settings-page {
+  width: 100%;
+  max-width: 1160px;
+  gap: 36px;
+  padding: 44px;
+}
+
+html[data-ui-version="archive"] .archive-settings-header {
+  padding-bottom: 20px;
+  border-bottom: 1px solid var(--border-strong);
+}
+
+html[data-ui-version="archive"] .archive-settings-layout {
+  display: grid;
+  grid-template-columns: 176px minmax(0, 1fr);
+  align-items: start;
+  gap: 40px;
+}
+
+html[data-ui-version="archive"] .archive-settings-nav {
+  position: sticky;
+  top: 20px;
+}
+
+html[data-ui-version="archive"] .archive-settings-nav ul {
+  border-left: 1px solid var(--border-strong);
+}
+
+html[data-ui-version="archive"] .archive-settings-nav a {
+  display: flex;
+  min-height: 34px;
+  align-items: center;
+  padding: 6px 10px;
+  border-left: 3px solid transparent;
+  color: var(--text-secondary);
+  font-size: var(--text-caption);
+  transition:
+    border-color 120ms ease,
+    background-color 120ms ease,
+    color 120ms ease;
+}
+
+html[data-ui-version="archive"] .archive-settings-nav a:hover,
+html[data-ui-version="archive"] .archive-settings-nav a:focus-visible {
+  border-left-color: var(--archive-index);
+  color: var(--text-primary);
+  background: var(--bg-hover);
+}
+
+html[data-ui-version="archive"] .archive-settings-content {
+  gap: 36px;
+}
+
+html[data-ui-version="archive"] .archive-settings-content > section {
+  scroll-margin-top: 24px;
+  padding-top: 28px;
+  border-top: 1px solid var(--border-default);
+}
+
+html[data-ui-version="archive"] .archive-settings-content > section:first-of-type {
+  border-top-color: var(--border-strong);
+}
+
+html[data-ui-version="archive"] .archive-settings-content > section[id="general"] {
+  padding-inline: 0;
+  padding-bottom: 0;
+  border-right: 0;
+  border-bottom: 0;
+  border-left: 0;
+  border-radius: 0;
+}
+
+html[data-ui-version="archive"] .archive-settings-content > section > :is(fieldset, div.rounded-md) {
+  border-radius: var(--radius-xs);
+  box-shadow: none;
+}
+
+html[data-ui-version="archive"] .archive-settings-content table {
+  min-width: 680px;
+}
+
+html[data-ui-version="archive"] .archive-settings-content > section[id="delete"] {
+  border-top-color: color-mix(in srgb, var(--danger) 55%, var(--border-default));
+}
+
+@media (max-width: 767px) {
+  html[data-ui-version="archive"] .archive-settings-page {
+    gap: 28px;
+    padding: 28px 20px 40px;
+  }
+
+  html[data-ui-version="archive"] .archive-settings-layout {
+    display: flex;
+    width: 100%;
+    min-width: 0;
+    gap: 28px;
+  }
+
+  html[data-ui-version="archive"] .archive-settings-nav {
+    position: sticky;
+    z-index: 5;
+    top: 0;
+    width: calc(100% + 40px);
+    max-width: calc(100% + 40px);
+    flex: none;
+    margin-inline: -20px;
+    overflow-x: auto;
+    border-block: 1px solid var(--border-default);
+    background: var(--bg-base);
+  }
+
+  html[data-ui-version="archive"] .archive-settings-nav ul {
+    display: flex;
+    width: max-content;
+    padding-inline: 12px;
+    border-left: 0;
+  }
+
+  html[data-ui-version="archive"] .archive-settings-nav a {
+    min-height: 40px;
+    border-bottom: 3px solid transparent;
+    border-left: 0;
+    white-space: nowrap;
+  }
+
+  html[data-ui-version="archive"] .archive-settings-nav a:hover,
+  html[data-ui-version="archive"] .archive-settings-nav a:focus-visible {
+    border-bottom-color: var(--archive-index);
+    border-left-color: transparent;
+  }
+
+  html[data-ui-version="archive"] .archive-settings-content > section {
+    scroll-margin-top: 52px;
+  }
+}
+
+@media (max-width: 767px) {
+  html[data-ui-version="archive"] .archive-trash-page {
+    padding: 28px 20px 40px;
+  }
+
+  html[data-ui-version="archive"] .archive-trash-row {
+    align-items: flex-start;
+  }
+
+  html[data-ui-version="archive"] .archive-trash-row > :last-child {
+    width: 100%;
+    justify-content: space-between;
+  }
+}
+
+/* UI v2 slice 2 — Space Dock／page tree：同一棵樹保留完整 DnD、鍵盤與選單行為。 */
+html[data-ui-version="archive"] .archive-space-layout {
+  min-height: 100%;
+  flex-direction: column;
+}
+
+html[data-ui-version="archive"] .archive-space-tree {
+  display: flex;
+  width: 100%;
+  max-height: min(320px, 44dvh);
+  border-right: 0;
+  border-bottom: 1px solid var(--border-strong);
+  background: var(--bg-sidebar);
+}
+
+html[data-ui-version="archive"] .archive-page-tree {
+  padding-block: 0;
+}
+
+html[data-ui-version="archive"] .archive-page-tree-header {
+  height: 44px;
+  padding-inline: 12px 8px;
+  border-bottom: 1px solid var(--border-default);
+}
+
+html[data-ui-version="archive"] .archive-page-tree-header > span:first-child {
+  color: var(--text-secondary);
+  font-family: var(--font-mono);
+  font-size: 10px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+html[data-ui-version="archive"] .archive-page-tree-list {
+  padding: 8px;
+}
+
+html[data-ui-version="archive"] .archive-page-tree-row-inner {
+  height: 34px;
+  border-radius: var(--radius-xs);
+}
+
+html[data-ui-version="archive"] .archive-page-tree-row + .archive-page-tree-row {
+  margin-top: 2px;
+}
+
+html[data-ui-version="archive"] .archive-page-tree-row-inner:has([aria-current="page"]) {
+  border: 1px solid var(--border-strong);
+  background: transparent;
+}
+
+html[data-ui-version="archive"] .archive-page-tree-row-inner:has([aria-current="page"]) > span[aria-hidden]:first-of-type {
+  inset-block: 0;
+  width: 3px;
+  border-radius: 0;
+  background: var(--archive-index);
+}
+
+html[data-ui-version="archive"] .archive-space-tree > :last-child a {
+  min-height: 36px;
+  border-radius: var(--radius-xs);
+}
+
+@media (min-width: 768px) {
+  html[data-ui-version="archive"] .archive-space-layout {
+    flex-direction: row;
+  }
+
+  html[data-ui-version="archive"] .archive-space-tree {
+    width: 244px;
+    max-height: none;
+    border-right: 1px solid var(--border-strong);
+    border-bottom: 0;
+  }
+}
+
+/* UI v2 slice 2 — Space overview：頂層頁面使用目錄列，節點型別仍保持原語意。 */
+html[data-ui-version="archive"] .archive-space-home {
+  width: 100%;
+  max-width: 920px;
+  gap: 42px;
+  padding: 44px;
+}
+
+html[data-ui-version="archive"] .archive-space-home-header {
+  gap: 8px;
+  padding-bottom: 24px;
+  border-bottom: 1px solid var(--border-strong);
+}
+
+html[data-ui-version="archive"] .archive-space-home-header h1 {
+  letter-spacing: -0.025em;
+}
+
+html[data-ui-version="archive"] .archive-space-directory {
+  gap: 0;
+}
+
+html[data-ui-version="archive"] .archive-space-directory > h2 {
+  padding-bottom: 10px;
+  border-bottom: 1px solid var(--border-default);
+  font-family: var(--font-mono);
+  font-size: 11px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+html[data-ui-version="archive"] .archive-space-directory-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+}
+
+html[data-ui-version="archive"] .archive-space-directory-row {
+  min-height: 64px;
+  justify-content: center;
+  padding: 12px 0;
+  border-width: 0 0 1px;
+  border-radius: 0;
+  background: transparent;
+}
+
+html[data-ui-version="archive"] a.archive-space-directory-row:hover {
+  padding-inline: 12px;
+  border-color: var(--border-strong);
+  background: var(--bg-hover);
+}
+
+html[data-ui-version="archive"] .archive-space-directory-group {
+  padding-inline: 12px;
+  border-style: dashed;
+  background: color-mix(in srgb, var(--bg-sidebar) 70%, transparent);
+}
+
+html[data-ui-version="archive"] .archive-space-directory-external {
+  border-left: 3px solid var(--ai);
+  padding-left: 12px;
+}
+
+@media (max-width: 767px) {
+  html[data-ui-version="archive"] .archive-space-home {
+    gap: 32px;
+    padding: 28px 20px 40px;
+  }
+
+  html[data-ui-version="archive"] .archive-space-home-header > div:first-child {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+}
+
+/* UI v2 slice 2 — Spaces／Collections：以檔案索引呈現分組與管理動作。 */
+html[data-ui-version="archive"] .archive-spaces-page {
+  width: 100%;
+  max-width: 1120px;
+  gap: 36px;
+  padding: 44px;
+}
+
+html[data-ui-version="archive"] .archive-spaces-header {
+  align-items: flex-end;
+  padding-bottom: 20px;
+  border-bottom: 1px solid var(--border-strong);
+}
+
+html[data-ui-version="archive"] .archive-spaces-header > :last-child {
+  flex-wrap: wrap;
+  justify-content: flex-end;
+}
+
+html[data-ui-version="archive"] .archive-collection-list {
+  gap: 42px;
+  counter-reset: archive-collection;
+}
+
+html[data-ui-version="archive"] .archive-collection {
+  gap: 0;
+  counter-increment: archive-collection;
+}
+
+html[data-ui-version="archive"] .archive-collection > div:first-child {
+  min-height: 40px;
+  padding-bottom: 8px;
+  border-color: var(--border-strong);
+}
+
+html[data-ui-version="archive"] .archive-collection > div:first-child h2::before {
+  margin-right: 10px;
+  color: var(--primary);
+  content: counter(archive-collection, decimal-leading-zero) " /";
+  font-family: var(--font-mono);
+  font-size: 10px;
+  letter-spacing: 0.08em;
+}
+
+html[data-ui-version="archive"] .archive-space-index {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+}
+
+html[data-ui-version="archive"] .archive-space-index-item {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(150px, 220px);
+  align-items: center;
+  gap: 16px;
+  border-bottom: 1px solid var(--border-default);
+}
+
+html[data-ui-version="archive"] .archive-space-index-link {
+  min-height: 72px;
+  justify-content: center;
+  padding: 12px 0;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+}
+
+html[data-ui-version="archive"] .archive-space-index-link:hover {
+  padding-inline: 12px;
+  background: var(--bg-hover);
+}
+
+@media (max-width: 767px) {
+  html[data-ui-version="archive"] .archive-spaces-page {
+    gap: 28px;
+    padding: 28px 20px 40px;
+  }
+
+  html[data-ui-version="archive"] .archive-spaces-header {
+    align-items: flex-start;
+    flex-direction: column;
+    gap: 16px;
+  }
+
+  html[data-ui-version="archive"] .archive-spaces-header > :last-child {
+    justify-content: flex-start;
+  }
+
+  html[data-ui-version="archive"] .archive-space-index-item {
+    display: flex;
+    align-items: stretch;
+    gap: 8px;
+  }
+}

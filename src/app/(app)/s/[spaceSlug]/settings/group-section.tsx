@@ -25,7 +25,7 @@ export async function GroupSection({
   const candidatesNotAttached = candidates.filter((c) => !attachedIds.has(c.id));
 
   return (
-    <section aria-labelledby="groups-heading" className="flex flex-col gap-4">
+    <section id="groups" aria-labelledby="groups-heading" className="flex flex-col gap-4">
       <div className="flex flex-col gap-1">
         <h2 id="groups-heading" className="text-h4 text-fg">
           {t("groupsHeading")}

@@ -64,7 +64,7 @@ export function VisibilitySection({
   }
 
   return (
-    <section aria-labelledby="visibility-heading" className="flex flex-col gap-3">
+    <section id="visibility" aria-labelledby="visibility-heading" className="flex flex-col gap-3">
       <div className="flex flex-col gap-1">
         <h2 id="visibility-heading" className="text-h4 text-fg">
           {t("visibilityHeading")}

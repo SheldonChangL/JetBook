@@ -5,6 +5,7 @@ import { usePathname } from "next/navigation";
 import { useTranslations } from "next-intl";
 import { PanelLeftClose } from "lucide-react";
 import { AiChatDrawer } from "@/components/ai/ai-chat-drawer";
+import { shouldShowArchiveGlobalDock } from "@/lib/archive-navigation";
 import { Drawer, DrawerContent } from "@/components/ui/drawer";
 import { IconButton } from "@/components/ui/icon-button";
 import type { AppShellProps } from "./app-shell";
@@ -30,6 +31,7 @@ export function ArchiveAppShell({
   const tc = useTranslations("common");
   const pathname = usePathname();
   const [dockCollapsed, setDockCollapsed] = useState(false);
+  const [spaceGlobalDockOpen, setSpaceGlobalDockOpen] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
   const [paletteOpen, setPaletteOpen] = useState(false);
   const [aiOpen, setAiOpen] = useState(false);
@@ -41,7 +43,14 @@ export function ArchiveAppShell({
 
   useEffect(() => {
     setMobileOpen(false);
+    setSpaceGlobalDockOpen(false);
   }, [pathname]);
+
+  const showGlobalDock = shouldShowArchiveGlobalDock(
+    pathname,
+    dockCollapsed,
+    spaceGlobalDockOpen,
+  );
 
   useEffect(() => {
     function onKey(event: KeyboardEvent) {
@@ -49,6 +58,12 @@ export function ArchiveAppShell({
         event.preventDefault();
         if (window.matchMedia("(max-width: 1023px)").matches) {
           setMobileOpen((current) => !current);
+          return;
+        }
+        if (pathname.startsWith("/s/")) {
+          setDockCollapsed(false);
+          setSpaceGlobalDockOpen((current) => !current);
+          localStorage.setItem(SIDEBAR_KEY, "0");
           return;
         }
         setDockCollapsed((current) => {
@@ -72,15 +87,17 @@ export function ArchiveAppShell({
 
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
-  }, [llmConfigured]);
+  }, [llmConfigured, pathname]);
 
   function expandDock() {
     setDockCollapsed(false);
+    setSpaceGlobalDockOpen(true);
     localStorage.setItem(SIDEBAR_KEY, "0");
   }
 
   function collapseDock() {
     setDockCollapsed(true);
+    setSpaceGlobalDockOpen(false);
     localStorage.setItem(SIDEBAR_KEY, "1");
   }
 
@@ -102,7 +119,7 @@ export function ArchiveAppShell({
             unreadNotifications={unreadNotifications}
             llmConfigured={llmConfigured}
             aiOpen={aiOpen}
-            dockCollapsed={dockCollapsed}
+            dockCollapsed={!showGlobalDock}
             uiVersion={uiVersion}
             uiVersionSwitchEnabled={uiVersionSwitchEnabled}
             mobileDockTriggerRef={mobileDockTriggerRef}
@@ -113,7 +130,7 @@ export function ArchiveAppShell({
           />
 
           <div className="flex min-h-0 flex-1">
-            {!dockCollapsed ? (
+            {showGlobalDock ? (
               <aside className="hidden w-[252px] shrink-0 flex-col border-r border-edge bg-sidebar lg:flex">
                 <div className="flex h-12 shrink-0 items-center justify-between border-b border-edge px-3">
                   <p className="font-mono text-[10px] font-medium tracking-[0.14em] text-fg-tertiary">

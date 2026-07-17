@@ -56,13 +56,13 @@ export function TrashList({ items, showSpace }: { items: TrashRow[]; showSpace: 
   }
 
   return (
-    <ul className="flex flex-col divide-y divide-edge overflow-hidden rounded-md border border-edge">
+    <ul className="archive-trash-list flex flex-col divide-y divide-edge overflow-hidden rounded-md border border-edge">
       {items.map((item) => {
         const isRestoring = pending && restoringId === item.pageId;
         return (
           <li
             key={item.pageId}
-            className="flex flex-wrap items-center gap-x-4 gap-y-2 bg-raised px-4 py-3"
+            className="archive-trash-row flex flex-wrap items-center gap-x-4 gap-y-2 bg-raised px-4 py-3"
           >
             <div className="flex min-w-0 flex-1 items-center gap-2">
               {item.icon ? (

@@ -42,7 +42,7 @@ export async function MemberSection({
   const hasAnyMember = members.length > 0 || groupMembers.length > 0;
 
   return (
-    <section aria-labelledby="members-heading" className="flex flex-col gap-4">
+    <section id="members" aria-labelledby="members-heading" className="flex flex-col gap-4">
       <div className="flex flex-col gap-1">
         <h2 id="members-heading" className="text-h4 text-fg">
           {t("membersHeading")}

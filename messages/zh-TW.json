@@ -17,6 +17,8 @@
   "home": {
     "title": "JetBook",
     "subtitle": "Jet Opto 內部知識管理系統 — 建置中（M0）。",
+    "archiveKicker": "知識工作檯 / 今日索引",
+    "archiveSubtitle": "從上次離開的地方繼續，或查看最新知識更新。",
     "stageBadge": "M0 建置中",
     "greeting": "{name}，歡迎回來",
     "mySpaces": "我的空間",
@@ -192,6 +194,7 @@
   },
   "spaces": {
     "title": "所有空間",
+    "archiveSubtitle": "依 Collection 檢視與管理你可存取的知識空間。",
     "create": "建立 Space",
     "createTitle": "建立新空間",
     "createError": "建立失敗，請稍後再試",
@@ -513,6 +516,7 @@
   },
   "trash": {
     "title": "垃圾桶",
+    "archiveKicker": "保留 30 天 / 到期自動清除",
     "subtitleGlobal": "跨空間彙整，僅顯示你有還原權限的項目。刪除的頁面保留 30 天後自動清除。",
     "subtitleSpace": "「{space}」已刪除的頁面，保留 30 天後自動清除。",
     "emptyTitle": "垃圾桶是空的",
@@ -1018,6 +1022,7 @@
   },
   "spaceSettings": {
     "title": "空間設定",
+    "archiveNavLabel": "設定區段",
     "generalTitle": "一般資訊",
     "generalDesc": "空間的名稱、描述與圖示。",
     "generalIcon": "圖示",
