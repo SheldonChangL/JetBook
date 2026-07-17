@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import { usePathname } from "next/navigation";
 import { useTranslations } from "next-intl";
 import { PanelLeftClose } from "lucide-react";
 import { AiChatDrawer } from "@/components/ai/ai-chat-drawer";
@@ -27,6 +28,7 @@ export function ArchiveAppShell({
 }: AppShellProps) {
   const t = useTranslations("shell");
   const tc = useTranslations("common");
+  const pathname = usePathname();
   const [dockCollapsed, setDockCollapsed] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
   const [paletteOpen, setPaletteOpen] = useState(false);
@@ -36,6 +38,10 @@ export function ArchiveAppShell({
   useEffect(() => {
     setDockCollapsed(localStorage.getItem(SIDEBAR_KEY) === "1");
   }, []);
+
+  useEffect(() => {
+    setMobileOpen(false);
+  }, [pathname]);
 
   useEffect(() => {
     function onKey(event: KeyboardEvent) {

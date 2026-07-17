@@ -1,6 +1,6 @@
 "use client";
 
-import type { ComponentType, ReactNode, SVGProps } from "react";
+import { useRef, type ComponentType, type ReactNode, type SVGProps } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useState } from "react";
@@ -41,6 +41,7 @@ export function ArchiveAdminShell({
   const tc = useTranslations("common");
   const pathname = usePathname();
   const [mobileOpen, setMobileOpen] = useState(false);
+  const mobileNavTriggerRef = useRef<HTMLButtonElement>(null);
 
   const navItems = [
     { href: "/admin/users", label: t("navUsers"), icon: Users },
@@ -80,7 +81,12 @@ export function ArchiveAdminShell({
 
       <div className="flex min-w-0 flex-1 flex-col">
         <header className="flex h-14 shrink-0 items-center gap-2 border-b border-edge bg-raised px-2 sm:px-4">
-          <IconButton label={t("title")} onClick={() => setMobileOpen(true)} className="lg:hidden">
+          <IconButton
+            ref={mobileNavTriggerRef}
+            label={t("title")}
+            onClick={() => setMobileOpen(true)}
+            className="lg:hidden"
+          >
             <Menu className="size-5" />
           </IconButton>
           <Link href="/" className="flex items-center gap-2 text-fg lg:hidden">
@@ -113,6 +119,10 @@ export function ArchiveAdminShell({
           title={t("title")}
           closeLabel={tc("close")}
           className="left-0 right-auto w-72 border-l-0 border-r border-edge lg:hidden"
+          onCloseAutoFocus={(event) => {
+            event.preventDefault();
+            mobileNavTriggerRef.current?.focus();
+          }}
         >
           <nav className="flex flex-col gap-1 p-2" aria-label={t("title")}>
             {navItems.map((item) => (

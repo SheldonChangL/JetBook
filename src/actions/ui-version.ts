@@ -1,6 +1,5 @@
 "use server";
 
-import { revalidatePath } from "next/cache";
 import { z } from "zod";
 import { UI_VERSIONS } from "@/lib/ui-version";
 import { setUiVersionPreference } from "@/lib/ui-version-server";
@@ -12,5 +11,4 @@ export async function setUiVersionAction(value: string): Promise<void> {
   if (!parsed.success) return;
 
   await setUiVersionPreference(parsed.data);
-  revalidatePath("/", "layout");
 }
