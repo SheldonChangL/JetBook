@@ -9,6 +9,7 @@ import { logout } from "@/actions/auth";
 import { setUiVersionAction } from "@/actions/ui-version";
 import { Avatar } from "@/components/ui/avatar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import type { BuildInfo } from "@/lib/build-info";
 import type { UiVersion } from "@/lib/ui-version";
 
 export function UserMenu({
@@ -17,6 +18,7 @@ export function UserMenu({
   isAdmin = false,
   uiVersion = "legacy",
   uiVersionSwitchEnabled = false,
+  buildInfo,
 }: {
   name: string;
   email: string;
@@ -24,6 +26,8 @@ export function UserMenu({
   isAdmin?: boolean;
   uiVersion?: UiVersion;
   uiVersionSwitchEnabled?: boolean;
+  /** 當前部署的 build 資訊（#267），顯示於選單底部供辨識版本。 */
+  buildInfo: BuildInfo;
 }) {
   const t = useTranslations("shell");
   const router = useRouter();
@@ -81,7 +85,7 @@ export function UserMenu({
                 : t("switchToArchive")}
           </button>
         ) : null}
-        <form action={logout}>
+        <form action={logout} className="border-b border-edge">
           <button
             type="submit"
             className="flex w-full items-center gap-2 px-3 py-2 text-body-ui text-fg transition-colors hover:bg-hover"
@@ -90,6 +94,23 @@ export function UserMenu({
             {t("logout")}
           </button>
         </form>
+        {/* Build 版本（#267）：辨識當前部署 */}
+        <dl className="flex flex-col gap-0.5 px-3 py-2 text-caption text-fg-tertiary">
+          <div className="flex items-center justify-between gap-2">
+            <dt>{t("buildVersionLabel")}</dt>
+            <dd className="font-mono text-fg-secondary">{buildInfo.version}</dd>
+          </div>
+          <div className="flex items-center justify-between gap-2">
+            <dt>{t("buildCommitLabel")}</dt>
+            <dd className="truncate font-mono text-fg-secondary">{buildInfo.shortCommit}</dd>
+          </div>
+          <div className="flex items-center justify-between gap-2">
+            <dt>{t("buildTimeLabel")}</dt>
+            <dd className="truncate font-mono text-fg-secondary">
+              {buildInfo.builtAt || t("buildTimeDev")}
+            </dd>
+          </div>
+        </dl>
       </PopoverContent>
     </Popover>
   );

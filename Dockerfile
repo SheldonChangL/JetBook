@@ -25,6 +25,14 @@ ENV NODE_ENV=production \
     NEXT_TELEMETRY_DISABLED=1 \
     PORT=3000 \
     HOSTNAME=0.0.0.0
+# ── Build metadata（#267）：build-arg 注入 → runtime ENV，供 GUI／healthz 顯示部署版本。
+# 未傳入時為空字串，由 src/lib/build-info.ts fallback（commit=dev、version 取 package.json）。
+ARG APP_VERSION=""
+ARG GIT_COMMIT=""
+ARG BUILD_TIME=""
+ENV APP_VERSION=$APP_VERSION \
+    GIT_COMMIT=$GIT_COMMIT \
+    BUILD_TIME=$BUILD_TIME
 RUN addgroup -S nodejs -g 1001 && adduser -S nextjs -u 1001 -G nodejs
 COPY --from=build --chown=nextjs:nodejs /app/.next/standalone ./
 COPY --from=build --chown=nextjs:nodejs /app/.next/static ./.next/static

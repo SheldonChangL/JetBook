@@ -5,6 +5,7 @@ import { getTranslations } from "next-intl/server";
 import { requireSession } from "@/lib/auth/current";
 import { isOrgAdmin } from "@/lib/authz/permission";
 import { checkDatabase, checkLlm, checkStorage, getEnvSummary } from "@/lib/health";
+import { getBuildInfo } from "@/lib/build-info-server";
 import { getStorageUsage } from "@/lib/storage/usage";
 import { isEmbeddingConfigured } from "@/lib/llm";
 import { formatFileSize } from "@/components/editor/attachment/attachment-utils";
@@ -34,6 +35,7 @@ export default async function AdminSystemPage() {
   const llm = checkLlm();
   const summary = getEnvSummary();
   const embeddingConfigured = isEmbeddingConfigured();
+  const buildInfo = getBuildInfo();
 
   return (
     <div className="archive-admin-page archive-admin-system mx-auto flex max-w-5xl flex-col gap-6 px-6 py-8">
@@ -96,6 +98,31 @@ export default async function AdminSystemPage() {
           ) : (
             <p className="text-body-ui text-fg-tertiary">{t("systemLlmHint")}</p>
           )}
+        </StatusCard>
+
+        {/* Build 版本（#267）：辨識當前部署的 image */}
+        <StatusCard
+          title={t("systemCardVersion")}
+          badge={<Badge variant="neutral">{buildInfo.shortCommit}</Badge>}
+        >
+          <dl className="flex flex-col gap-1 text-body-ui text-fg-secondary">
+            <div className="flex justify-between gap-2">
+              <dt className="text-fg-tertiary">{t("systemVersionVersion")}</dt>
+              <dd className="font-mono">{buildInfo.version}</dd>
+            </div>
+            <div className="flex justify-between gap-2">
+              <dt className="text-fg-tertiary">{t("systemVersionCommit")}</dt>
+              <dd className="truncate font-mono" title={buildInfo.commit}>
+                {buildInfo.shortCommit}
+              </dd>
+            </div>
+            <div className="flex justify-between gap-2">
+              <dt className="text-fg-tertiary">{t("systemVersionBuiltAt")}</dt>
+              <dd className="truncate font-mono">
+                {buildInfo.builtAt || t("systemVersionDev")}
+              </dd>
+            </div>
+          </dl>
         </StatusCard>
       </div>
 

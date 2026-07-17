@@ -8,8 +8,10 @@ import { ArchiveMark } from "@/components/brand/archive-mark";
 import { Button } from "@/components/ui/button";
 import { IconButton } from "@/components/ui/icon-button";
 import { Kbd } from "@/components/ui/kbd";
+import type { BuildInfo } from "@/lib/build-info";
 import type { NotificationView } from "@/lib/notifications";
 import type { UiVersion } from "@/lib/ui-version";
+import { BuildBadge } from "./build-badge";
 import { NotificationBell } from "./notification-bell";
 import { ThemeToggle } from "./theme-toggle";
 import { UserMenu } from "./user-menu";
@@ -23,6 +25,7 @@ export function ArchiveTopbar({
   dockCollapsed,
   uiVersion,
   uiVersionSwitchEnabled,
+  buildInfo,
   mobileDockTriggerRef,
   onOpenMobileDock,
   onExpandDock,
@@ -37,6 +40,7 @@ export function ArchiveTopbar({
   dockCollapsed: boolean;
   uiVersion: UiVersion;
   uiVersionSwitchEnabled: boolean;
+  buildInfo: BuildInfo;
   mobileDockTriggerRef: Ref<HTMLButtonElement>;
   onOpenMobileDock: () => void;
   onExpandDock: () => void;
@@ -107,12 +111,14 @@ export function ArchiveTopbar({
         ) : null}
         <NotificationBell initialItems={notifications} initialUnread={unreadNotifications} />
         <ThemeToggle />
+        <BuildBadge info={buildInfo} className="mx-1 hidden sm:inline-block" />
         <UserMenu
           name={user.name}
           email={user.email}
           isAdmin={user.isAdmin}
           uiVersion={uiVersion}
           uiVersionSwitchEnabled={uiVersionSwitchEnabled}
+          buildInfo={buildInfo}
         />
       </div>
     </header>

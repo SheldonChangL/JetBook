@@ -136,6 +136,14 @@ Next.js（App Router、TS strict）全端 + PostgreSQL 16/pgvector/pgroonga + Do
 - [x] Production browser QA：Archive light／dark × 320／768／1440 與 Legacy light／dark 共 8 組均只有一個完成按鈕、零水平溢位、零 console warning／error；兩套 presentation 各自外觀保持正確
 - [x] 本機品質閘門：lint ✅ typecheck ✅ 單元 532/532 ✅ 整合 304/304（含 N-04）✅ N-02 Playwright 2/2（Archive rollout）✅ production build ✅
 
+### Build 版本識別（2026-07-17，#267）
+
+- [x] GUI 常駐顯示當前部署版本（`version`＋git commit 短碼＋build 時間），讓反覆部署時一眼分辨是否生效、與上版差異。此為全新「app/build 版本識別」，非既有頁面內容版本歷史/diff
+- [x] build 階段注入（ADR-013）：`env.ts` 加 `APP_VERSION`/`GIT_COMMIT`/`BUILD_TIME`（optional）；Dockerfile runner `ARG`→`ENV`；docker-compose web/worker `build.args`；CI `build-push-action` `build-args` 帶 `github.sha`＋`date -u`＋package.json version。runtime 無 git 依賴
+- [x] `src/lib/build-info.ts`（純解析，client/測試共用）＋ `build-info-server.ts`（server-only，`getBuildInfo()`，package.json fallback、commit=dev）；顯示於共用 `BuildBadge`（Legacy／Archive 兩套 shell＋admin topbar，不隨側欄收合）、`UserMenu` 底部、admin 系統頁版本卡、`/api/healthz` JSON
+- [x] 驗證：lint ✅ typecheck ✅ 單元 539/539（新增 build-info 7 條，含注入端到端 mock env→getBuildInfo）✅ next build ✅ worker build ✅；dev runtime `curl /api/healthz` 回 `{status,version,commit}`（fallback 值）✅、對照組舊 image 僅回 `{status:"ok"}`；登入頁 dev server 零 console error。**GUI badge 登入後畫面因安全規則不代輸密碼登入，交使用者/部署確認**
+- [x] branch `feature/issue-267-build-version-badge` — PR #268（Fixes #267）
+
 ### 尚未完成（v1 之後）
 - **UI Design v2 已完成**：#251／PR #252、#253／PR #254、#255／PR #256、#257／PR #258、#259／PR #260、#261／PR #262 六批與 #263／PR #264 編輯體驗迭代皆完成實作及本機驗證；Legacy fallback 依漸進 rollout 決策暫時保留
 - **#93 M4 backlog**：變更請求、行內評論、webhooks（暫停）、PDF 匯出、KaTeX、多欄、snippets、內容分析等——其餘候選項依回饋再拆
@@ -147,7 +155,7 @@ Next.js（App Router、TS strict）全端 + PostgreSQL 16/pgvector/pgroonga + Do
 - Repo：https://github.com/SheldonChangL/JetBook（private）
 - Issues：#93 追蹤 M4 backlog；Archive Studio UI v2 由 #251／PR #252、#253／PR #254、#255／PR #256、#257／PR #258、#259／PR #260、#261／PR #262 六批交付，#263／PR #264 交付編輯體驗迭代；#265／PR #266 修正重複完成按鈕回歸
 - Milestones：M0 10/10 ✅／M1 42/42 ✅／M2 16/16 ✅／M3 23/23 ✅／M4 已交付 15 功能＋多項修復（backlog 追蹤 #93）
-- 工作流：branch `feature/issue-<n>-<slug>` → PR（Fixes #n）→ squash merge（使用者已授權 self-merge）；目前分支 `feature/issue-265-single-editor-done-action`
+- 工作流：branch `feature/issue-<n>-<slug>` → PR（Fixes #n）→ squash merge（使用者已授權 self-merge）；目前分支 `feature/issue-267-build-version-badge`（#267 build 版本識別）
 
 ## 已完成
 

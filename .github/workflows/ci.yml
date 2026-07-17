@@ -143,12 +143,24 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
+      # Build metadata（#267）：注入 image 供 GUI／healthz 顯示部署版本。
+      - name: Resolve build metadata
+        if: hashFiles('Dockerfile') != ''
+        id: meta
+        run: |
+          echo "version=$(node -p "require('./package.json').version")" >> "$GITHUB_OUTPUT"
+          echo "build_time=$(date -u +%FT%TZ)" >> "$GITHUB_OUTPUT"
+
       - name: Build and push image
         if: hashFiles('Dockerfile') != ''
         uses: docker/build-push-action@v6
         with:
           context: .
           push: true
+          build-args: |
+            APP_VERSION=${{ steps.meta.outputs.version }}
+            GIT_COMMIT=${{ github.sha }}
+            BUILD_TIME=${{ steps.meta.outputs.build_time }}
           tags: |
             ghcr.io/sheldonchangl/jetbook:${{ github.sha }}
             ghcr.io/sheldonchangl/jetbook:latest

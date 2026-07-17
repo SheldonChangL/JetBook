@@ -10,6 +10,7 @@ import { listCollections } from "@/lib/spaces/collections";
 import { groupSpacesByCollection } from "@/lib/spaces/grouping";
 import { listAccessibleSpaces } from "@/lib/spaces/queries";
 import { getUiVersion, isUiVersionSwitcherEnabled } from "@/lib/ui-version-server";
+import { getBuildInfo } from "@/lib/build-info-server";
 import { AppShell } from "@/components/layout/app-shell";
 import { ArchiveAppShell } from "@/components/layout/archive-app-shell";
 
@@ -76,6 +77,7 @@ export default async function AppLayout({ children }: { children: ReactNode }) {
       unreadNotifications={unreadNotifications}
       uiVersion={uiVersion}
       uiVersionSwitchEnabled={isUiVersionSwitcherEnabled()}
+      buildInfo={getBuildInfo()}
     >
       {children}
     </Shell>

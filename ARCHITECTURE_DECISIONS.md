@@ -360,3 +360,25 @@ MCP `create_page`/`update_page` 傳入的外部圖片 Markdown（如 Redmine 附
 - **得**：egress 預設拒絕、以部署設定（env）明確開放，符合 deny-by-default 與 12-factor；SSRF 純邏輯可單元測試，網路依賴以注入 transport/resolver 測試。
 - **失／限制**：allowlist 以 host 精確比對（不展開子網域），新增來源需改 env；跨程序 DNS rebinding 僅以「連線 pin＋逐跳重驗」緩解，未做完整 pinned-connect 的 TLS 重驗（內網受信來源情境下可接受）。
 - **關聯**：不接受任意 Authorization header——需登入的來源改用來源系統（如 Redmine MCP）產生的短效下載 URL。未來換 S3/MinIO StorageProvider 時本路徑不變。
+
+## ADR-013：Build 版本識別於 build 階段注入，經 env.ts 唯讀取用
+
+- **狀態**：已接受
+- **日期**：2026-07-17
+- **對應審查編號**：—（issue #267）
+
+### 背景
+
+反覆部署時 GUI 無從辨識當前執行的是哪個 image（`package.json` version 幾乎不變），使用者無法一眼判斷部署是否生效、與上一版是否有差異。需要一個「每次部署都會變」的版本識別（git commit、build 時間）顯示於 GUI 與 `/api/healthz`。難點在於 standalone Docker runtime 內沒有 git repo，且 CLAUDE.md 鐵律要求所有設定經 `src/lib/env.ts`。
+
+### 決策
+
+1. **build 階段注入**：`APP_VERSION`／`GIT_COMMIT`／`BUILD_TIME` 由 Docker build-arg 注入為 runtime `ENV`（Dockerfile runner stage `ARG`→`ENV`；docker-compose `build.args` 由 shell 帶入；CI `build-push-action` 的 `build-args` 帶 `github.sha` 與 `date -u` 產出的時間、package.json version）。runtime 不需 git repo。
+2. **經 env.ts 取用**：三個欄位在 `env.ts` 皆為 `.optional()`（不影響既有 fail-fast 與 build-time 佔位）。`src/lib/build-info-server.ts`（server-only）以 `getBuildInfo()` 組出 `{ version, commit, shortCommit, builtAt }`；純解析邏輯抽至 `src/lib/build-info.ts`（不含 server-only，可供 client 元件型別與測試共用，比照 `ui-version` / `ui-version-server` 分層）。
+3. **顯示**：常駐 `BuildBadge`（Legacy／Archive 兩套 shell 與 admin 的 topbar，不隨側欄收合）＋ `UserMenu` 底部 ＋ admin 系統頁版本卡 ＋ `/api/healthz` JSON（供部署腳本 `curl` 程式化確認）。
+
+### 取捨與後果
+
+- **得**：符合「設定唯一入口 env.ts」與 12-factor；runtime 唯讀、無 git 依賴；本機開發未注入時優雅 fallback（`commit=dev`、version 取 package.json）。
+- **得**：`healthz` 附版本使部署自動化可斷言上線版本，不需登入 GUI。
+- **失／限制**：本機 `next build` 不自動抓 git（維持單純）；git sha 的正確性依賴 CI／compose 正確帶入 build-arg（屬部署設定，非執行期邏輯）。build metadata 為 build-arg 而非 runtime `.env` 設定，故不列入 `.env.example`（避免誤導為可在 `.env` 覆寫）。
