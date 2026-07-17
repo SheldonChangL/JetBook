@@ -58,9 +58,14 @@ export function CreateUserButton() {
           {t("createUser")}
         </Button>
       </ModalTrigger>
-      <ModalContent size="sm" title={t("createUserTitle")} closeLabel={t("cancel")}>
+      <ModalContent
+        size="sm"
+        title={t("createUserTitle")}
+        closeLabel={t("cancel")}
+        className="archive-admin-modal"
+      >
         <form action={onSubmit} className="flex flex-col gap-4">
-          <Input name="name" label={t("fieldName")} required maxLength={100} />
+          <Input name="name" label={t("fieldName")} required maxLength={100} autoFocus />
           <Input
             name="email"
             type="email"

@@ -56,10 +56,14 @@ export default async function AdminUsersPage({
   });
 
   return (
-    <div className="mx-auto flex max-w-5xl flex-col gap-6 px-6 py-8">
-      <header className="flex items-center justify-between">
-        <h1 className="text-h1 text-fg">{t("usersTitle")}</h1>
-        <div className="flex items-center gap-2">
+    <div className="archive-admin-page archive-admin-users mx-auto flex max-w-5xl flex-col gap-6 px-6 py-8">
+      <header className="archive-admin-page-header flex items-center justify-between">
+        <div>
+          <p className="archive-admin-kicker ui-archive-only">{t("archiveUsersKicker")}</p>
+          <h1 className="text-h1 text-fg">{t("usersTitle")}</h1>
+          <p className="archive-admin-subtitle ui-archive-only">{t("archiveUsersDesc")}</p>
+        </div>
+        <div className="archive-admin-header-actions flex items-center gap-2">
           <ImportUsersButton />
           <CreateUserButton />
         </div>
@@ -77,8 +81,8 @@ export default async function AdminUsersPage({
         }}
       />
 
-      <div className="overflow-x-auto rounded-md border border-edge">
-        <table className="w-full text-body-ui">
+      <div className="archive-admin-table-wrap overflow-x-auto rounded-md border border-edge">
+        <table className="archive-admin-table w-full text-body-ui">
           <thead>
             <tr className="border-b border-edge bg-sidebar text-left text-caption text-fg-tertiary">
               <th className="px-3 py-2 font-medium">{t("colName")}</th>
@@ -130,7 +134,7 @@ export default async function AdminUsersPage({
         </table>
       </div>
 
-      <footer className="flex items-center justify-between text-body-ui text-fg-secondary">
+      <footer className="archive-admin-pagination flex items-center justify-between text-body-ui text-fg-secondary">
         <span>{t("usersPaginationInfo", { total, page: requestedPage, totalPages })}</span>
         {totalPages > 1 && (
           <nav className="flex items-center gap-2">

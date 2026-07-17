@@ -56,7 +56,7 @@ export function AddGroupMemberForm({
   }
 
   return (
-    <div className="flex flex-col gap-2 sm:flex-row sm:items-end">
+    <div className="archive-admin-toolbar flex flex-col gap-2 sm:flex-row sm:items-end">
       <div className="flex flex-1 flex-col gap-1">
         <span className="text-caption text-fg-tertiary">{t("addMemberLabel")}</span>
         <Combobox
@@ -119,7 +119,12 @@ export function CsvImportForm({ groupId }: { groupId: string }) {
         {t("csvImport")}
       </Button>
       <Modal open={open} onOpenChange={onOpenChange}>
-        <ModalContent size="md" title={t("csvImportTitle")} closeLabel={t("cancel")}>
+        <ModalContent
+          size="md"
+          title={t("csvImportTitle")}
+          closeLabel={t("cancel")}
+          className="archive-admin-modal"
+        >
           <div className="flex flex-col gap-4">
             <Textarea
               label={t("csvImportLabel")}
@@ -129,6 +134,7 @@ export function CsvImportForm({ groupId }: { groupId: string }) {
               rows={6}
               maxLength={50000}
               disabled={pending}
+              autoFocus
             />
 
             {result ? (
@@ -203,7 +209,12 @@ export function RemoveGroupMemberButton({
         <Trash2 aria-hidden className="size-4" />
       </Button>
       <Modal open={open} onOpenChange={setOpen}>
-        <ModalContent size="sm" title={t("removeMemberTitle")} closeLabel={t("cancel")}>
+        <ModalContent
+          size="sm"
+          title={t("removeMemberTitle")}
+          closeLabel={t("cancel")}
+          className="archive-admin-modal"
+        >
           <div className="flex flex-col gap-4">
             <p className="text-body-ui text-fg-secondary">{t("removeConfirmBody", { name })}</p>
             <div className="flex justify-end gap-2">

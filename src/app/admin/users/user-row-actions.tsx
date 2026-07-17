@@ -149,6 +149,7 @@ export function ResetPasswordButton({ userId, name }: { userId: string; name: st
           size="sm"
           title={t("resetPasswordTitle", { name })}
           closeLabel={t("cancel")}
+          className="archive-admin-modal"
         >
           {password ? (
             <div className="flex flex-col gap-4">

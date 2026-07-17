@@ -58,7 +58,7 @@ export function UsersFilter({
   }, [query, initialQuery, status, router]);
 
   return (
-    <div className="flex flex-wrap items-center gap-3">
+    <div className="archive-admin-toolbar flex flex-wrap items-center gap-3">
       <div className="min-w-64 flex-1">
         <Input
           value={query}

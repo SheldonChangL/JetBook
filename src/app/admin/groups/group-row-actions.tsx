@@ -94,7 +94,12 @@ export function GroupRowActions({
       </Button>
 
       <Modal open={editOpen} onOpenChange={onEditOpenChange}>
-        <ModalContent size="sm" title={t("editGroupTitle")} closeLabel={t("cancel")}>
+        <ModalContent
+          size="sm"
+          title={t("editGroupTitle")}
+          closeLabel={t("cancel")}
+          className="archive-admin-modal"
+        >
           <form action={onSave} className="flex flex-col gap-4">
             <Input
               name="name"
@@ -102,6 +107,7 @@ export function GroupRowActions({
               defaultValue={name}
               required
               maxLength={80}
+              autoFocus
               error={error === "NAME_TAKEN" ? t("errorNameTaken") : undefined}
             />
             <Textarea
@@ -129,7 +135,12 @@ export function GroupRowActions({
       </Modal>
 
       <Modal open={deleteOpen} onOpenChange={setDeleteOpen}>
-        <ModalContent size="sm" title={t("deleteGroupTitle")} closeLabel={t("cancel")}>
+        <ModalContent
+          size="sm"
+          title={t("deleteGroupTitle")}
+          closeLabel={t("cancel")}
+          className="archive-admin-modal"
+        >
           <div className="flex flex-col gap-4">
             <p className="text-body-ui text-fg-secondary">{t("deleteConfirmBody", { name })}</p>
             <div className="flex justify-end gap-2">
