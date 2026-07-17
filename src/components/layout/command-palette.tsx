@@ -92,8 +92,41 @@ export function CommandPalette({
 
   const openRef = useRef(open);
   const onOpenChangeRef = useRef(onOpenChange);
+  const lastExternalFocusRef = useRef<HTMLElement | null>(null);
+  const wasOpenRef = useRef(open);
   openRef.current = open;
   onOpenChangeRef.current = onOpenChange;
+
+  // cmdk 的受控 Dialog 沒有實體 Trigger；由頂列按鈕或全域快捷鍵開啟時，
+  // Radix 無法自行知道關閉後應把焦點還給誰。持續記住工作層外最後聚焦的元素，
+  // 並在關閉後還原，確保 Esc／再次按快捷鍵的鍵盤旅程不會掉回 body。
+  useEffect(() => {
+    function rememberExternalFocus(event: FocusEvent) {
+      const target = event.target;
+      if (target instanceof HTMLElement && !target.closest(".archive-command-layer")) {
+        lastExternalFocusRef.current = target;
+      }
+    }
+
+    const active = document.activeElement;
+    if (active instanceof HTMLElement && active !== document.body) {
+      lastExternalFocusRef.current = active;
+    }
+    document.addEventListener("focusin", rememberExternalFocus);
+    return () => document.removeEventListener("focusin", rememberExternalFocus);
+  }, []);
+
+  useEffect(() => {
+    const wasOpen = wasOpenRef.current;
+    wasOpenRef.current = open;
+    if (!wasOpen || open) return;
+
+    const target = lastExternalFocusRef.current;
+    const frame = window.requestAnimationFrame(() => {
+      if (target?.isConnected) target.focus();
+    });
+    return () => window.cancelAnimationFrame(frame);
+  }, [open]);
 
   // 全域 ⌘K/Ctrl+K 切換（只註冊一次；IME 組字中不觸發）。
   useEffect(() => {

@@ -126,7 +126,7 @@ export function ApiTokensSection({ tokens }: { tokens: ApiTokenRow[] }) {
           >
             {created === null ? (
               <form action={onCreate} className="flex flex-col gap-4">
-                <Input name="name" label={t("nameLabel")} required maxLength={100} />
+                <Input name="name" label={t("nameLabel")} required maxLength={100} autoFocus />
                 <div className="flex flex-col gap-1.5">
                   <span className="text-body-ui font-medium text-fg">{t("expiryLabel")}</span>
                   <Select

@@ -2,7 +2,7 @@
 
 > 本矩陣以 2026-07-16 `main` 的路由、元件、`messages/zh-TW.json` 與 `PROJECT_STATE.md` 為來源。Mock 圖是代表畫面，不等於只改四頁；表內所有現有 UI 都必須在選案後的實作 issue 中得到對應設計。
 
-正式規格見 `docs/design/ui-design-v2.md`。Archive Studio 第一批 #251／PR #252 已建立可逆 rollout、語意 token、App／Admin Shell、Auth Frame 與 403／404／error／offline presentation；第二批 #253／PR #254 已覆蓋 Dashboard、Spaces／Collections、Space overview／page tree、回收桶與 Space settings；第三批 #255／PR #256 已完成閱讀、內容區塊、留言、版本、附件與預覽；第四批 #257 開始遷移編輯器、衝突防護、AI 寫作與 import/export job presentation。後續頁面仍依本矩陣的 slice 4–6 逐批遷移，未完成前保留 Legacy。
+正式規格見 `docs/design/ui-design-v2.md`。Archive Studio 第一批 #251／PR #252 已建立可逆 rollout、語意 token、App／Admin Shell、Auth Frame 與 403／404／error／offline presentation；第二批 #253／PR #254 已覆蓋 Dashboard、Spaces／Collections、Space overview／page tree、回收桶與 Space settings；第三批 #255／PR #256 已完成閱讀、內容區塊、留言、版本、附件與預覽；第四批 #257／PR #258 已完成編輯器、衝突防護、AI 寫作與 import/export job presentation；第五批 #259 遷移搜尋、Cmd+K、AI、通知、個人設定、API Token 與 API Docs。管理後台與全站收尾仍在 slice 6，遷移完成前保留 Legacy。
 
 ## 正式實作對應（#253）
 
@@ -137,15 +137,29 @@
 
 | 現有入口        | 功能與必要狀態                                                               | Mock 證據      | 後續 slice |
 | --------------- | ---------------------------------------------------------------------------- | -------------- | ---------- |
-| `/search`       | 關鍵字、URL query、Space／updated／type filters、排序、empty／loading／error | 搜尋主圖       | 5          |
+| `/search`       | 關鍵字、URL query、Space／updated／author filters、empty／loading／error     | 搜尋主圖       | 5          |
 | 全文結果        | icon、title、path、highlight、權限過濾                                       | 搜尋主圖       | 5          |
-| 語意結果        | feature availability、分區、score 表達、權限過濾                             | 搜尋主圖       | 5          |
+| 語意結果        | Cmd+K feature availability、分區、score 表達、權限過濾                       | 搜尋主圖       | 5          |
 | 附件搜尋        | 檔名結果、所在頁、PDF／Office 預覽、轉檔中                                   | 搜尋主圖       | 5          |
 | Cmd+K           | 最近瀏覽、全文、語意、問 AI、show all、鍵盤／新分頁、失敗                    | 搜尋主圖＋矩陣 | 5          |
 | AI Drawer       | 全域 `⌘J`、close、empty、輸入、composition、send／stop／retry                | 搜尋主圖       | 5          |
 | AI conversation | 歷史、多輪、目前對話、來源卡、引用跳轉                                       | 搜尋主圖       | 5          |
 | AI SSE          | retrieving／generating、stream cursor、stop、斷線與 retry                    | 搜尋主圖       | 5          |
 | AI governance   | disabled、unauthorized、rate limited、quota exceeded、failed、disclaimer     | 搜尋主圖＋矩陣 | 5、6       |
+
+### Slice 5 實作對應（#259）
+
+| 覆蓋面 | 實際路由／元件 |
+| ------ | -------------- |
+| 全文搜尋、Space／更新時間／作者篩選、結果與空狀態 | `src/app/(app)/search/page.tsx`、`src/app/(app)/search/search-results.tsx`；沿用既有 URL query、debounce 與 server query |
+| 附件檔名搜尋、所在頁與 PDF／Office 預覽 | `src/app/(app)/search/page.tsx` 與既有 attachment preview 元件／route；preview 與轉檔行為未改 |
+| Cmd+K 最近瀏覽、全文、語意、問 AI、全部結果與鍵盤操作 | `src/components/layout/command-palette.tsx`；全文與語意仍透過既有 `/api/search` mode，未替 `/search` 新增不存在的語意模式 |
+| AI Drawer、歷史、多輪、SSE、停止／重試、引用與治理狀態 | `src/components/ai/ai-chat-drawer.tsx`、`conversation-history.tsx`、`source-cards.tsx`；原 API、quota 與權限行為不變 |
+| 通知未讀、清除全部、導向與空狀態 | `src/components/layout/notification-bell.tsx`；沿用既有 optimistic update 與通知 route |
+| 個人資料、密碼、外觀、Email 通知與 API Token | `src/app/(app)/settings/page.tsx` 與各 section／token modal；原 action、theme preference 與 token 只顯示一次規則不變 |
+| REST／MCP 認證說明與 endpoint reference | `src/app/(app)/api-docs/page.tsx`；既有 spec download 與 API 介面不變 |
+
+`/search` 目前只有全文與附件檔名搜尋；語意搜尋是 Cmd+K 的既有能力。原矩陣誤列 `/search` 的 type filter 與排序，2026-07-17 依實際 route／component 校正，#259 不以 UI 遷移名義新增後端產品能力。
 
 ## 個人設定、API 與管理後台
 
