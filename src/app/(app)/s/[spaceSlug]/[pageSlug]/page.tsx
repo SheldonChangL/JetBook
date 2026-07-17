@@ -19,8 +19,11 @@ import { listPageComments } from "@/lib/comments/service";
 import { RenderContent } from "@/components/content/render-content";
 import { CopyLinkButton } from "@/components/content/copy-link-button";
 import { AnchorHighlight } from "@/components/content/anchor-highlight";
+import { ReadingToc } from "@/components/content/reading-toc";
 import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
 import type { ProseMirrorDoc } from "@/lib/content/types";
+import { collectTableOfContents } from "@/lib/content/toc";
 import { CommentsPanel } from "./comments-panel";
 import { PageActionsMenu } from "./page-actions-menu";
 
@@ -88,57 +91,85 @@ export default async function PageReadPage({
   // 交由渲染器以 pageId 對應——改名自動更新連結文字與 URL（F-EDIT-12）。
   const pageDoc = (page.content as ProseMirrorDoc | null) ?? null;
   const pageLinks = await resolvePageLinkTargets(user, [...collectPageLinkIds(pageDoc)]);
+  const tocItems = collectTableOfContents(pageDoc);
 
   return (
-    <article className="mx-auto max-w-3xl px-6 py-8">
-      <nav className="mb-2 text-caption text-fg-tertiary">
-        <Link href={`/s/${spaceSlug}`} className="hover:text-fg">
-          {space.icon ? `${space.icon} ` : ""}
-          {space.name}
-        </Link>
-      </nav>
-
-      <div className="mb-1 flex items-start justify-between gap-4">
-        <h1 className="text-h1 text-fg">
-          {page.icon ? `${page.icon} ` : ""}
-          {page.title}
-        </h1>
-        <div className="flex shrink-0 items-center gap-1.5">
-          <CopyLinkButton />
-          <Button asChild variant="ghost" size="sm">
-            <Link href={`/s/${spaceSlug}/${pageSlug}/history`}>
-              <History aria-hidden className="size-4" />
-              {t("history")}
+    <article className="archive-reading-page mx-auto max-w-3xl px-6 py-8">
+      <div className="archive-reading-layout">
+        <div className="archive-reading-document">
+          <nav className="archive-reading-breadcrumb mb-2 text-caption text-fg-tertiary">
+            <Link href={`/s/${spaceSlug}`} className="hover:text-fg">
+              {space.icon ? `${space.icon} ` : ""}
+              {space.name}
             </Link>
-          </Button>
-          {canEdit ? (
-            <Button asChild variant="secondary" size="sm">
-              <Link href={`/s/${spaceSlug}/${pageSlug}/edit`}>
-                <Pencil aria-hidden className="size-4" />
-                {t("edit")}
-              </Link>
-            </Button>
-          ) : null}
-          <PageActionsMenu pageId={page.id} />
+          </nav>
+
+          <header className="archive-reading-header">
+            <p className="archive-reading-kicker ui-archive-only">
+              {t("archiveKicker", { version: page.currentVersionNo })}
+            </p>
+            <div className="archive-reading-title-row mb-1 flex items-start justify-between gap-4">
+              <h1 className="text-h1 text-fg">
+                {page.icon ? `${page.icon} ` : ""}
+                {page.title}
+              </h1>
+              <div className="archive-reading-actions flex shrink-0 items-center gap-1.5">
+                <CopyLinkButton />
+                <Button asChild variant="ghost" size="sm">
+                  <Link href={`/s/${spaceSlug}/${pageSlug}/history`}>
+                    <History aria-hidden className="size-4" />
+                    {t("history")}
+                  </Link>
+                </Button>
+                {canEdit ? (
+                  <Button asChild variant="secondary" size="sm">
+                    <Link href={`/s/${spaceSlug}/${pageSlug}/edit`}>
+                      <Pencil aria-hidden className="size-4" />
+                      {t("edit")}
+                    </Link>
+                  </Button>
+                ) : null}
+                <PageActionsMenu pageId={page.id} />
+              </div>
+            </div>
+
+            <p className="archive-reading-meta mb-6 text-caption text-fg-tertiary">
+              {t("lastUpdated", { time: updated })}
+            </p>
+          </header>
+
+          <div className="archive-reading-mobile-toc ui-archive-only">
+            <ReadingToc items={tocItems} compact />
+          </div>
+
+          <div className="archive-reading-content">
+            <RenderContent
+              doc={pageDoc}
+              links={pageLinks}
+              embedAllowedDomains={env.EMBED_ALLOWED_DOMAINS}
+            />
+            <AnchorHighlight />
+          </div>
         </div>
+
+        <aside className="archive-reading-inspector" aria-label={t("archiveContext")}>
+          <div className="archive-reading-inspector-head ui-archive-only">
+            <strong>{t("archiveContext")}</strong>
+            <Badge variant="neutral">{t("archiveVersion", { version: page.currentVersionNo })}</Badge>
+          </div>
+          <section className="archive-reading-toc-section ui-archive-only" aria-labelledby="toc-heading">
+            <h2 id="toc-heading">{t("archiveToc")}</h2>
+            <ReadingToc items={tocItems} />
+          </section>
+          <CommentsPanel
+            pageId={page.id}
+            currentUser={{ id: user.id, name: user.name }}
+            canComment={canComment}
+            canModerate={canModerate}
+            initialComments={comments}
+          />
+        </aside>
       </div>
-
-      <p className="mb-6 text-caption text-fg-tertiary">{t("lastUpdated", { time: updated })}</p>
-
-      <RenderContent
-        doc={pageDoc}
-        links={pageLinks}
-        embedAllowedDomains={env.EMBED_ALLOWED_DOMAINS}
-      />
-      <AnchorHighlight />
-
-      <CommentsPanel
-        pageId={page.id}
-        currentUser={{ id: user.id, name: user.name }}
-        canComment={canComment}
-        canModerate={canModerate}
-        initialComments={comments}
-      />
     </article>
   );
 }

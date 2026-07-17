@@ -2,7 +2,7 @@
 
 > 本矩陣以 2026-07-16 `main` 的路由、元件、`messages/zh-TW.json` 與 `PROJECT_STATE.md` 為來源。Mock 圖是代表畫面，不等於只改四頁；表內所有現有 UI 都必須在選案後的實作 issue 中得到對應設計。
 
-正式規格見 `docs/design/ui-design-v2.md`。Archive Studio 第一批 #251／PR #252 已建立可逆 rollout、語意 token、App／Admin Shell、Auth Frame 與 403／404／error／offline presentation；第二批 #253 已覆蓋 Dashboard、Spaces／Collections、Space overview／page tree、回收桶與 Space settings。後續頁面仍依本矩陣的 slice 3–6 逐批遷移，未完成前保留 Legacy。
+正式規格見 `docs/design/ui-design-v2.md`。Archive Studio 第一批 #251／PR #252 已建立可逆 rollout、語意 token、App／Admin Shell、Auth Frame 與 403／404／error／offline presentation；第二批 #253／PR #254 已覆蓋 Dashboard、Spaces／Collections、Space overview／page tree、回收桶與 Space settings；第三批 #255 開始遷移閱讀、內容區塊、留言、版本、附件與預覽。後續頁面仍依本矩陣的 slice 3–6 逐批遷移，未完成前保留 Legacy。
 
 ## 正式實作對應（#253）
 
@@ -67,7 +67,7 @@
 
 | 現有入口            | 功能與必要狀態                                                        | Mock 證據                 | 後續 slice |
 | ------------------- | --------------------------------------------------------------------- | ------------------------- | ---------- |
-| `/s/[space]/[page]` | 麵包屑、title、metadata、貢獻者、閱讀時間、權限動作                   | 閱讀主圖                  | 3          |
+| `/s/[space]/[page]` | 麵包屑、title、更新時間、目前版本、權限動作                          | 閱讀主圖                  | 3          |
 | 閱讀動作            | 編輯、留言、歷史、複製連結／Markdown、下載 Markdown、移動、刪除       | 閱讀主圖＋矩陣            | 3          |
 | TOC                 | H2／H3、scroll spy、桌面 Inspector、窄螢幕下拉                        | 閱讀 Inspector            | 3          |
 | 內容基礎            | 段落、H1–H3、粗體、底線、刪除線、行內 code、引用、分隔線              | 閱讀主圖＋矩陣            | 3          |
@@ -87,6 +87,19 @@
 | Comments            | 建立、回覆、編輯、刪除、resolve／reopen、moderation、空與錯誤         | 閱讀 Inspector            | 3          |
 | `/history`          | 版本清單、snapshot、diff、author、空狀態                              | 閱讀版本入口＋矩陣        | 3          |
 | Version restore     | 確認、建立新版本、成功／失敗                                          | 矩陣                      | 3          |
+
+### Slice 3 實作對應（#255）
+
+| 覆蓋面 | 實際路由／元件 |
+| ------ | -------------- |
+| Reader Canvas、麵包屑、權限動作、responsive Inspector | `src/app/(app)/s/[spaceSlug]/[pageSlug]/page.tsx`、`page-actions-menu.tsx` |
+| H2／H3 outline、穩定去重錨點、scroll-spy、窄螢幕索引 | `src/components/content/reading-toc.tsx`、`src/lib/content/toc.ts`、`heading-slug.ts` |
+| 基礎文字、清單、code、table、callout、圖片、附件、inline document、Tabs／摺疊／Stepper、Mermaid、embed、Mention／Page link | `src/components/content/render-content.tsx` 與 `src/components/content/*` 既有專用 renderer；Archive 樣式由 `src/app/globals.css` scope 隔離 |
+| PDF／Office ready、pending、unavailable、下載降級 | `content-attachment.tsx`、`inline-document.tsx`、`attachment-preview.tsx`、`use-attachment-preview.ts`；preview route 與 polling 行為未改 |
+| 留言建立／回覆／編輯／刪除／resolve／reopen／moderation | `src/app/(app)/s/[spaceSlug]/[pageSlug]/comments-panel.tsx`；寬螢幕進 Inspector、窄螢幕回到文件下方 |
+| 版本清單、快照、任兩版中文 diff、還原確認 | `src/app/(app)/s/[spaceSlug]/[pageSlug]/history/page.tsx`、`version-sidebar.tsx`、`restore-version-button.tsx` |
+
+閱讀頁的 move／copy／soft delete 仍由同一頁面樹節點選單提供，未建立第二套 action 或權限判斷；Archive Reader 頂列完整保留原有 copy link、history、editor-only edit、copy/download Markdown。
 
 ## 編輯器與衝突防護
 

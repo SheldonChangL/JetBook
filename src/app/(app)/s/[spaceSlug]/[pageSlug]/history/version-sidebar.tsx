@@ -75,7 +75,7 @@ export function VersionSidebar({
 
   return (
     <>
-      <div className="border-b border-edge px-4 py-2">
+      <div className="archive-version-toolbar border-b border-edge px-4 py-2">
         {twoSelected ? (
           <div className="flex items-center gap-2">
             <Button size="sm" className="flex-1" onClick={compare}>
@@ -90,11 +90,14 @@ export function VersionSidebar({
           <p className="text-caption text-fg-tertiary">{t("compareHint")}</p>
         )}
       </div>
-      <nav aria-label={t("listLabel")} className="min-h-0 flex-1 overflow-y-auto py-2">
+      <nav
+        aria-label={t("listLabel")}
+        className="archive-version-nav min-h-0 flex-1 overflow-y-auto py-2"
+      >
         {versions.length === 0 ? (
           <p className="px-4 py-6 text-caption text-fg-tertiary">{t("empty")}</p>
         ) : (
-          <ul className="flex flex-col">
+          <ul className="archive-version-list flex flex-col">
             {versions.map((item) => {
               const isChecked = checked.includes(item.versionNo);
               const isCompared =
@@ -106,7 +109,7 @@ export function VersionSidebar({
                 <li key={item.id}>
                   <div
                     className={cn(
-                      "flex items-start gap-2 border-l-2 px-3 py-2.5 transition-colors",
+                      "archive-version-row flex items-start gap-2 border-l-2 px-3 py-2.5 transition-colors",
                       isSelected || isCompared
                         ? "border-primary bg-primary-tint"
                         : "border-transparent hover:bg-hover",

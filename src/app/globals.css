@@ -2182,3 +2182,472 @@ html[data-ui-version="archive"] .archive-space-index-link:hover {
     gap: 8px;
   }
 }
+
+/* UI v2 slice 3 — Reading workspace：文件 Canvas＋情境 Inspector。 */
+html[data-ui-version="archive"] .archive-reading-page {
+  width: 100%;
+  max-width: none;
+  height: 100%;
+  margin: 0;
+  padding: 0;
+  overflow: hidden;
+}
+
+html[data-ui-version="archive"] .archive-reading-layout {
+  display: grid;
+  height: 100%;
+  min-height: 0;
+  grid-template-columns: minmax(0, 1fr) 292px;
+}
+
+html[data-ui-version="archive"] .archive-reading-document {
+  min-width: 0;
+  padding: 36px 44px 72px;
+  overflow-y: auto;
+}
+
+html[data-ui-version="archive"] .archive-reading-breadcrumb,
+html[data-ui-version="archive"] .archive-reading-header,
+html[data-ui-version="archive"] .archive-reading-content,
+html[data-ui-version="archive"] .archive-reading-mobile-toc {
+  width: 100%;
+  max-width: 760px;
+  margin-inline: auto;
+}
+
+html[data-ui-version="archive"] .archive-reading-breadcrumb {
+  margin-bottom: 18px;
+  font-family: var(--font-mono);
+  font-size: 10px;
+  letter-spacing: 0.04em;
+}
+
+html[data-ui-version="archive"] .archive-reading-header {
+  margin-bottom: 26px;
+  padding-bottom: 20px;
+  border-bottom: 1px solid var(--border-strong);
+}
+
+html[data-ui-version="archive"] .archive-reading-kicker {
+  margin-bottom: 8px;
+  color: var(--primary);
+  font-family: var(--font-mono);
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+html[data-ui-version="archive"] .archive-reading-title-row {
+  align-items: flex-start;
+}
+
+html[data-ui-version="archive"] .archive-reading-title-row h1 {
+  max-width: 620px;
+  letter-spacing: -0.025em;
+}
+
+html[data-ui-version="archive"] .archive-reading-actions {
+  flex-wrap: wrap;
+  justify-content: flex-end;
+}
+
+html[data-ui-version="archive"] .archive-reading-actions > * {
+  border-radius: var(--radius-xs);
+}
+
+html[data-ui-version="archive"] .archive-reading-meta {
+  margin-block: 10px 0;
+  font-family: var(--font-mono);
+  font-size: 10px;
+  letter-spacing: 0.02em;
+}
+
+html[data-ui-version="archive"] .archive-reading-inspector {
+  min-width: 0;
+  overflow-y: auto;
+  border-left: 1px solid var(--border-strong);
+  background: var(--bg-sidebar);
+}
+
+html[data-ui-version="archive"] .archive-reading-inspector-head {
+  display: flex;
+  min-height: 52px;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 16px;
+  border-bottom: 1px solid var(--border-strong);
+  font-size: var(--text-body-ui);
+}
+
+html[data-ui-version="archive"] .archive-reading-toc-section {
+  padding: 18px 16px 22px;
+  border-bottom: 1px solid var(--border-default);
+}
+
+html[data-ui-version="archive"] .archive-reading-toc-section > h2 {
+  margin-bottom: 10px;
+  font-family: var(--font-mono);
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+
+html[data-ui-version="archive"] .archive-reading-toc-list {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+html[data-ui-version="archive"] .archive-reading-toc-list a {
+  display: block;
+  min-height: 28px;
+  padding: 5px 8px;
+  border-left: 2px solid transparent;
+  color: var(--text-secondary);
+  font-size: var(--text-caption);
+  line-height: 1.45;
+  transition:
+    border-color 120ms ease,
+    background-color 120ms ease,
+    color 120ms ease;
+}
+
+html[data-ui-version="archive"] .archive-reading-toc-list li[data-level="3"] a {
+  padding-left: 20px;
+  color: var(--text-tertiary);
+}
+
+html[data-ui-version="archive"] .archive-reading-toc-list a:hover,
+html[data-ui-version="archive"] .archive-reading-toc-list a:focus-visible,
+html[data-ui-version="archive"] .archive-reading-toc-list a[aria-current="location"] {
+  border-left-color: var(--archive-index);
+  color: var(--text-primary);
+  background: var(--bg-hover);
+}
+
+html[data-ui-version="archive"] .archive-reading-toc-empty {
+  color: var(--text-tertiary);
+  font-size: var(--text-caption);
+}
+
+html[data-ui-version="archive"] .archive-reading-mobile-toc {
+  display: none;
+}
+
+html[data-ui-version="archive"] .archive-reading-toc-compact {
+  border-block: 1px solid var(--border-strong);
+  background: var(--bg-sidebar);
+}
+
+html[data-ui-version="archive"] .archive-reading-toc-compact > summary {
+  display: flex;
+  min-height: 46px;
+  cursor: pointer;
+  list-style: none;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 8px 12px;
+}
+
+html[data-ui-version="archive"] .archive-reading-toc-compact > summary::-webkit-details-marker {
+  display: none;
+}
+
+html[data-ui-version="archive"] .archive-reading-toc-compact > summary > span {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+}
+
+html[data-ui-version="archive"] .archive-reading-toc-compact > summary strong {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+
+html[data-ui-version="archive"] .archive-reading-toc-compact > summary small {
+  overflow: hidden;
+  color: var(--text-tertiary);
+  font-size: var(--text-caption);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+html[data-ui-version="archive"] .archive-reading-toc-compact[open] > summary svg {
+  transform: rotate(180deg);
+}
+
+html[data-ui-version="archive"] .archive-reading-toc-compact nav {
+  max-height: 260px;
+  padding: 4px 10px 12px;
+  overflow-y: auto;
+}
+
+/* Reader typography and rich blocks: all content behavior remains in RenderContent. */
+html[data-ui-version="archive"] .archive-content-renderer {
+  color: var(--text-secondary);
+  font-size: 15px;
+  line-height: 1.78;
+}
+
+html[data-ui-version="archive"] .archive-content-renderer :where(h1, h2, h3) {
+  color: var(--text-primary);
+  letter-spacing: -0.015em;
+}
+
+html[data-ui-version="archive"] .archive-content-renderer :where(h2) {
+  margin-top: 2.15em;
+  padding-top: 0.2em;
+  border-top: 1px solid var(--border-default);
+}
+
+html[data-ui-version="archive"] .archive-content-renderer :where(blockquote) {
+  border-left-width: 3px;
+  border-left-color: var(--archive-index);
+  background: color-mix(in srgb, var(--bg-sidebar) 72%, transparent);
+}
+
+html[data-ui-version="archive"] .archive-content-renderer .jb-callout,
+html[data-ui-version="archive"] .archive-content-renderer .jb-code,
+html[data-ui-version="archive"] .archive-content-renderer .jb-tabs,
+html[data-ui-version="archive"] .archive-content-renderer .jb-details,
+html[data-ui-version="archive"] .archive-content-renderer .jb-embed,
+html[data-ui-version="archive"] .archive-content-renderer :where(.content-attachment, .content-document) {
+  border-radius: var(--radius-xs);
+  box-shadow: none;
+}
+
+html[data-ui-version="archive"] .archive-content-renderer :where(.tableWrapper) {
+  margin-inline: -12px;
+  padding-inline: 12px;
+}
+
+html[data-ui-version="archive"] .archive-content-renderer :where(table th) {
+  background: var(--bg-sidebar);
+  font-family: var(--font-mono);
+  font-size: 11px;
+  letter-spacing: 0.03em;
+}
+
+html[data-ui-version="archive"] .archive-content-renderer :where(figure.content-image-figure) {
+  padding-block: 8px;
+  border-block: 1px solid var(--border-default);
+}
+
+/* Comments live in the Inspector on wide Archive workspaces and flow below the page otherwise. */
+html[data-ui-version="archive"] .archive-reading-inspector .archive-comments-panel {
+  margin-top: 0;
+  padding: 18px 16px 28px;
+  border-top: 0;
+}
+
+html[data-ui-version="archive"] .archive-reading-inspector .archive-comments-heading {
+  margin-bottom: 12px;
+  font-family: var(--font-mono);
+  font-size: 10px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+html[data-ui-version="archive"] .archive-reading-inspector .archive-comments-heading svg {
+  width: 14px;
+  height: 14px;
+}
+
+html[data-ui-version="archive"] .archive-reading-inspector .archive-comments-list {
+  gap: 0;
+  border-top: 1px solid var(--border-default);
+}
+
+html[data-ui-version="archive"] .archive-reading-inspector .archive-comment-thread {
+  padding: 14px 0;
+  border-width: 0 0 1px;
+  border-radius: 0;
+  background: transparent;
+}
+
+html[data-ui-version="archive"] .archive-reading-inspector .archive-comment-body {
+  gap: 8px;
+}
+
+html[data-ui-version="archive"] .archive-reading-inspector .archive-comment-replies {
+  margin-left: 8px;
+  padding-left: 10px;
+}
+
+html[data-ui-version="archive"] .archive-reading-inspector .archive-comment-compose {
+  align-items: flex-start;
+  gap: 8px;
+  padding-top: 14px;
+  border-top: 1px solid var(--border-default);
+}
+
+html[data-ui-version="archive"] .archive-reading-inspector .archive-comment-compose textarea {
+  min-height: 84px;
+}
+
+/* UI v2 slice 3 — Version workspace：任兩版比較與還原行為不變。 */
+html[data-ui-version="archive"] .archive-history {
+  background: var(--bg-base);
+}
+
+html[data-ui-version="archive"] .archive-history-sidebar {
+  width: 248px;
+  border-color: var(--border-strong);
+  background: var(--bg-sidebar);
+}
+
+html[data-ui-version="archive"] .archive-history-sidebar-head {
+  padding: 16px;
+  border-color: var(--border-strong);
+}
+
+html[data-ui-version="archive"] .archive-version-toolbar {
+  min-height: 52px;
+  padding: 9px 12px;
+}
+
+html[data-ui-version="archive"] .archive-version-nav {
+  padding-block: 0;
+}
+
+html[data-ui-version="archive"] .archive-version-row {
+  min-height: 82px;
+  padding: 12px;
+  border-left-width: 3px;
+}
+
+html[data-ui-version="archive"] .archive-history-canvas {
+  width: 100%;
+  max-width: 900px;
+  padding: 44px;
+}
+
+html[data-ui-version="archive"] .archive-history-tabs {
+  margin-bottom: 28px;
+  border-color: var(--border-strong);
+}
+
+html[data-ui-version="archive"] .archive-history-snapshot > div:first-child {
+  padding-bottom: 12px;
+  border-bottom: 1px solid var(--border-default);
+}
+
+@media (max-width: 1279px) {
+  html[data-ui-version="archive"] .archive-reading-page {
+    height: auto;
+    min-height: 100%;
+    overflow: visible;
+  }
+
+  html[data-ui-version="archive"] .archive-reading-layout {
+    display: block;
+    height: auto;
+  }
+
+  html[data-ui-version="archive"] .archive-reading-document {
+    padding: 36px 36px 48px;
+    overflow: visible;
+  }
+
+  html[data-ui-version="archive"] .archive-reading-mobile-toc {
+    display: block;
+    margin-bottom: 28px;
+  }
+
+  html[data-ui-version="archive"] .archive-reading-inspector {
+    overflow: visible;
+    border-top: 1px solid var(--border-strong);
+    border-left: 0;
+    background: transparent;
+  }
+
+  html[data-ui-version="archive"] .archive-reading-inspector-head,
+  html[data-ui-version="archive"] .archive-reading-toc-section {
+    display: none;
+  }
+
+  html[data-ui-version="archive"] .archive-reading-inspector .archive-comments-panel {
+    width: calc(100% - 72px);
+    max-width: 760px;
+    margin-inline: auto;
+    padding: 32px 0 56px;
+  }
+}
+
+@media (max-width: 1023px) {
+  html[data-ui-version="archive"] .archive-history {
+    height: auto;
+    min-height: 100%;
+    flex-direction: column;
+  }
+
+  html[data-ui-version="archive"] .archive-history-sidebar {
+    width: 100%;
+    max-height: 340px;
+    flex: none;
+    border-right: 0;
+    border-bottom: 1px solid var(--border-strong);
+  }
+
+  html[data-ui-version="archive"] .archive-history-main {
+    overflow: visible;
+  }
+}
+
+@media (max-width: 767px) {
+  html[data-ui-version="archive"] .archive-reading-document {
+    padding: 28px 20px 40px;
+  }
+
+  html[data-ui-version="archive"] .archive-reading-header {
+    margin-bottom: 22px;
+  }
+
+  html[data-ui-version="archive"] .archive-reading-title-row {
+    flex-direction: column;
+  }
+
+  html[data-ui-version="archive"] .archive-reading-title-row h1 {
+    max-width: 100%;
+  }
+
+  html[data-ui-version="archive"] .archive-reading-actions {
+    width: 100%;
+    justify-content: flex-start;
+  }
+
+  html[data-ui-version="archive"] .archive-reading-inspector .archive-comments-panel {
+    width: 100%;
+    padding: 28px 20px 44px;
+  }
+
+  html[data-ui-version="archive"] .archive-comment-compose {
+    flex-direction: column;
+  }
+
+  html[data-ui-version="archive"] .archive-comment-compose > :last-child {
+    width: 100%;
+  }
+
+  html[data-ui-version="archive"] .archive-content-renderer {
+    font-size: 14px;
+  }
+
+  html[data-ui-version="archive"] .archive-content-renderer :where(.tableWrapper) {
+    margin-inline: -20px;
+    padding-inline: 20px;
+  }
+
+  html[data-ui-version="archive"] .archive-history-sidebar {
+    max-height: 300px;
+  }
+
+  html[data-ui-version="archive"] .archive-history-canvas {
+    padding: 28px 20px 44px;
+  }
+}

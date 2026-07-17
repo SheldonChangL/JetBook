@@ -77,8 +77,14 @@ export function CommentsPanel({
   }
 
   return (
-    <section aria-labelledby="comments-heading" className="mt-10 border-t border-edge pt-8">
-      <h2 id="comments-heading" className="mb-4 flex items-center gap-2 text-h4 text-fg">
+    <section
+      aria-labelledby="comments-heading"
+      className="archive-comments-panel mt-10 border-t border-edge pt-8"
+    >
+      <h2
+        id="comments-heading"
+        className="archive-comments-heading mb-4 flex items-center gap-2 text-h4 text-fg"
+      >
         <MessageSquare aria-hidden className="size-5 text-fg-tertiary" />
         {total > 0 ? t("headingWithCount", { count: total }) : t("heading")}
       </h2>
@@ -88,7 +94,7 @@ export function CommentsPanel({
           {t("empty")}
         </p>
       ) : (
-        <ul className="flex flex-col gap-4">
+        <ul className="archive-comments-list flex flex-col gap-4">
           {active.map((thread) => (
             <li key={thread.id}>
               <ThreadCard
@@ -119,7 +125,7 @@ export function CommentsPanel({
       )}
 
       {resolved.length > 0 ? (
-        <div className="mt-6">
+        <div className="archive-comments-resolved mt-6">
           <button
             type="button"
             onClick={() => setShowResolved((v) => !v)}
@@ -271,7 +277,7 @@ function ThreadCard({
 
   return (
     <div
-      className={`rounded-md border border-edge bg-raised p-4 ${isResolved ? "opacity-70" : ""}`}
+      className={`archive-comment-thread rounded-md border border-edge bg-raised p-4 ${isResolved ? "opacity-70" : ""}`}
     >
       <CommentBody
         comment={thread}
@@ -309,7 +315,7 @@ function ThreadCard({
 
       {/* 回覆列表（縮排 12px） */}
       {thread.replies.length > 0 ? (
-        <ul className="ml-3 mt-3 flex flex-col gap-3 border-l border-edge pl-3">
+        <ul className="archive-comment-replies ml-3 mt-3 flex flex-col gap-3 border-l border-edge pl-3">
           {thread.replies.map((reply) => (
             <li key={reply.id}>
               <CommentBody
@@ -400,7 +406,7 @@ function CommentBody({
   }
 
   return (
-    <div className="flex gap-3">
+    <div className="archive-comment-body flex gap-3">
       <Avatar name={authorName} colorKey={comment.authorId ?? authorName} size="md" />
       <div className="min-w-0 flex-1">
         <div className="flex items-center gap-2">
@@ -542,7 +548,7 @@ function NewCommentForm({
   }
 
   return (
-    <div className="mt-4 flex gap-3">
+    <div className="archive-comment-compose mt-4 flex gap-3">
       <Avatar name={currentUser.name} colorKey={currentUser.id} size="md" />
       <div className="flex flex-1 flex-col gap-2">
         <Textarea
