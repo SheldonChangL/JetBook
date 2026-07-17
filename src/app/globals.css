@@ -1784,6 +1784,138 @@ html[data-ui-version="archive"] .archive-trash-row:hover {
   background: var(--bg-hover);
 }
 
+/* UI v2 slice 2 — Space settings：左側任務索引＋單一內容流，避免堆疊卡片。 */
+html[data-ui-version="archive"] .archive-settings-page {
+  width: 100%;
+  max-width: 1160px;
+  gap: 36px;
+  padding: 44px;
+}
+
+html[data-ui-version="archive"] .archive-settings-header {
+  padding-bottom: 20px;
+  border-bottom: 1px solid var(--border-strong);
+}
+
+html[data-ui-version="archive"] .archive-settings-layout {
+  display: grid;
+  grid-template-columns: 176px minmax(0, 1fr);
+  align-items: start;
+  gap: 40px;
+}
+
+html[data-ui-version="archive"] .archive-settings-nav {
+  position: sticky;
+  top: 20px;
+}
+
+html[data-ui-version="archive"] .archive-settings-nav ul {
+  border-left: 1px solid var(--border-strong);
+}
+
+html[data-ui-version="archive"] .archive-settings-nav a {
+  display: flex;
+  min-height: 34px;
+  align-items: center;
+  padding: 6px 10px;
+  border-left: 3px solid transparent;
+  color: var(--text-secondary);
+  font-size: var(--text-caption);
+  transition:
+    border-color 120ms ease,
+    background-color 120ms ease,
+    color 120ms ease;
+}
+
+html[data-ui-version="archive"] .archive-settings-nav a:hover,
+html[data-ui-version="archive"] .archive-settings-nav a:focus-visible {
+  border-left-color: var(--archive-index);
+  color: var(--text-primary);
+  background: var(--bg-hover);
+}
+
+html[data-ui-version="archive"] .archive-settings-content {
+  gap: 36px;
+}
+
+html[data-ui-version="archive"] .archive-settings-content > section {
+  scroll-margin-top: 24px;
+  padding-top: 28px;
+  border-top: 1px solid var(--border-default);
+}
+
+html[data-ui-version="archive"] .archive-settings-content > section:first-of-type {
+  border-top-color: var(--border-strong);
+}
+
+html[data-ui-version="archive"] .archive-settings-content > section[id="general"] {
+  padding-inline: 0;
+  padding-bottom: 0;
+  border-right: 0;
+  border-bottom: 0;
+  border-left: 0;
+  border-radius: 0;
+}
+
+html[data-ui-version="archive"] .archive-settings-content > section > :is(fieldset, div.rounded-md) {
+  border-radius: var(--radius-xs);
+  box-shadow: none;
+}
+
+html[data-ui-version="archive"] .archive-settings-content table {
+  min-width: 680px;
+}
+
+html[data-ui-version="archive"] .archive-settings-content > section[id="delete"] {
+  border-top-color: color-mix(in srgb, var(--danger) 55%, var(--border-default));
+}
+
+@media (max-width: 767px) {
+  html[data-ui-version="archive"] .archive-settings-page {
+    gap: 28px;
+    padding: 28px 20px 40px;
+  }
+
+  html[data-ui-version="archive"] .archive-settings-layout {
+    display: flex;
+    gap: 28px;
+  }
+
+  html[data-ui-version="archive"] .archive-settings-nav {
+    position: sticky;
+    z-index: 5;
+    top: 0;
+    margin-inline: -20px;
+    overflow-x: auto;
+    border-block: 1px solid var(--border-default);
+    background: var(--bg-base);
+  }
+
+  html[data-ui-version="archive"] .archive-settings-nav ul {
+    display: flex;
+    width: max-content;
+    padding-inline: 12px;
+    border-left: 0;
+  }
+
+  html[data-ui-version="archive"] .archive-settings-nav a {
+    min-height: 40px;
+    border-bottom: 3px solid transparent;
+    border-left: 0;
+    white-space: nowrap;
+  }
+
+  html[data-ui-version="archive"] .archive-settings-nav a:hover,
+  html[data-ui-version="archive"] .archive-settings-nav a:focus-visible {
+    border-bottom-color: var(--archive-index);
+    border-left-color: transparent;
+  }
+
+  html[data-ui-version="archive"] .archive-settings-content > section {
+    scroll-margin-top: 52px;
+  }
+}
+
 @media (max-width: 767px) {
   html[data-ui-version="archive"] .archive-trash-page {
     padding: 28px 20px 40px;

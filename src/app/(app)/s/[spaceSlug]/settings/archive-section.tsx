@@ -40,7 +40,7 @@ export function ArchiveSection({
   }
 
   return (
-    <section aria-labelledby="archive-heading" className="flex flex-col gap-3">
+    <section id="archive" aria-labelledby="archive-heading" className="flex flex-col gap-3">
       <div className="flex flex-col gap-1">
         <h2 id="archive-heading" className="text-h4 text-fg">
           {t("archiveHeading")}

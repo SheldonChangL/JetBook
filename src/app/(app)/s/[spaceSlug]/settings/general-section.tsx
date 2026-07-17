@@ -54,9 +54,13 @@ export function GeneralSection({
   }
 
   return (
-    <section className="flex flex-col gap-4 rounded-md border border-edge p-5">
+    <section
+      id="general"
+      aria-labelledby="general-heading"
+      className="flex flex-col gap-4 rounded-md border border-edge p-5"
+    >
       <div>
-        <h2 className="text-h3 text-fg">{t("generalTitle")}</h2>
+        <h2 id="general-heading" className="text-h3 text-fg">{t("generalTitle")}</h2>
         <p className="text-body-ui text-fg-secondary">{t("generalDesc")}</p>
       </div>
       <div className="flex items-start gap-3">

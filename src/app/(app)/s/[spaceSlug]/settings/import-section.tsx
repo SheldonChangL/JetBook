@@ -137,7 +137,7 @@ export function ImportSection({ spaceId, spaceSlug }: { spaceId: string; spaceSl
   }
 
   return (
-    <section aria-labelledby="import-heading" className="flex flex-col gap-3">
+    <section id="import" aria-labelledby="import-heading" className="flex flex-col gap-3">
       <div className="flex flex-col gap-1">
         <h2 id="import-heading" className="text-h4 text-fg">
           {t("importHeading")}
