@@ -351,16 +351,21 @@ export function PageEditor({
           {t("back")}
         </button>
         <div className="archive-editor-toolbar-actions flex items-center gap-3">
-          <span className="ui-legacy-only text-caption text-fg-tertiary" aria-live="polite">
-            {legacyStatusText}
-          </span>
           <span
-            className="archive-editor-save-state ui-archive-only text-caption text-fg-tertiary"
+            className="archive-editor-save-state text-caption text-fg-tertiary"
             data-state={saveState}
             aria-live="polite"
           >
-            {archiveStatusText}
+            {legacyStatusText}
           </span>
+          {!legacyStatusText ? (
+            <span
+              className="archive-editor-save-state ui-archive-only text-caption text-fg-tertiary"
+              data-state={saveState}
+            >
+              {archiveStatusText}
+            </span>
+          ) : null}
           <Button variant="secondary" size="sm" onClick={() => router.push(`/s/${spaceSlug}/${pageSlug}`)}>
             {t("done")}
           </Button>
@@ -458,7 +463,7 @@ export function PageEditor({
               </div>
               <div>
                 <dt>{t("archiveAutosave")}</dt>
-                <dd>{archiveStatusText}</dd>
+                <dd>{t("archiveAutosaveDetail")}</dd>
               </div>
             </dl>
           </section>

@@ -608,6 +608,7 @@
     "archiveVersion": "目前版本",
     "archiveVersionValue": "v{version}",
     "archiveAutosave": "自動儲存",
+    "archiveAutosaveDetail": "變更後 2 秒同步",
     "archiveTools": "可用內容",
     "archiveToolsMedia": "圖片與多個附件",
     "archiveToolsDocument": "Office／PDF 文件",

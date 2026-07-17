@@ -3089,6 +3089,11 @@ html[data-ui-version="archive"] .archive-transfer-toolbar > label {
 }
 
 @media (max-width: 767px) {
+  html[data-ui-version="archive"] div:has(> .archive-editor-insert) {
+    right: 8px !important;
+    left: auto !important;
+  }
+
   html[data-ui-version="archive"] .archive-editor-toolbar {
     min-height: 52px;
     gap: 8px;
