@@ -1,6 +1,6 @@
 # JetBook UI Design v2 — Archive Studio／知識工坊
 
-> 狀態：已選定；六個順序 issue／PR（#251–#262）均已完成。#263 依實際使用回饋再改善編輯工作區的人因與工具可發現性。原始兩案與 16 張 mock 見 `docs/design/mockups-v2/`。
+> 狀態：已選定；六個順序 issue／PR（#251–#262）均已完成。#263 依實際使用回饋再改善編輯工作區的人因與工具可發現性；#269 將 App Shell 由雙側欄改為展開單一 sidebar／收合 compact rail。原始兩案與 16 張 mock 見 `docs/design/mockups-v2/`。
 
 ## 1. 設計方向
 
@@ -10,14 +10,14 @@ JetBook 是工程師使用的活文件檔案室：以紙張、索引、檔案標
 
 ### Content plan
 
-1. 72 px Command Rail 固定全域層級：首頁、所有空間、搜尋、AI 與設定。
-2. 252 px Space Dock 承載首頁入口、Collection、Space 與頁面樹。
+1. 展開狀態使用 288 px 單一 Archive Sidebar：品牌、首頁、所有空間、搜尋、AI、個人設定與 Space Dock 共用同一個 surface，避免深色 rail 與淺色 dock 並排造成雙 bar。
+2. 收合狀態保留 72 px compact rail，維持首頁、所有空間、搜尋、AI 與設定入口。
 3. 中央 Canvas 保留原路由內容與操作，逐批改造成閱讀／編輯工作檯。
 4. Inspector 只在任務需要時顯示 TOC、留言、編輯鎖、版本或 AI，不永久壓縮內容。
 
 ### Interaction thesis
 
-- Rail 與 Space Dock 分層；桌面可收合 Dock，行動版改用具 focus trap／restore 的 Drawer。
+- 桌面展開時 Rail 與 Space Dock 整合為單一 sidebar；收合時只保留 compact rail；行動版改用具 focus trap／restore 的 Drawer。
 - 閱讀進入編輯後切換為 focus mode，暫時收起頁面樹；返回閱讀時立即恢復原導航脈絡。
 - Cmd+K 與 AI 共用探索工作層；來源、引用、附件預覽與錯誤保持在同一脈絡。
 - 動效只使用短距離 opacity／translate；`prefers-reduced-motion: reduce` 下停用。
@@ -59,7 +59,7 @@ Archive token 只在 `html[data-ui-version="archive"]` 覆寫現有語意別名�
 | Token | Light | Dark | 用途 |
 | --- | --- | --- | --- |
 | `--bg-base` | `#EFECE4` | `#171714` | Canvas／主工作檯 |
-| `--bg-sidebar` | `#F8F5ED` | `#1E1F1B` | Space Dock／次層表面 |
+| `--bg-sidebar` | `#F8F5ED` | `#1E1F1B` | Archive Sidebar／Space Dock／次層表面 |
 | `--bg-raised` | `#FFFDF7` | `#272720` | Topbar／Dialog／需要抬升的表面 |
 | `--text-primary` | `#282A26` | `#F2EDE0` | 主文字 |
 | `--text-secondary` | `#5C5D54` | `#C1BAAA` | 次要文字 |
@@ -74,7 +74,7 @@ Archive token 只在 `html[data-ui-version="archive"]` 覆寫現有語意別名�
 
 | Token | 值／規則 |
 | --- | --- |
-| Command Rail | Light／Dark 均以深墨 `#25241F` 為主；active `#3B3931` |
+| Compact Rail | Light／Dark 均以深墨 `#25241F` 為主；active `#3B3931` |
 | Index | `#EF8B61`，搭配 `#171714` 前景 |
 | Paper | Light `#FFFDF7`；Dark `#272720` |
 | Canvas rule | 32 px 水平基線，低透明銅橘，不干擾正文 |
@@ -86,7 +86,7 @@ Archive token 只在 `html[data-ui-version="archive"]` 覆寫現有語意別名�
 ## 5. 排版、密度與品牌
 
 - 沿用 Inter、Noto Sans TC、JetBrains Mono，不新增字型或動畫依賴。
-- 產品與頁面名稱使用現有 sans 字體；索引、Rail label 與 archive kicker 使用 mono 大寫字距。
+- 產品與頁面名稱使用現有 sans 字體；索引、sidebar label 與 archive kicker 使用 mono 大寫字距。
 - 原創 `ArchiveMark` SVG 使用文件、索引與裝訂線語彙，不沿用第三方品牌資產。
 - Dashboard、Admin 與列表採密集但可讀的 32／40／48 px 節奏；卡片只保留給真正可點擊的內容單位。
 - 文件正文維持適合繁中閱讀的行寬與行高，不以裝飾性襯線或偽斜體處理中文。
@@ -95,8 +95,8 @@ Archive token 只在 `html[data-ui-version="archive"]` 覆寫現有語意別名�
 
 ### App Shell
 
-- Desktop `≥1024`：72 px Command Rail＋252 px Space Dock＋彈性 Canvas。
-- Dock 可由按鈕或 `Cmd/Ctrl+\\` 收合，狀態沿用 `jetbook-sidebar-collapsed`。
+- Desktop `≥1024`：展開時為 288 px 單一 Archive Sidebar＋彈性 Canvas；收合時為 72 px compact rail＋彈性 Canvas。
+- Sidebar 可由按鈕或 `Cmd/Ctrl+\\` 收合，狀態沿用 `jetbook-sidebar-collapsed`；Space route 預設 compact rail，可臨時展開全域 Space Dock。
 - `<1024`：Rail 與 Dock 隱藏，Topbar 導覽按鈕開啟左側 Drawer。
 - Drawer 支援 Tab focus trap、Esc、關閉鈕與關閉後 focus restore。
 - Topbar 保留搜尋、建立、AI、通知、主題、使用者與 UI 回切入口；狹窄畫面依優先序收合文字，不刪功能。

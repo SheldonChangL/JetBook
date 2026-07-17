@@ -12,3 +12,15 @@ export function shouldShowArchiveGlobalDock(
   if (!pathname.startsWith("/s/")) return true;
   return spaceGlobalDockOpen;
 }
+
+export type ArchiveSidebarPresentation = "expanded" | "compact";
+
+export function getArchiveSidebarPresentation(
+  pathname: string,
+  dockCollapsed: boolean,
+  spaceGlobalDockOpen: boolean,
+): ArchiveSidebarPresentation {
+  return shouldShowArchiveGlobalDock(pathname, dockCollapsed, spaceGlobalDockOpen)
+    ? "expanded"
+    : "compact";
+}

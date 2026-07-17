@@ -11,6 +11,7 @@ import { Kbd } from "@/components/ui/kbd";
 import type { BuildInfo } from "@/lib/build-info";
 import type { NotificationView } from "@/lib/notifications";
 import type { UiVersion } from "@/lib/ui-version";
+import { cn } from "@/lib/utils";
 import { BuildBadge } from "./build-badge";
 import { NotificationBell } from "./notification-bell";
 import { ThemeToggle } from "./theme-toggle";
@@ -70,7 +71,10 @@ export function ArchiveTopbar({
         </IconButton>
       ) : null}
 
-      <Link href="/" className="flex min-w-0 items-center gap-2 text-fg">
+      <Link
+        href="/"
+        className={cn("flex min-w-0 items-center gap-2 text-fg", !dockCollapsed && "lg:hidden")}
+      >
         <ArchiveMark className="size-7 lg:hidden" />
         <span className="truncate text-body-ui font-semibold sm:text-h4">{tc("appName")}</span>
         <span className="hidden border-l border-edge pl-2 font-mono text-[10px] tracking-[0.14em] text-fg-tertiary xl:inline">

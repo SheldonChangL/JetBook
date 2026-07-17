@@ -47,8 +47,12 @@ test("MVP 冒煙：登入→建空間→建頁→編輯→閱讀→搜尋→私�
   page,
   browser,
 }) => {
+  await page.setViewportSize({ width: 1440, height: 900 });
+
   // ── 1) 管理員登入 ──
   await login(page, E2E_ADMIN);
+  await expect(page.locator(".archive-shell aside:visible")).toHaveCount(1);
+  await expect(page.locator(".archive-shell aside:visible")).toContainText("SPACE DOCK");
 
   // ── 2) 建立私有 Space（新建 Space 預設 visibility=private）──
   await page.goto("/spaces");
