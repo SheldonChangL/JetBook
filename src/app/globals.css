@@ -1878,6 +1878,8 @@ html[data-ui-version="archive"] .archive-settings-content > section[id="delete"]
 
   html[data-ui-version="archive"] .archive-settings-layout {
     display: flex;
+    width: 100%;
+    min-width: 0;
     gap: 28px;
   }
 
@@ -1885,6 +1887,9 @@ html[data-ui-version="archive"] .archive-settings-content > section[id="delete"]
     position: sticky;
     z-index: 5;
     top: 0;
+    width: calc(100% + 40px);
+    max-width: calc(100% + 40px);
+    flex: none;
     margin-inline: -20px;
     overflow-x: auto;
     border-block: 1px solid var(--border-default);
