@@ -155,6 +155,7 @@
   },
   "apiDocs": {
     "title": "API 文件",
+    "archiveKicker": "DEVELOPER INTERFACE / REST v1",
     "backToSettings": "返回個人設定",
     "rawSpec": "下載 OpenAPI 規格（openapi.json）",
     "params": "參數：{list}",
@@ -263,7 +264,8 @@
     "pageMention": "{actor} 在「{title}」提及了你",
     "pageMentionNoTitle": "{actor} 在一個頁面提及了你",
     "genericEvent": "你有一則新通知",
-    "unreadBadgeMax": "9+"
+    "unreadBadgeMax": "9+",
+    "archiveKicker": "ACTIVITY / INBOX"
   },
   "errors": {
     "notFound": {
@@ -1223,6 +1225,8 @@
   "settings": {
     "title": "個人設定",
     "subtitle": "管理你的基本資料、密碼與外觀偏好",
+    "archiveKicker": "IDENTITY / PERSONAL CONTROL",
+    "archiveNavLabel": "個人設定區段",
     "notificationsHeading": "Email 通知",
     "notificationsDesc": "站內通知同時寄送 Email 提醒（需系統已設定 SMTP）。",
     "emailNotifEnabled": "寄送",
@@ -1324,6 +1328,8 @@
     "historyEmpty": "尚無歷史對話",
     "historyLoading": "載入中…",
     "historyError": "載入歷史失敗",
-    "untitledConversation": "未命名對話"
+    "untitledConversation": "未命名對話",
+    "archiveContext": "權限隔離知識檢索",
+    "archiveConnected": "AI 工作層已連線"
   }
 }

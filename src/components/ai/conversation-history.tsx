@@ -79,7 +79,7 @@ export function ConversationHistory({ currentConversationId, onSelect }: Convers
       >
         <History className="size-4" />
       </PopoverTrigger>
-      <PopoverContent align="end" className="w-80 max-w-[calc(100vw-32px)] p-1.5">
+      <PopoverContent align="end" className="archive-ai-history w-80 max-w-[calc(100vw-32px)] p-1.5">
         <div className="max-h-80 overflow-y-auto">
           {loading ? (
             <p className="px-2.5 py-6 text-center text-caption text-fg-tertiary">
@@ -102,7 +102,7 @@ export function ConversationHistory({ currentConversationId, onSelect }: Convers
                       onClick={() => void selectConversation(c.id)}
                       disabled={selectingId !== null}
                       className={cn(
-                        "flex w-full items-center gap-2 rounded-sm px-2.5 py-2 text-left text-body-ui text-fg transition-colors hover:bg-hover disabled:opacity-60",
+                        "archive-ai-history-item flex w-full items-center gap-2 rounded-sm px-2.5 py-2 text-left text-body-ui text-fg transition-colors hover:bg-hover disabled:opacity-60",
                         isCurrent && "bg-hover",
                       )}
                     >

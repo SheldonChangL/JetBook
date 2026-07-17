@@ -3558,3 +3558,484 @@ html[data-ui-version="archive"] .archive-command-footer {
     flex: none;
   }
 }
+
+/* AI、通知與個人控制層：沿用既有 SSE、Action、權限與 Token flow。 */
+html[data-ui-version="archive"] .archive-ai-drawer {
+  width: 460px;
+  border-color: var(--border-strong);
+  box-shadow: none;
+}
+
+html[data-ui-version="archive"] .archive-ai-drawer > div:first-child {
+  height: 58px;
+  border-top: 4px solid var(--ai);
+  border-bottom-color: var(--border-strong);
+  background: var(--bg-sidebar);
+}
+
+html[data-ui-version="archive"] .archive-ai-drawer > div:first-child h2 {
+  font-family: var(--font-mono);
+  font-size: var(--text-body-ui);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+html[data-ui-version="archive"] .archive-ai-workspace {
+  background: var(--bg-base);
+}
+
+html[data-ui-version="archive"] .archive-ai-context {
+  display: flex;
+  min-height: 38px;
+  flex: none;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 0 16px;
+  border-bottom: 1px solid var(--border-default);
+  color: var(--text-tertiary);
+  background: var(--bg-sidebar);
+  font-family: var(--font-mono);
+  font-size: 9px;
+  letter-spacing: 0.06em;
+}
+
+html[data-ui-version="archive"] .archive-ai-context > span:first-child {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  color: var(--text-secondary);
+}
+
+html[data-ui-version="archive"] .archive-ai-context svg {
+  width: 13px;
+  height: 13px;
+  color: var(--ai);
+}
+
+html[data-ui-version="archive"] .archive-ai-thread {
+  padding: 20px;
+  background-image: linear-gradient(var(--border-subtle) 1px, transparent 1px);
+  background-size: 100% 32px;
+}
+
+html[data-ui-version="archive"] .archive-ai-empty {
+  min-height: 260px;
+  border: 1px dashed var(--border-strong);
+  background: color-mix(in srgb, var(--bg-raised) 86%, transparent);
+}
+
+html[data-ui-version="archive"] .archive-ai-user-message {
+  border-right: 3px solid var(--archive-index);
+  border-radius: var(--radius-xs);
+  background: var(--primary-tint);
+}
+
+html[data-ui-version="archive"] .archive-ai-answer {
+  padding: 14px 14px 14px 16px;
+  border-left: 3px solid var(--ai);
+  background: color-mix(in srgb, var(--bg-raised) 92%, transparent);
+}
+
+html[data-ui-version="archive"] .archive-ai-sources > :first-child {
+  font-family: var(--font-mono);
+  font-size: 9px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+html[data-ui-version="archive"] .archive-ai-source-list {
+  gap: 8px;
+}
+
+html[data-ui-version="archive"] .archive-ai-source-card {
+  border-radius: var(--radius-xs);
+  box-shadow: none;
+}
+
+html[data-ui-version="archive"] .archive-ai-source-card:hover,
+html[data-ui-version="archive"] .archive-ai-source-card:focus-visible {
+  border-left: 3px solid var(--archive-index);
+  background: var(--bg-hover);
+  box-shadow: none;
+}
+
+html[data-ui-version="archive"] .archive-ai-stream-status {
+  min-height: 36px;
+  padding: 7px 10px;
+  border: 1px solid var(--border-default);
+  background: var(--bg-sidebar);
+  font-family: var(--font-mono);
+  font-size: 9px;
+}
+
+html[data-ui-version="archive"] .archive-ai-stream-status > button,
+html[data-ui-version="archive"] .archive-ai-error {
+  border-radius: var(--radius-xs);
+}
+
+html[data-ui-version="archive"] .archive-ai-composer {
+  padding: 14px 16px 12px;
+  border-color: var(--border-strong);
+  background: var(--bg-sidebar);
+}
+
+html[data-ui-version="archive"] .archive-ai-composer-field {
+  border-radius: var(--radius-xs);
+  background: var(--bg-base);
+  box-shadow: inset 3px 0 0 var(--ai);
+}
+
+html[data-ui-version="archive"] .archive-ai-composer-field > button {
+  border-radius: var(--radius-xs);
+}
+
+html[data-ui-version="archive"] .archive-ai-history {
+  padding: 8px;
+  border-color: var(--border-strong);
+  border-radius: var(--radius-xs);
+  box-shadow: var(--shadow-lg);
+}
+
+html[data-ui-version="archive"] .archive-ai-history-item {
+  min-height: 40px;
+  border-left: 3px solid transparent;
+  border-radius: var(--radius-xs);
+}
+
+html[data-ui-version="archive"] .archive-ai-history-item:hover,
+html[data-ui-version="archive"] .archive-ai-history-item:focus-visible {
+  border-left-color: var(--ai);
+}
+
+html[data-ui-version="archive"] .archive-notification-trigger {
+  border-radius: var(--radius-xs);
+}
+
+html[data-ui-version="archive"] .archive-notification-popover {
+  width: 360px;
+  max-width: calc(100vw - 24px);
+  border-color: var(--border-strong);
+  border-top: 4px solid var(--archive-index);
+  border-radius: var(--radius-xs);
+  box-shadow: var(--shadow-lg);
+}
+
+html[data-ui-version="archive"] .archive-notification-head {
+  min-height: 54px;
+  padding: 8px 12px;
+  border-color: var(--border-strong);
+  background: var(--bg-sidebar);
+}
+
+html[data-ui-version="archive"] .archive-notification-head span.ui-archive-only {
+  color: var(--text-tertiary);
+  font-family: var(--font-mono);
+  font-size: 8px;
+  letter-spacing: 0.1em;
+}
+
+html[data-ui-version="archive"] .archive-notification-head button {
+  border-radius: var(--radius-xs);
+}
+
+html[data-ui-version="archive"] .archive-notification-list {
+  padding: 0;
+}
+
+html[data-ui-version="archive"] .archive-notification-item {
+  min-height: 62px;
+  border-bottom: 1px solid var(--border-default);
+}
+
+html[data-ui-version="archive"] .archive-notification-item:hover,
+html[data-ui-version="archive"] .archive-notification-item:focus-visible {
+  padding-left: 15px;
+  border-left: 3px solid var(--archive-index);
+}
+
+html[data-ui-version="archive"] .archive-personal-settings {
+  width: 100%;
+  max-width: 1120px;
+  gap: 0;
+  padding: 42px 48px 72px;
+}
+
+html[data-ui-version="archive"] .archive-personal-header {
+  padding-bottom: 22px;
+  border-bottom: 1px solid var(--border-strong);
+}
+
+html[data-ui-version="archive"] .archive-personal-header h1 {
+  letter-spacing: -0.025em;
+}
+
+html[data-ui-version="archive"] .archive-personal-kicker,
+html[data-ui-version="archive"] .archive-api-docs-kicker {
+  margin-top: 10px;
+  color: var(--primary);
+  font-family: var(--font-mono);
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.12em;
+}
+
+html[data-ui-version="archive"] .archive-personal-layout {
+  display: grid;
+  grid-template-columns: 190px minmax(0, 1fr);
+  gap: 42px;
+  padding-top: 26px;
+}
+
+html[data-ui-version="archive"] .archive-personal-nav {
+  display: block;
+}
+
+html[data-ui-version="archive"] .archive-personal-nav ul {
+  position: sticky;
+  top: 24px;
+  display: flex;
+  flex-direction: column;
+  border-block: 1px solid var(--border-strong);
+}
+
+html[data-ui-version="archive"] .archive-personal-nav a {
+  display: block;
+  min-height: 40px;
+  padding: 12px 10px;
+  border-bottom: 1px solid var(--border-default);
+  color: var(--text-secondary);
+  font-family: var(--font-mono);
+  font-size: 10px;
+  letter-spacing: 0.03em;
+}
+
+html[data-ui-version="archive"] .archive-personal-nav a:hover,
+html[data-ui-version="archive"] .archive-personal-nav a:focus-visible {
+  padding-left: 13px;
+  border-left: 3px solid var(--archive-index);
+  color: var(--text-primary);
+  background: var(--bg-hover);
+}
+
+html[data-ui-version="archive"] .archive-personal-content {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+}
+
+html[data-ui-version="archive"] .archive-personal-section {
+  scroll-margin-top: 20px;
+  gap: 14px;
+  padding: 30px 0;
+  border-width: 0 0 1px;
+  border-color: var(--border-strong);
+  border-radius: 0;
+}
+
+html[data-ui-version="archive"] .archive-personal-section:first-child {
+  padding-top: 0;
+}
+
+html[data-ui-version="archive"] .archive-personal-section > div:first-child h2,
+html[data-ui-version="archive"] .archive-personal-section > h2 {
+  letter-spacing: -0.015em;
+}
+
+html[data-ui-version="archive"] .archive-personal-card {
+  padding: 18px;
+  border-radius: var(--radius-xs);
+  background: var(--bg-raised);
+  box-shadow: none;
+}
+
+html[data-ui-version="archive"] .archive-personal-card input,
+html[data-ui-version="archive"] .archive-personal-card button {
+  border-radius: var(--radius-xs);
+}
+
+html[data-ui-version="archive"] .archive-appearance-options {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 0;
+  padding: 0;
+  overflow: hidden;
+}
+
+html[data-ui-version="archive"] .archive-appearance-option {
+  min-height: 76px;
+  justify-content: center;
+  border-right: 1px solid var(--border-default);
+  border-radius: 0;
+}
+
+html[data-ui-version="archive"] .archive-appearance-option:last-child {
+  border-right: 0;
+}
+
+html[data-ui-version="archive"] .archive-notification-settings,
+html[data-ui-version="archive"] .archive-api-tokens {
+  padding-inline: 0;
+}
+
+html[data-ui-version="archive"] .archive-notification-preferences {
+  border-top: 1px solid var(--border-default);
+}
+
+html[data-ui-version="archive"] .archive-notification-preferences > li {
+  min-height: 48px;
+  border-bottom: 1px solid var(--border-default);
+}
+
+html[data-ui-version="archive"] .archive-api-tokens > div:first-child {
+  padding-bottom: 14px;
+  border-bottom: 1px solid var(--border-default);
+}
+
+html[data-ui-version="archive"] .archive-api-tokens button,
+html[data-ui-version="archive"] .archive-api-token-modal,
+html[data-ui-version="archive"] .archive-api-token-modal button,
+html[data-ui-version="archive"] .archive-api-token-modal code {
+  border-radius: var(--radius-xs);
+}
+
+html[data-ui-version="archive"] .archive-api-token-modal {
+  border-color: var(--border-strong);
+  border-top: 4px solid var(--archive-index);
+}
+
+html[data-ui-version="archive"] .archive-api-token-list {
+  border: 0;
+  border-radius: 0;
+}
+
+html[data-ui-version="archive"] .archive-api-token-row {
+  min-height: 62px;
+  padding-inline: 0;
+}
+
+html[data-ui-version="archive"] .archive-api-docs {
+  width: 100%;
+  max-width: 1080px;
+  padding: 42px 48px 72px;
+}
+
+html[data-ui-version="archive"] .archive-api-docs-header {
+  padding-bottom: 22px;
+  border-bottom: 1px solid var(--border-strong);
+}
+
+html[data-ui-version="archive"] .archive-api-docs-header h1 {
+  letter-spacing: -0.025em;
+}
+
+html[data-ui-version="archive"] .archive-api-endpoint-list {
+  gap: 0;
+}
+
+html[data-ui-version="archive"] .archive-api-endpoint {
+  padding: 20px 0;
+  border-width: 0 0 1px;
+  border-radius: 0;
+}
+
+html[data-ui-version="archive"] .archive-api-endpoint > div + div {
+  margin-top: 18px;
+  padding-top: 18px;
+  border-top: 1px dashed var(--border-default);
+}
+
+html[data-ui-version="archive"] .archive-api-method {
+  min-width: 56px;
+  border-radius: var(--radius-xs);
+  text-align: center;
+}
+
+html[data-ui-version="archive"] .archive-api-method[data-method="post"],
+html[data-ui-version="archive"] .archive-api-method[data-method="put"],
+html[data-ui-version="archive"] .archive-api-method[data-method="patch"] {
+  color: var(--warning);
+  background: var(--warning-tint);
+}
+
+html[data-ui-version="archive"] .archive-api-method[data-method="delete"] {
+  color: var(--danger);
+  background: var(--danger-tint);
+}
+
+@media (max-width: 1023px) {
+  html[data-ui-version="archive"] .archive-personal-layout {
+    grid-template-columns: 1fr;
+    gap: 22px;
+  }
+
+  html[data-ui-version="archive"] .archive-personal-nav ul {
+    position: static;
+    flex-direction: row;
+    overflow-x: auto;
+    border-block: 1px solid var(--border-strong);
+  }
+
+  html[data-ui-version="archive"] .archive-personal-nav li {
+    flex: none;
+  }
+
+  html[data-ui-version="archive"] .archive-personal-nav a {
+    border-right: 1px solid var(--border-default);
+    border-bottom: 0;
+  }
+}
+
+@media (max-width: 767px) {
+  html[data-ui-version="archive"] .archive-ai-drawer {
+    width: calc(100vw - 16px);
+    max-width: none;
+  }
+
+  html[data-ui-version="archive"] .archive-ai-thread {
+    padding: 16px;
+  }
+
+  html[data-ui-version="archive"] .archive-personal-settings,
+  html[data-ui-version="archive"] .archive-api-docs {
+    padding: 30px 20px 52px;
+  }
+
+  html[data-ui-version="archive"] .archive-appearance-options {
+    grid-template-columns: 1fr;
+  }
+
+  html[data-ui-version="archive"] .archive-appearance-option,
+  html[data-ui-version="archive"] .archive-appearance-option:last-child {
+    min-height: 52px;
+    justify-content: flex-start;
+    border-right: 0;
+    border-bottom: 1px solid var(--border-default);
+  }
+
+  html[data-ui-version="archive"] .archive-appearance-option:last-child {
+    border-bottom: 0;
+  }
+
+  html[data-ui-version="archive"] .archive-notification-settings > div:first-child,
+  html[data-ui-version="archive"] .archive-api-tokens > div:first-child {
+    flex-direction: column;
+  }
+
+  html[data-ui-version="archive"] .archive-api-tokens > div:first-child > button {
+    width: 100%;
+  }
+
+  html[data-ui-version="archive"] .archive-api-token-row {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  html[data-ui-version="archive"] .archive-api-token-row > button {
+    align-self: flex-end;
+  }
+
+  html[data-ui-version="archive"] .archive-api-endpoint code {
+    overflow-wrap: anywhere;
+  }
+}

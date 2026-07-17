@@ -103,7 +103,7 @@ export function ApiTokensSection({ tokens }: { tokens: ApiTokenRow[] }) {
   }
 
   return (
-    <section className="flex flex-col gap-4 rounded-md border border-edge p-5">
+    <section id="api-tokens" className="archive-personal-section archive-api-tokens flex flex-col gap-4 rounded-md border border-edge p-5">
       <div className="flex items-start justify-between gap-4">
         <div>
           <h2 className="text-h3 text-fg">{t("heading")}</h2>
@@ -118,7 +118,12 @@ export function ApiTokensSection({ tokens }: { tokens: ApiTokenRow[] }) {
           <ModalTrigger asChild>
             <Button variant="secondary">{t("create")}</Button>
           </ModalTrigger>
-          <ModalContent size="sm" title={t("createTitle")} closeLabel={t("close")}>
+          <ModalContent
+            size="sm"
+            title={t("createTitle")}
+            closeLabel={t("close")}
+            className="archive-api-token-modal"
+          >
             {created === null ? (
               <form action={onCreate} className="flex flex-col gap-4">
                 <Input name="name" label={t("nameLabel")} required maxLength={100} />
@@ -201,12 +206,12 @@ export function ApiTokensSection({ tokens }: { tokens: ApiTokenRow[] }) {
       {tokens.length === 0 ? (
         <p className="text-body-ui text-fg-tertiary">{t("empty")}</p>
       ) : (
-        <ul className="flex flex-col divide-y divide-edge rounded-md border border-edge">
+        <ul className="archive-api-token-list flex flex-col divide-y divide-edge rounded-md border border-edge">
           {tokens.map((token) => {
             const expired =
               token.expiresAt !== null && new Date(token.expiresAt).getTime() <= Date.now();
             return (
-              <li key={token.id} className="flex items-center gap-3 px-4 py-3">
+              <li key={token.id} className="archive-api-token-row flex items-center gap-3 px-4 py-3">
                 <div className="min-w-0 flex-1">
                   <p className="flex items-center gap-2 text-body-ui font-medium text-fg">
                     <span className="truncate">{token.name}</span>

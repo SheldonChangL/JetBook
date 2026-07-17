@@ -20,18 +20,18 @@ export interface SourceCardsProps {
 export function SourceCards({ label, sources, onSelect }: SourceCardsProps) {
   if (sources.length === 0) return null;
   return (
-    <div className="flex flex-col gap-1.5">
+    <div className="archive-ai-sources flex flex-col gap-1.5">
       <div className="flex items-center gap-1.5 text-caption font-semibold tracking-wide text-fg-tertiary">
         <BookText aria-hidden className="size-3.5" />
         <span>{label}</span>
       </div>
-      <div className="-mx-1 flex gap-2 overflow-x-auto px-1 pb-1.5">
+      <div className="archive-ai-source-list -mx-1 flex gap-2 overflow-x-auto px-1 pb-1.5">
         {sources.map((s) => (
           <Link
             key={s.n}
             href={s.url}
             onClick={onSelect}
-            className="flex w-61 shrink-0 flex-col rounded-sm border border-edge bg-raised p-3 text-left transition-colors hover:border-primary hover:shadow-sm"
+            className="archive-ai-source-card flex w-61 shrink-0 flex-col rounded-sm border border-edge bg-raised p-3 text-left transition-colors hover:border-primary hover:shadow-sm"
           >
             <span className="flex min-w-0 items-center gap-1.5">
               <span

@@ -31,8 +31,8 @@ export default async function SettingsPage() {
       : "system";
 
   return (
-    <main className="mx-auto flex max-w-[720px] flex-col gap-8 px-6 py-8">
-      <header className="flex flex-col gap-2">
+    <main className="archive-personal-settings mx-auto flex max-w-[720px] flex-col gap-8 px-6 py-8">
+      <header className="archive-personal-header flex flex-col gap-2">
         <Link
           href="/"
           className="inline-flex w-fit items-center gap-1 text-caption text-fg-tertiary transition-colors hover:text-fg"
@@ -40,28 +40,43 @@ export default async function SettingsPage() {
           <ChevronLeft aria-hidden className="size-3.5" />
           {t("backToApp")}
         </Link>
+        <p className="archive-personal-kicker ui-archive-only">{t("archiveKicker")}</p>
         <h1 className="text-h1 text-fg">{t("title")}</h1>
         <p className="text-body-ui text-fg-secondary">{t("subtitle")}</p>
       </header>
 
-      <ProfileSection name={user.name} email={user.email} />
+      <div className="archive-personal-layout">
+        <nav className="archive-personal-nav ui-archive-only" aria-label={t("archiveNavLabel")}>
+          <ul>
+            <li><a href="#profile">{t("profileHeading")}</a></li>
+            <li><a href="#password">{t("passwordHeading")}</a></li>
+            <li><a href="#appearance">{t("appearanceHeading")}</a></li>
+            <li><a href="#notifications">{t("notificationsHeading")}</a></li>
+            <li><a href="#api-tokens">{t("apiTokens.heading")}</a></li>
+          </ul>
+        </nav>
 
-      <PasswordSection isLocal={user.authProvider === "local" && user.passwordHash !== null} />
+        <div className="archive-personal-content">
+          <ProfileSection name={user.name} email={user.email} />
 
-      <AppearanceSection initialTheme={currentTheme} />
+          <PasswordSection isLocal={user.authProvider === "local" && user.passwordHash !== null} />
 
-      <NotificationsSection initialPrefs={user.emailNotificationPrefs ?? null} />
+          <AppearanceSection initialTheme={currentTheme} />
 
-      <ApiTokensSection
-        tokens={apiTokens.map((token) => ({
-          id: token.id,
-          name: token.name,
-          scopes: token.scopes,
-          expiresAt: token.expiresAt?.toISOString() ?? null,
-          lastUsedAt: token.lastUsedAt?.toISOString() ?? null,
-          createdAt: token.createdAt.toISOString(),
-        }))}
-      />
+          <NotificationsSection initialPrefs={user.emailNotificationPrefs ?? null} />
+
+          <ApiTokensSection
+            tokens={apiTokens.map((token) => ({
+              id: token.id,
+              name: token.name,
+              scopes: token.scopes,
+              expiresAt: token.expiresAt?.toISOString() ?? null,
+              lastUsedAt: token.lastUsedAt?.toISOString() ?? null,
+              createdAt: token.createdAt.toISOString(),
+            }))}
+          />
+        </div>
+      </div>
     </main>
   );
 }

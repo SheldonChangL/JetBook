@@ -23,8 +23,8 @@ export default async function ApiDocsPage() {
   const paths = Object.entries(openApiSpec.paths);
 
   return (
-    <main className="mx-auto flex max-w-[880px] flex-col gap-6 px-6 py-8">
-      <header className="flex flex-col gap-2">
+    <main className="archive-api-docs mx-auto flex max-w-[880px] flex-col gap-6 px-6 py-8">
+      <header className="archive-api-docs-header flex flex-col gap-2">
         <Link
           href="/settings"
           className="inline-flex w-fit items-center gap-1 text-caption text-fg-tertiary transition-colors hover:text-fg"
@@ -32,6 +32,7 @@ export default async function ApiDocsPage() {
           <ChevronLeft aria-hidden className="size-3.5" />
           {t("backToSettings")}
         </Link>
+        <p className="archive-api-docs-kicker ui-archive-only">{t("archiveKicker")}</p>
         <h1 className="text-h1 text-fg">{openApiSpec.info.title}</h1>
         <p className="text-body-ui text-fg-secondary">{openApiSpec.info.description}</p>
         <a
@@ -42,9 +43,9 @@ export default async function ApiDocsPage() {
         </a>
       </header>
 
-      <ul className="flex flex-col gap-4">
+      <ul className="archive-api-endpoint-list flex flex-col gap-4">
         {paths.map(([path, operations]) => (
-          <li key={path} className="rounded-md border border-edge p-4">
+          <li key={path} className="archive-api-endpoint rounded-md border border-edge p-4">
             {METHOD_ORDER.filter((m) => m in operations).map((method) => {
               const op = (operations as Record<string, {
                 summary?: string;
@@ -55,7 +56,7 @@ export default async function ApiDocsPage() {
               return (
                 <div key={method} className="flex flex-col gap-2">
                   <p className="flex items-center gap-2">
-                    <span className="rounded-sm bg-primary-tint px-2 py-0.5 font-mono text-caption font-semibold uppercase text-primary">
+                    <span data-method={method} className="archive-api-method rounded-sm bg-primary-tint px-2 py-0.5 font-mono text-caption font-semibold uppercase text-primary">
                       {method}
                     </span>
                     <code className="font-mono text-body-ui text-fg">{path}</code>

@@ -42,7 +42,7 @@ export function AppearanceSection({ initialTheme }: { initialTheme: Theme }) {
   }
 
   return (
-    <section aria-labelledby="appearance-heading" className="flex flex-col gap-3">
+    <section id="appearance" aria-labelledby="appearance-heading" className="archive-personal-section flex flex-col gap-3">
       <div className="flex flex-col gap-1">
         <h2 id="appearance-heading" className="text-h4 text-fg">
           {t("appearanceHeading")}
@@ -50,14 +50,14 @@ export function AppearanceSection({ initialTheme }: { initialTheme: Theme }) {
         <p className="text-body-ui text-fg-secondary">{t("appearanceDesc")}</p>
       </div>
 
-      <fieldset className="flex flex-col gap-2 rounded-md border border-edge bg-raised p-4">
+      <fieldset className="archive-personal-card archive-appearance-options flex flex-col gap-2 rounded-md border border-edge bg-raised p-4">
         <legend className="sr-only">{t("appearanceHeading")}</legend>
         {OPTIONS.map((option) => {
           const Icon = option.icon;
           return (
             <label
               key={option.value}
-              className="flex cursor-pointer items-center gap-3 rounded-sm px-2 py-2 transition-colors hover:bg-hover"
+              className="archive-appearance-option flex cursor-pointer items-center gap-3 rounded-sm px-2 py-2 transition-colors hover:bg-hover"
             >
               <input
                 type="radio"

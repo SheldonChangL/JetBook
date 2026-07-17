@@ -34,7 +34,7 @@ export function ProfileSection({ name, email }: { name: string; email: string })
   }
 
   return (
-    <section aria-labelledby="profile-heading" className="flex flex-col gap-3">
+    <section id="profile" aria-labelledby="profile-heading" className="archive-personal-section flex flex-col gap-3">
       <div className="flex flex-col gap-1">
         <h2 id="profile-heading" className="text-h4 text-fg">
           {t("profileHeading")}
@@ -44,7 +44,7 @@ export function ProfileSection({ name, email }: { name: string; email: string })
 
       <form
         onSubmit={onSubmit}
-        className="flex flex-col gap-4 rounded-md border border-edge bg-raised p-4"
+        className="archive-personal-card flex flex-col gap-4 rounded-md border border-edge bg-raised p-4"
       >
         <Input label={t("emailLabel")} value={email} readOnly disabled />
         <Input
