@@ -54,7 +54,7 @@ export function NotificationBell({
     <Popover open={open} onOpenChange={setOpen}>
       <PopoverTrigger
         aria-label={unread > 0 ? t("labelWithCount", { count: unread }) : t("label")}
-        className="relative inline-flex size-8 items-center justify-center rounded-sm text-fg-secondary transition-colors hover:bg-hover hover:text-fg focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[color:var(--primary)]"
+        className="archive-notification-trigger relative inline-flex size-8 items-center justify-center rounded-sm text-fg-secondary transition-colors hover:bg-hover hover:text-fg focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[color:var(--primary)]"
       >
         <Bell className="size-4" />
         {unread > 0 ? (
@@ -66,9 +66,12 @@ export function NotificationBell({
           </span>
         ) : null}
       </PopoverTrigger>
-      <PopoverContent align="end" className="w-80 p-0">
-        <div className="flex items-center justify-between border-b border-edge px-3 py-2">
-          <p className="text-body-ui font-medium text-fg">{t("heading")}</p>
+      <PopoverContent align="end" className="archive-notification-popover w-80 p-0">
+        <div className="archive-notification-head flex items-center justify-between border-b border-edge px-3 py-2">
+          <div>
+            <span className="ui-archive-only">{t("archiveKicker")}</span>
+            <p className="text-body-ui font-medium text-fg">{t("heading")}</p>
+          </div>
           {unread > 0 ? (
             <Button variant="ghost" size="sm" onClick={onMarkAllRead}>
               {t("markAllRead")}
@@ -83,14 +86,14 @@ export function NotificationBell({
             className="px-4 py-8 [&>h3]:text-body-ui [&>h3]:text-fg-secondary"
           />
         ) : (
-          <ul className="max-h-96 overflow-y-auto py-1">
+          <ul className="archive-notification-list max-h-96 overflow-y-auto py-1">
             {items.map((item) => (
               <li key={item.id}>
                 <Link
                   href={item.payload.url}
                   onClick={() => setOpen(false)}
                   className={cn(
-                    "flex gap-2 px-3 py-2.5 transition-colors hover:bg-hover",
+                    "archive-notification-item flex gap-2 px-3 py-2.5 transition-colors hover:bg-hover",
                     item.readAt ? null : "bg-primary-tint",
                   )}
                 >

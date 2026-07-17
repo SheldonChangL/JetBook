@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { getTranslations } from "next-intl/server";
-import { Paperclip } from "lucide-react";
+import { Paperclip, Search as SearchIcon } from "lucide-react";
 import { requireSession } from "@/lib/auth/current";
 import { fullTextSearch } from "@/lib/search/fulltext";
 import { searchAttachmentsByName } from "@/lib/search/attachments";
@@ -50,8 +50,12 @@ export default async function SearchPage({
     : [[], []];
 
   return (
-    <div className="mx-auto max-w-3xl px-6 py-8">
-      <h1 className="mb-4 text-h1 text-fg">{t("title")}</h1>
+    <div className="archive-search-page mx-auto max-w-3xl px-6 py-8">
+      <header className="archive-search-header">
+        <p className="archive-search-kicker ui-archive-only">{t("archiveKicker")}</p>
+        <h1 className="mb-4 text-h1 text-fg">{t("title")}</h1>
+        <p className="archive-search-subtitle ui-archive-only">{t("archiveSubtitle")}</p>
+      </header>
       <SearchResults
         initialQuery={q}
         initialHits={hits}
@@ -73,18 +77,24 @@ export default async function SearchPage({
           allAuthors: t("filters.allAuthors"),
           authorSearchPlaceholder: t("filters.authorSearchPlaceholder"),
           authorEmpty: t("filters.authorEmpty"),
+          filterHeading: t("archiveFilterHeading"),
+          resultsHeading: t("archiveResultsHeading"),
+          resultCount: t("archiveResultCount", { count: hits.length }),
         }}
       />
 
       {attachmentHits.length > 0 && (
-        <section className="mt-8 flex flex-col gap-2">
-          <h2 className="text-caption font-medium text-fg-tertiary">
-            {t("attachmentsHeading", { count: attachmentHits.length })}
-          </h2>
-          <ul className="flex flex-col divide-y divide-edge rounded-md border border-edge">
+        <section className="archive-search-attachments mt-8 flex flex-col gap-2">
+          <div className="archive-search-section-heading">
+            <span className="ui-archive-only"><SearchIcon aria-hidden />{t("archiveAttachmentIndex")}</span>
+            <h2 className="text-caption font-medium text-fg-tertiary">
+              {t("attachmentsHeading", { count: attachmentHits.length })}
+            </h2>
+          </div>
+          <ul className="archive-search-attachment-list flex flex-col divide-y divide-edge rounded-md border border-edge">
             {attachmentHits.map((hit) => (
-              <li key={hit.id} className="flex items-center gap-3 px-4 py-3">
-                <Paperclip aria-hidden className="size-4 shrink-0 text-fg-tertiary" />
+              <li key={hit.id} className="archive-search-attachment-row flex items-center gap-3 px-4 py-3">
+                <span className="archive-search-file-icon"><Paperclip aria-hidden /></span>
                 <div className="min-w-0 flex-1">
                   <a
                     href={attachmentFileUrl(hit.id)}

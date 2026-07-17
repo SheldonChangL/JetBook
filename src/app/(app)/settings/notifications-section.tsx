@@ -37,12 +37,12 @@ export function NotificationsSection({
   }
 
   return (
-    <section className="flex flex-col gap-4 rounded-md border border-edge p-5">
+    <section id="notifications" className="archive-personal-section archive-notification-settings flex flex-col gap-4 rounded-md border border-edge p-5">
       <div>
         <h2 className="text-h3 text-fg">{t("notificationsHeading")}</h2>
         <p className="text-body-ui text-fg-secondary">{t("notificationsDesc")}</p>
       </div>
-      <ul className="flex flex-col gap-3">
+      <ul className="archive-notification-preferences flex flex-col gap-3">
         {EMAIL_NOTIFICATION_TYPES.map((type) => (
           <li key={type} className="flex items-center justify-between gap-4">
             <span className="text-body-ui text-fg">{t(`emailNotif.${type}`)}</span>

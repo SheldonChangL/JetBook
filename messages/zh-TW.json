@@ -155,6 +155,7 @@
   },
   "apiDocs": {
     "title": "API 文件",
+    "archiveKicker": "DEVELOPER INTERFACE / REST v1",
     "backToSettings": "返回個人設定",
     "rawSpec": "下載 OpenAPI 規格（openapi.json）",
     "params": "參數：{list}",
@@ -263,7 +264,8 @@
     "pageMention": "{actor} 在「{title}」提及了你",
     "pageMentionNoTitle": "{actor} 在一個頁面提及了你",
     "genericEvent": "你有一則新通知",
-    "unreadBadgeMax": "9+"
+    "unreadBadgeMax": "9+",
+    "archiveKicker": "ACTIVITY / INBOX"
   },
   "errors": {
     "notFound": {
@@ -540,6 +542,12 @@
     "title": "搜尋",
     "searchPlaceholder": "搜尋…",
     "noResults": "找不到符合的結果",
+    "archiveKicker": "DISCOVERY / KNOWLEDGE INDEX",
+    "archiveSubtitle": "跨空間搜尋頁面與附件；Cmd+K 同時提供語意相關結果與 AI 問答。",
+    "archiveFilterHeading": "縮小索引範圍",
+    "archiveResultsHeading": "頁面結果",
+    "archiveResultCount": "{count} 筆頁面結果",
+    "archiveAttachmentIndex": "附件索引",
     "attachmentsHeading": "附件（{count}）",
     "attachmentPageLocation": "{space}／{page}",
     "untitledPage": "未命名頁面",
@@ -572,7 +580,11 @@
     "hintSelect": "選擇",
     "hintOpen": "開啟",
     "hintNewTab": "新分頁",
-    "hintClose": "關閉"
+    "hintClose": "關閉",
+    "archiveLayer": "COMMAND / 探索工作層",
+    "archiveScopeFullText": "全文索引",
+    "archiveScopeSemantic": "全文＋語意",
+    "archiveScopeAi": "AI 可用"
   },
   "editor": {
     "back": "返回",
@@ -1213,6 +1225,8 @@
   "settings": {
     "title": "個人設定",
     "subtitle": "管理你的基本資料、密碼與外觀偏好",
+    "archiveKicker": "IDENTITY / PERSONAL CONTROL",
+    "archiveNavLabel": "個人設定區段",
     "notificationsHeading": "Email 通知",
     "notificationsDesc": "站內通知同時寄送 Email 提醒（需系統已設定 SMTP）。",
     "emailNotifEnabled": "寄送",
@@ -1314,6 +1328,8 @@
     "historyEmpty": "尚無歷史對話",
     "historyLoading": "載入中…",
     "historyError": "載入歷史失敗",
-    "untitledConversation": "未命名對話"
+    "untitledConversation": "未命名對話",
+    "archiveContext": "權限隔離知識檢索",
+    "archiveConnected": "AI 工作層已連線"
   }
 }

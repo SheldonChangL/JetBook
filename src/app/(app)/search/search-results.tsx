@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+import { FileText, Search, SlidersHorizontal } from "lucide-react";
 import type { SearchHit } from "@/lib/search/fulltext";
 import { Combobox, type ComboboxOption } from "@/components/ui/combobox";
 import { Input } from "@/components/ui/input";
@@ -32,6 +33,9 @@ interface SearchLabels {
   allAuthors: string;
   authorSearchPlaceholder: string;
   authorEmpty: string;
+  filterHeading: string;
+  resultsHeading: string;
+  resultCount: string;
 }
 
 /** 「全部」哨兵值：Radix Select item value 不可為空字串，故以 "all" 表示未篩選。 */
@@ -91,15 +95,24 @@ export function SearchResults({
   }, [query, initialQuery, selectedSpace, selectedUpdated, selectedAuthor, router]);
 
   return (
-    <div className="flex flex-col gap-4">
-      <Input
-        autoFocus
-        value={query}
-        onChange={(e) => setQuery(e.target.value)}
-        placeholder={labels.searchPlaceholder}
-      />
+    <div className="archive-search-workspace flex flex-col gap-4">
+      <div className="archive-search-query">
+        <Search aria-hidden className="ui-archive-only" />
+        <Input
+          autoFocus
+          value={query}
+          onChange={(e) => setQuery(e.target.value)}
+          placeholder={labels.searchPlaceholder}
+          className="archive-search-input"
+        />
+        <span className="archive-search-count ui-archive-only">{labels.resultCount}</span>
+      </div>
 
-      <div className="flex flex-wrap gap-3">
+      <div className="archive-search-filter-heading ui-archive-only">
+        <SlidersHorizontal aria-hidden />
+        <span>{labels.filterHeading}</span>
+      </div>
+      <div className="archive-search-filters flex flex-wrap gap-3">
         {/* Space 過濾 */}
         <label className="flex min-w-40 flex-1 flex-col gap-1">
           <span className="text-caption text-fg-tertiary">{labels.spaceLabel}</span>
@@ -160,25 +173,38 @@ export function SearchResults({
       </div>
 
       {initialQuery.trim() && initialHits.length === 0 ? (
-        <p className="text-body-ui text-fg-tertiary">{labels.noResults}</p>
+        <p className="archive-search-empty text-body-ui text-fg-tertiary">{labels.noResults}</p>
       ) : (
-        <ul className="flex flex-col gap-2">
-          {initialHits.map((hit) => (
-            <li key={hit.pageId}>
-              <Link
-                href={`/s/${hit.spaceSlug}/${hit.slug}`}
-                className="block rounded-md border border-edge bg-raised p-3 transition-shadow hover:shadow-sm"
-              >
-                <div className="text-body-ui font-medium text-fg">{hit.title}</div>
-                <div className="text-caption text-fg-tertiary">{hit.spaceName}</div>
-                <div
-                  className="mt-1 line-clamp-2 text-caption text-fg-secondary [&_mark]:bg-primary-tint [&_mark]:text-primary"
-                  dangerouslySetInnerHTML={{ __html: hit.snippet }}
-                />
-              </Link>
-            </li>
-          ))}
-        </ul>
+        <>
+          {initialQuery.trim() && initialHits.length > 0 ? (
+            <div className="archive-search-section-heading ui-archive-only">
+              <span><FileText aria-hidden />{labels.resultsHeading}</span>
+              <strong>{labels.resultCount}</strong>
+            </div>
+          ) : null}
+          <ul className="archive-search-results flex flex-col gap-2">
+            {initialHits.map((hit) => (
+              <li key={hit.pageId}>
+                <Link
+                  href={`/s/${hit.spaceSlug}/${hit.slug}`}
+                  className="archive-search-result-row block rounded-md border border-edge bg-raised p-3 transition-shadow hover:shadow-sm"
+                >
+                  <span className="archive-search-result-icon ui-archive-only" aria-hidden>
+                    {hit.icon ?? <FileText />}
+                  </span>
+                  <span className="archive-search-result-copy">
+                    <span className="block text-body-ui font-medium text-fg">{hit.title}</span>
+                    <span className="block text-caption text-fg-tertiary">{hit.spaceName}</span>
+                    <span
+                      className="mt-1 line-clamp-2 text-caption text-fg-secondary [&_mark]:bg-primary-tint [&_mark]:text-primary"
+                      dangerouslySetInnerHTML={{ __html: hit.snippet }}
+                    />
+                  </span>
+                </Link>
+              </li>
+            ))}
+          </ul>
+        </>
       )}
     </div>
   );

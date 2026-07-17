@@ -60,7 +60,7 @@ export function PasswordSection({ isLocal }: { isLocal: boolean }) {
   }
 
   return (
-    <section aria-labelledby="password-heading" className="flex flex-col gap-3">
+    <section id="password" aria-labelledby="password-heading" className="archive-personal-section flex flex-col gap-3">
       <div className="flex flex-col gap-1">
         <h2 id="password-heading" className="text-h4 text-fg">
           {t("passwordHeading")}
@@ -71,7 +71,7 @@ export function PasswordSection({ isLocal }: { isLocal: boolean }) {
       {isLocal ? (
         <form
           onSubmit={onSubmit}
-          className="flex flex-col gap-4 rounded-md border border-edge bg-raised p-4"
+          className="archive-personal-card flex flex-col gap-4 rounded-md border border-edge bg-raised p-4"
         >
           <Input
             type="password"

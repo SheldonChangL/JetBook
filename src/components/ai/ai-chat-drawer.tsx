@@ -8,7 +8,7 @@ import {
 } from "react";
 import { useRouter } from "next/navigation";
 import { useTranslations } from "next-intl";
-import { AlertTriangle, ArrowUp, Plus, Sparkles, Square } from "lucide-react";
+import { AlertTriangle, ArrowUp, BookLock, Plus, Sparkles, Square } from "lucide-react";
 import { Drawer, DrawerContent } from "@/components/ui/drawer";
 import { EmptyState } from "@/components/ui/empty-state";
 import { IconButton } from "@/components/ui/icon-button";
@@ -139,13 +139,22 @@ export function AiChatDrawer({ open, onOpenChange }: AiChatDrawerProps) {
 
   return (
     <Drawer open={open} onOpenChange={onOpenChange}>
-      <DrawerContent title={t("title")} closeLabel={t("closeLabel")} headerActions={headerActions}>
-        <div className="flex h-full min-h-0 flex-col">
+      <DrawerContent
+        title={t("title")}
+        closeLabel={t("closeLabel")}
+        headerActions={headerActions}
+        className="archive-ai-drawer"
+      >
+        <div className="archive-ai-workspace flex h-full min-h-0 flex-col">
+          <div className="archive-ai-context ui-archive-only">
+            <span><BookLock aria-hidden />{t("archiveContext")}</span>
+            <span>{t("archiveConnected")}</span>
+          </div>
           {/* 訊息串（串流逐字更新以 aria-live 播報） */}
-          <div ref={scrollRef} className="min-h-0 flex-1 overflow-y-auto px-4 py-4" aria-live="polite">
+          <div ref={scrollRef} className="archive-ai-thread min-h-0 flex-1 overflow-y-auto px-4 py-4" aria-live="polite">
             {messages.length === 0 ? (
               <EmptyState
-                className="h-full py-0"
+                className="archive-ai-empty h-full py-0"
                 icon={<Sparkles />}
                 title={t("emptyTitle")}
                 description={t("emptyDescription")}
@@ -156,7 +165,7 @@ export function AiChatDrawer({ open, onOpenChange }: AiChatDrawerProps) {
                   m.role === "user" ? (
                     <div
                       key={m.id}
-                      className="max-w-[85%] self-end rounded-lg rounded-br-xs bg-primary-tint px-3 py-2 text-body-ui text-fg"
+                      className="archive-ai-user-message max-w-[85%] self-end rounded-lg rounded-br-xs bg-primary-tint px-3 py-2 text-body-ui text-fg"
                     >
                       {m.text}
                     </div>
@@ -175,7 +184,7 @@ export function AiChatDrawer({ open, onOpenChange }: AiChatDrawerProps) {
 
                 {/* 狀態列：檢索中 → 找到 N 篇生成中（含停止生成） */}
                 {isStreaming ? (
-                  <div className="flex items-center gap-2 text-caption text-fg-tertiary">
+                  <div className="archive-ai-stream-status flex items-center gap-2 text-caption text-fg-tertiary">
                     <span className="inline-block size-3 shrink-0 animate-spin rounded-full border-[1.5px] border-ai border-t-transparent" />
                     <span>
                       {status === "retrieving"
@@ -201,7 +210,7 @@ export function AiChatDrawer({ open, onOpenChange }: AiChatDrawerProps) {
                 {error ? (
                   <div
                     role="alert"
-                    className="flex items-start gap-2 rounded-sm border border-danger/40 bg-danger-tint px-3 py-2 text-caption text-danger"
+                    className="archive-ai-error flex items-start gap-2 rounded-sm border border-danger/40 bg-danger-tint px-3 py-2 text-caption text-danger"
                   >
                     <AlertTriangle aria-hidden className="mt-0.5 size-3.5 shrink-0" />
                     <div className="flex-1">
@@ -221,8 +230,8 @@ export function AiChatDrawer({ open, onOpenChange }: AiChatDrawerProps) {
           </div>
 
           {/* 底部輸入區 + 免責 caption */}
-          <div className="shrink-0 border-t border-edge bg-base px-4 pb-2.5 pt-3">
-            <div className="flex items-end gap-2 rounded-md border border-edge-strong bg-base px-3 py-2 focus-within:border-ai focus-within:ring-3 focus-within:ring-ai-tint">
+          <div className="archive-ai-composer shrink-0 border-t border-edge bg-base px-4 pb-2.5 pt-3">
+            <div className="archive-ai-composer-field flex items-end gap-2 rounded-md border border-edge-strong bg-base px-3 py-2 focus-within:border-ai focus-within:ring-3 focus-within:ring-ai-tint">
               <textarea
                 ref={inputRef}
                 rows={1}
@@ -297,7 +306,7 @@ function AssistantMessage({
   );
 
   return (
-    <div className="flex flex-col gap-2">
+    <div className="archive-ai-answer flex flex-col gap-2">
       <div className="text-body-ui leading-6 text-fg">
         <AnswerContent text={message.text} onCite={onCite} citeLabel={citeLabel} />
         {streaming ? (
