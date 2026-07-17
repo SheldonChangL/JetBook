@@ -40,10 +40,10 @@ export default async function SpaceLayout({
   const tShell = await getTranslations("shell");
 
   return (
-    <div className="flex h-full">
+    <div className="archive-space-layout flex h-full">
       <aside
         aria-label={space.name}
-        className="hidden w-[260px] shrink-0 flex-col border-r border-edge bg-sidebar md:flex"
+        className="archive-space-tree hidden w-[260px] shrink-0 flex-col border-r border-edge bg-sidebar md:flex"
       >
         <div className="min-h-0 flex-1 overflow-y-auto">
           <PageTree spaceId={space.id} spaceSlug={space.slug} nodes={nodes} canEdit={canEdit} />
@@ -60,7 +60,7 @@ export default async function SpaceLayout({
           </div>
         ) : null}
       </aside>
-      <div className="min-w-0 flex-1 overflow-y-auto">{children}</div>
+      <div className="archive-space-content min-w-0 flex-1 overflow-y-auto">{children}</div>
     </div>
   );
 }

@@ -600,8 +600,8 @@ export function PageTree({ spaceId, spaceSlug, nodes, canEdit }: PageTreeProps) 
   }
 
   return (
-    <div className="flex flex-col py-2">
-      <div className="flex h-8 items-center justify-between pl-3 pr-2">
+    <div className="archive-page-tree flex flex-col py-2">
+      <div className="archive-page-tree-header flex h-8 items-center justify-between pl-3 pr-2">
         <span className="text-caption font-medium text-fg-tertiary">{t("label")}</span>
         {canEdit ? (
           <div className="flex items-center gap-0.5">
@@ -708,7 +708,7 @@ export function PageTree({ spaceId, spaceSlug, nodes, canEdit }: PageTreeProps) 
         <ul
           role="tree"
           aria-label={t("label")}
-          className="px-1"
+          className="archive-page-tree-list px-1"
           onKeyDown={onTreeKeyDown}
           onDragLeave={canEdit ? onTreeDragLeave : undefined}
         >
@@ -727,10 +727,10 @@ export function PageTree({ spaceId, spaceSlug, nodes, canEdit }: PageTreeProps) 
               else itemRefs.current.delete(node.id);
             };
             return (
-              <li key={node.id} role="none">
+              <li key={node.id} role="none" className="archive-page-tree-row">
                 <div
                   className={cn(
-                    "group relative flex h-[30px] items-center gap-0.5 rounded-sm pr-1",
+                    "archive-page-tree-row-inner group relative flex h-[30px] items-center gap-0.5 rounded-sm pr-1",
                     isCurrent ? "bg-primary-tint" : "hover:bg-hover",
                     dragId === node.id && "opacity-50",
                     isDropInside && "bg-primary-tint ring-1 ring-inset ring-primary",

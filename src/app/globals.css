@@ -1744,6 +1744,82 @@ html[data-ui-version="archive"] .archive-dashboard-updates > li {
   }
 }
 
+/* UI v2 slice 2 — Space Dock／page tree：同一棵樹保留完整 DnD、鍵盤與選單行為。 */
+html[data-ui-version="archive"] .archive-space-layout {
+  min-height: 100%;
+  flex-direction: column;
+}
+
+html[data-ui-version="archive"] .archive-space-tree {
+  display: flex;
+  width: 100%;
+  max-height: min(320px, 44dvh);
+  border-right: 0;
+  border-bottom: 1px solid var(--border-strong);
+  background: var(--bg-sidebar);
+}
+
+html[data-ui-version="archive"] .archive-page-tree {
+  padding-block: 0;
+}
+
+html[data-ui-version="archive"] .archive-page-tree-header {
+  height: 44px;
+  padding-inline: 12px 8px;
+  border-bottom: 1px solid var(--border-default);
+}
+
+html[data-ui-version="archive"] .archive-page-tree-header > span:first-child {
+  color: var(--text-secondary);
+  font-family: var(--font-mono);
+  font-size: 10px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+html[data-ui-version="archive"] .archive-page-tree-list {
+  padding: 8px;
+}
+
+html[data-ui-version="archive"] .archive-page-tree-row-inner {
+  height: 34px;
+  border-radius: var(--radius-xs);
+}
+
+html[data-ui-version="archive"] .archive-page-tree-row + .archive-page-tree-row {
+  margin-top: 2px;
+}
+
+html[data-ui-version="archive"] .archive-page-tree-row-inner:has([aria-current="page"]) {
+  border: 1px solid var(--border-strong);
+  background: transparent;
+}
+
+html[data-ui-version="archive"] .archive-page-tree-row-inner:has([aria-current="page"]) > span[aria-hidden]:first-of-type {
+  inset-block: 0;
+  width: 3px;
+  border-radius: 0;
+  background: var(--archive-index);
+}
+
+html[data-ui-version="archive"] .archive-space-tree > :last-child a {
+  min-height: 36px;
+  border-radius: var(--radius-xs);
+}
+
+@media (min-width: 768px) {
+  html[data-ui-version="archive"] .archive-space-layout {
+    flex-direction: row;
+  }
+
+  html[data-ui-version="archive"] .archive-space-tree {
+    width: 244px;
+    max-height: none;
+    border-right: 1px solid var(--border-strong);
+    border-bottom: 0;
+  }
+}
+
 /* UI v2 slice 2 — Spaces／Collections：以檔案索引呈現分組與管理動作。 */
 html[data-ui-version="archive"] .archive-spaces-page {
   width: 100%;
