@@ -1,5 +1,8 @@
 import { describe, expect, it } from "vitest";
-import { shouldShowArchiveGlobalDock } from "@/lib/archive-navigation";
+import {
+  getArchiveSidebarPresentation,
+  shouldShowArchiveGlobalDock,
+} from "@/lib/archive-navigation";
 
 describe("shouldShowArchiveGlobalDock", () => {
   it("shows the global dock on non-Space routes when it is expanded", () => {
@@ -17,5 +20,15 @@ describe("shouldShowArchiveGlobalDock", () => {
   it("keeps a persisted collapsed dock hidden on every route", () => {
     expect(shouldShowArchiveGlobalDock("/", true, true)).toBe(false);
     expect(shouldShowArchiveGlobalDock("/s/handbook", true, true)).toBe(false);
+  });
+
+  it("uses one expanded sidebar on global routes instead of a separate rail plus dock", () => {
+    expect(getArchiveSidebarPresentation("/", false, false)).toBe("expanded");
+    expect(getArchiveSidebarPresentation("/spaces", false, false)).toBe("expanded");
+  });
+
+  it("uses a compact rail when the global dock is hidden", () => {
+    expect(getArchiveSidebarPresentation("/", true, false)).toBe("compact");
+    expect(getArchiveSidebarPresentation("/s/handbook", false, false)).toBe("compact");
   });
 });

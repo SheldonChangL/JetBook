@@ -26,7 +26,7 @@
 | `/forgot-password`   | Email 送出、未知帳號防枚舉、成功提示                                           | 矩陣                           | 1          |
 | `/reset-password`    | token 有效／失效／過期、密碼規則、成功登入                                     | 矩陣                           | 1          |
 | App Shell            | Logo、全域搜尋、建立、AI、通知、主題、使用者選單                               | 四張主圖                       | 1          |
-| App Shell sidebar    | Dashboard、Spaces、全域回收桶、Collection 分組、Space 列表、收合與行動 overlay | Dashboard／閱讀主圖            | 1、2       |
+| App Shell sidebar    | 單一 Archive Sidebar、compact rail、Dashboard、Spaces、全域回收桶、Collection 分組、Space 列表、收合與行動 overlay | Dashboard／閱讀主圖            | 1、2       |
 | Admin Shell          | 使用者、群組、Space、AI、稽核、系統、返回 App                                  | 矩陣                           | 1、6       |
 | User menu            | 個人設定、管理後台權限顯示、登出                                               | Dashboard 主圖                 | 1          |
 | Theme                | `light`／`dark`／`system`、SSR 防 FOUC、本機覆蓋、快捷鍵                       | 全部主圖具 light／dark 對照    | 1          |

@@ -144,6 +144,14 @@ Next.js（App Router、TS strict）全端 + PostgreSQL 16/pgvector/pgroonga + Do
 - [x] 驗證：lint ✅ typecheck ✅ 單元 539/539（新增 build-info 7 條，含注入端到端 mock env→getBuildInfo）✅ next build ✅ worker build ✅；dev runtime `curl /api/healthz` 回 `{status,version,commit}`（fallback 值）✅、對照組舊 image 僅回 `{status:"ok"}`；登入頁 dev server 零 console error。**GUI badge 登入後畫面因安全規則不代輸密碼登入，交使用者/部署確認**
 - [x] branch `feature/issue-267-build-version-badge` — PR #268（Fixes #267）
 
+### UI Design v2 App Shell 側欄回饋修正（2026-07-17，#269／PR #270）
+
+- [x] 回應使用者截圖回饋「左側兩條 bar 滿奇怪」：Archive App Shell 展開狀態由深色 Command Rail＋淺色 Space Dock 兩個相鄰 sidebar，改為 288px 單一 Archive Sidebar；品牌、首頁、所有空間、搜尋、個人設定與 Space Dock 共用同一 surface
+- [x] 收合狀態保留 72px compact rail，`Cmd/Ctrl+\`、收合按鈕、行動版 Drawer、Legacy fallback、既有 route/action/authz/data flow 均不變
+- [x] 測試與 QA：`getArchiveSidebarPresentation` 單元 guard；N-02 smoke 新增 Archive desktop 只有一個 visible aside 且含 `SPACE DOCK` 的回歸斷言；production browser QA 覆蓋 320／768／1024／1440 × light／dark，確認 1024/1440 展開只有一個 288px sidebar、收合只有一個 72px rail、320/768 無 desktop aside、零水平溢位與零 console warning/error
+- [x] 驗證：lint ✅ typecheck ✅ 單元 541/541 ✅ 整合 304/304（含 N-04）✅ production N-02 smoke ✅ production build ✅ worker build ✅
+- [x] 文件同步：`docs/design/ui-design-v2.md` 與 `docs/design/mockups-v2/feature-coverage.md` 改為展開單一 sidebar／收合 compact rail 模型
+
 ### 尚未完成（v1 之後）
 - **UI Design v2 已完成**：#251／PR #252、#253／PR #254、#255／PR #256、#257／PR #258、#259／PR #260、#261／PR #262 六批與 #263／PR #264 編輯體驗迭代皆完成實作及本機驗證；Legacy fallback 依漸進 rollout 決策暫時保留
 - **#93 M4 backlog**：變更請求、行內評論、webhooks（暫停）、PDF 匯出、KaTeX、多欄、snippets、內容分析等——其餘候選項依回饋再拆
@@ -153,9 +161,9 @@ Next.js（App Router、TS strict）全端 + PostgreSQL 16/pgvector/pgroonga + Do
 ## GitHub 執行狀態
 
 - Repo：https://github.com/SheldonChangL/JetBook（private）
-- Issues：#93 追蹤 M4 backlog；Archive Studio UI v2 由 #251／PR #252、#253／PR #254、#255／PR #256、#257／PR #258、#259／PR #260、#261／PR #262 六批交付，#263／PR #264 交付編輯體驗迭代；#265／PR #266 修正重複完成按鈕回歸
+- Issues：#93 追蹤 M4 backlog；Archive Studio UI v2 由 #251／PR #252、#253／PR #254、#255／PR #256、#257／PR #258、#259／PR #260、#261／PR #262 六批交付，#263／PR #264 交付編輯體驗迭代；#265／PR #266 修正重複完成按鈕回歸；#269 修正 App Shell 雙側欄視覺
 - Milestones：M0 10/10 ✅／M1 42/42 ✅／M2 16/16 ✅／M3 23/23 ✅／M4 已交付 15 功能＋多項修復（backlog 追蹤 #93）
-- 工作流：branch `feature/issue-<n>-<slug>` → PR（Fixes #n）→ squash merge（使用者已授權 self-merge）；目前分支 `feature/issue-267-build-version-badge`（#267 build 版本識別）
+- 工作流：branch `feature/issue-<n>-<slug>` → PR（Fixes #n）→ squash merge（使用者已授權 self-merge）；目前分支 `feature/issue-269-archive-sidebar-merge`（#269 Archive App Shell 側欄整併）
 
 ## 已完成
 

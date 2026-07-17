@@ -1,11 +1,13 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useTranslations } from "next-intl";
 import { PanelLeftClose } from "lucide-react";
 import { AiChatDrawer } from "@/components/ai/ai-chat-drawer";
-import { shouldShowArchiveGlobalDock } from "@/lib/archive-navigation";
+import { ArchiveMark } from "@/components/brand/archive-mark";
+import { getArchiveSidebarPresentation } from "@/lib/archive-navigation";
 import { Drawer, DrawerContent } from "@/components/ui/drawer";
 import { IconButton } from "@/components/ui/icon-button";
 import type { AppShellProps } from "./app-shell";
@@ -47,11 +49,12 @@ export function ArchiveAppShell({
     setSpaceGlobalDockOpen(false);
   }, [pathname]);
 
-  const showGlobalDock = shouldShowArchiveGlobalDock(
+  const sidebarPresentation = getArchiveSidebarPresentation(
     pathname,
     dockCollapsed,
     spaceGlobalDockOpen,
   );
+  const showGlobalDock = sidebarPresentation === "expanded";
 
   useEffect(() => {
     function onKey(event: KeyboardEvent) {
@@ -106,12 +109,56 @@ export function ArchiveAppShell({
     <div className="archive-shell flex h-dvh flex-col bg-base">
       <OfflineBanner />
       <div className="flex min-h-0 flex-1">
-        <ArchiveCommandRail
-          llmConfigured={llmConfigured}
-          aiOpen={aiOpen}
-          onSearch={() => setPaletteOpen(true)}
-          onAi={() => setAiOpen((current) => !current)}
-        />
+        {showGlobalDock ? (
+          <aside
+            aria-label={t("archiveRail")}
+            className="archive-unified-sidebar hidden w-[288px] shrink-0 flex-col border-r border-edge bg-sidebar lg:flex"
+          >
+            <div className="flex h-14 shrink-0 items-center gap-2 border-b border-edge px-3">
+              <Link
+                href="/"
+                aria-label={tc("appName")}
+                className="flex min-w-0 flex-1 items-center gap-2 text-fg"
+              >
+                <span className="grid size-9 shrink-0 place-items-center rounded-xs bg-[var(--archive-index)] text-[var(--archive-index-ink)]">
+                  <ArchiveMark className="size-6 [&_path]:stroke-current [&_path:first-child]:fill-transparent" />
+                </span>
+                <span className="min-w-0">
+                  <strong className="block truncate text-body-ui font-semibold">
+                    {tc("appName")}
+                  </strong>
+                  <small className="block truncate font-mono text-[9px] tracking-[0.14em] text-fg-tertiary">
+                    {t("archiveKicker")}
+                  </small>
+                </span>
+              </Link>
+              <IconButton label={t("collapseSidebar")} onClick={collapseDock}>
+                <PanelLeftClose className="size-4" />
+              </IconButton>
+            </div>
+            <ArchiveCommandRail
+              presentation="expanded"
+              llmConfigured={llmConfigured}
+              aiOpen={aiOpen}
+              onSearch={() => setPaletteOpen(true)}
+              onAi={() => setAiOpen((current) => !current)}
+            />
+            <div className="flex h-10 shrink-0 items-center border-y border-edge px-3">
+              <p className="font-mono text-[10px] font-medium tracking-[0.14em] text-fg-tertiary">
+                {t("archiveDock")}
+              </p>
+            </div>
+            <div className="min-h-0 flex-1 overflow-y-auto px-2 py-3">{sidebar}</div>
+          </aside>
+        ) : (
+          <ArchiveCommandRail
+            presentation="compact"
+            llmConfigured={llmConfigured}
+            aiOpen={aiOpen}
+            onSearch={() => setPaletteOpen(true)}
+            onAi={() => setAiOpen((current) => !current)}
+          />
+        )}
 
         <div className="flex min-w-0 flex-1 flex-col">
           <ArchiveTopbar
@@ -132,20 +179,6 @@ export function ArchiveAppShell({
           />
 
           <div className="flex min-h-0 flex-1">
-            {showGlobalDock ? (
-              <aside className="hidden w-[252px] shrink-0 flex-col border-r border-edge bg-sidebar lg:flex">
-                <div className="flex h-12 shrink-0 items-center justify-between border-b border-edge px-3">
-                  <p className="font-mono text-[10px] font-medium tracking-[0.14em] text-fg-tertiary">
-                    {t("archiveDock")}
-                  </p>
-                  <IconButton label={t("collapseSidebar")} onClick={collapseDock}>
-                    <PanelLeftClose className="size-4" />
-                  </IconButton>
-                </div>
-                <div className="min-h-0 flex-1 overflow-y-auto px-2 py-3">{sidebar}</div>
-              </aside>
-            ) : null}
-
             <main className="archive-canvas min-w-0 flex-1 overflow-y-auto bg-base">
               {children}
             </main>
