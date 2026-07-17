@@ -106,9 +106,10 @@ Next.js（App Router、TS strict）全端 + PostgreSQL 16/pgvector/pgroonga + Do
 
 ### UI Design v2 第五批（2026-07-17，#259，進行中）
 
-- [ ] Archive 搜尋、Cmd+K、AI、通知、個人設定、API Token／Docs presentation
-- [ ] Legacy 與 rollout 回退、既有路由／action／權限／搜尋／AI／Token 規則保持不變
-- [ ] Production browser QA 與本機品質閘門
+- [x] Archive 搜尋、Cmd+K、AI Drawer／歷史／引用、通知、個人設定、API Token 與 API Docs presentation；功能覆蓋矩陣同步校正 `/search` 全文／附件與 Cmd+K 語意搜尋的實際邊界
+- [x] Legacy 與 rollout 回退保持可用；既有路由、Server Action、REST、MCP、SSE、schema、authz、全文／語意搜尋、AI governance 與 Token 規則不變
+- [x] Browser QA：320／768／1024／1440、light／dark、搜尋／設定／API Docs 零水平溢位與零 console warning/error；Cmd+K 全文／語意／AI、繁中 IME、AI SSE／引用／歷史、通知空狀態、Token Modal、Archive ⇄ Legacy 查詢狀態保留均通過。QA 抓出並修正 Cmd+K 關閉焦點未復原及 Token Modal 未聚焦名稱欄
+- [x] 本機品質閘門：lint ✅ typecheck ✅ 單元 532/532 ✅ 整合 304/304（含 N-04）✅ N-02 Playwright 2/2（Archive rollout）✅ production build ✅ production bundle browser smoke ✅
 - [ ] PR／CI 全綠後 squash merge
 
 ### 尚未完成（v1 之後）
@@ -178,8 +179,8 @@ Space 封存/軟刪、跨 Space 移動複製、死鏈標示、附件 GC、Tabs/�
 
 ## 下一步
 
-1. 完成 #259 Archive 搜尋、Cmd+K、全域 AI、通知、個人設定、API Token／Docs presentation
-2. #259 browser QA 與本機／CI N-02、N-04 全綠後 squash merge
+1. Push #259 分支、開 PR，等待 Validate／N-02 全綠後 squash merge
+2. 建立 UI Design v2 slice 6 issue：管理後台、全站 responsive／無障礙與視覺回歸收尾
 3. 部署到公司內部伺服器：`.env` 填正式值（含 SMTP_*；要開 Office 預覽加 `PREVIEW_CONVERTER_URL=http://gotenberg:3000`）、`docker compose up -d --build`、跑 `db:migrate`（0020）
 4. 串接真實 AI 端點（ANTHROPIC_API_KEY + local BGE-M3）；MCP 依 docs/guides/mcp-server.md 讓 Claude 接上知識庫（每人自建 API token；寫入需勾選 write scope）
 5. 其餘 backlog 候選見 #93（變更請求、行內評論、webhooks、PDF 匯出、KaTeX 等，依回饋再拆）
