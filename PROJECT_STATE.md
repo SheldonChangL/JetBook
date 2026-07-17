@@ -91,7 +91,7 @@ Next.js（App Router、TS strict）全端 + PostgreSQL 16/pgvector/pgroonga + Do
 
 - [x] Archive 閱讀工作區、H2／H3 TOC scroll-spy、內容 renderer、留言 Inspector、版本歷史／差異／還原、附件與 PDF／Office 預覽 presentation
 - [x] Legacy 與 rollout 回退、既有路由／action／權限／資料規則保持不變；無 schema、REST、MCP、SSE 或 authz 變更
-- [x] Production browser QA：Reader light／dark、TOC 錨點、留言新增／刪除、版本任兩版比較、還原 Modal Esc＋focus restore、Archive ⇄ Legacy；Playwright 320／768／1024／1440 light／dark 零水平溢位、零 console warning/error 與非預期 request failure
+- [x] Production browser QA：Reader light／dark、TOC 錨點、留言新增／刪除、版本任兩版比較、還原 Modal Esc＋focus restore、Archive ⇄ Legacy；Playwright 320／768／1024／1440 light／dark 零水平溢位、零 console warning/error 與非預期 request failure；viewer／commenter／editor／admin 實際角色驗證確認編輯入口、留言輸入與他人留言刪除權限正確
 - [x] 本機品質閘門：lint ✅ typecheck ✅ 單元 532/532 ✅ 整合 304/304（含 N-04 與 Office preview 狀態）✅ N-02 Playwright 2/2（Archive rollout）✅ production build ✅
 - [ ] PR／CI 全綠後 squash merge
 
