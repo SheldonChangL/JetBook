@@ -9,7 +9,7 @@ Next.js（App Router、TS strict）全端 + PostgreSQL 16/pgvector/pgroonga + Do
 
 ## 目前階段
 
-**v1 商品化完成 ✅（2026-07-13）。** M0–M3 全部 91 個 issue 關閉並合併；目前開放 #93 M4 backlog 與 #251 UI Design v2 第一批實作。
+**v1 商品化完成 ✅（2026-07-13）。** M0–M3 全部 91 個 issue 關閉並合併；目前開放 #93 M4 backlog 與 #253 UI Design v2 第二批實作。
 
 ### 出貨閘門與終驗證據（全數實測通過）
 - **N-02 MVP E2E 冒煙**：Playwright 全旅程（登入→建空間→建頁→編輯→閱讀→搜尋→私有隔離→登出），CI 綠（PR #151、#186 head run）
@@ -77,9 +77,16 @@ Next.js（App Router、TS strict）全端 + PostgreSQL 16/pgvector/pgroonga + Do
 - [x] Production build 真實瀏覽器驗證：320／768／1024／1440 無水平溢位、light／dark、Archive ⇄ Legacy、`off` cookie override、`opt-in`、Cmd+K、Drawer focus trap／restore、reduced-motion；除刻意載入 404 文件本身的預期 404 response 外，console warning/error 與失敗網路請求皆為零
 - [x] Browser QA 發現並修正 App／Admin 行動 Drawer 關閉後焦點未返回 trigger，以及 App Drawer 換頁後未關閉；`IconButton` 支援 ref forwarding，Playwright 同情境回歸通過
 - [x] 品質閘門：lint ✅ typecheck ✅ 單元 526/526 ✅ 整合 304/304（含 N-04）✅ N-02 Playwright 2/2 ✅ production build ✅
+- [x] PR #252 CI 全綠並已 squash merge；`UI_V2_ROLLOUT=off` 全域回退與非 off 使用者 Legacy ⇄ Archive 切換保留
+
+### UI Design v2 第二批（2026-07-17，#253，進行中）
+
+- [ ] Archive Dashboard、Spaces／Collections、Space overview／page tree、回收桶與 Space settings presentation
+- [ ] Legacy DOM／功能與 #251 rollout 回退路徑保持可用；URL、action、REST、MCP、SSE、schema、authz 不變
+- [ ] light／dark、320／768／1024／1440、鍵盤／Dialog／Drawer、reduced-motion 與 browser console/network 驗證
 
 ### 尚未完成（v1 之後）
-- **UI Design v2**：#251 第一批程式碼、browser QA 與品質閘門已完成，待 PR／CI；後續 slice 2–6 依功能覆蓋矩陣逐批遷移
+- **UI Design v2**：#251／PR #252 第一批已完成；#253 第二批進行中，後續 slice 3–6 依功能覆蓋矩陣逐批遷移
 - **#93 M4 backlog**：變更請求、行內評論、webhooks（暫停）、PDF 匯出、KaTeX、多欄、snippets、內容分析等——其餘候選項依回饋再拆
 - 真實 LLM/Embedding 端點串接為部署設定（本機開發以 mock 驗證介面）；上線時以 /admin/ai 測試連線驗證
 
@@ -87,9 +94,9 @@ Next.js（App Router、TS strict）全端 + PostgreSQL 16/pgvector/pgroonga + Do
 ## GitHub 執行狀態
 
 - Repo：https://github.com/SheldonChangL/JetBook（private）
-- Issues：開放 #93（M4 backlog 彙總）與 #251（Archive Studio foundation）；#249／PR #250 已完成 UI v2 選案
+- Issues：開放 #93（M4 backlog 彙總）與 #253（Archive workspace）；#251／PR #252 已完成 Archive foundation
 - Milestones：M0 10/10 ✅／M1 42/42 ✅／M2 16/16 ✅／M3 23/23 ✅／M4 已交付 15 功能＋多項修復（backlog 追蹤 #93）
-- 工作流：branch `feature/issue-<n>-<slug>` → PR（Fixes #n）→ squash merge（使用者已授權 self-merge）；目前分支 `feature/issue-251-archive-foundation`，active issue #251，最新已合併 PR #250
+- 工作流：branch `feature/issue-<n>-<slug>` → PR（Fixes #n）→ squash merge（使用者已授權 self-merge）；目前分支 `feature/issue-253-archive-workspace`，active issue #253，最新已合併 PR #252
 
 ## 已完成
 
@@ -145,8 +152,8 @@ Space 封存/軟刪、跨 Space 移動複製、死鏈標示、附件 GC、Tabs/�
 
 ## 下一步
 
-1. 開啟 #251 PR（Fixes #251）；CI N-02／N-04 全綠後合併
-2. 建立 UI v2 slice 2 issue：Dashboard、Spaces／Collections、頁面樹、回收桶與 Space 設定；維持相同 rollout 與 Legacy 回退
+1. 完成 #253 Archive Dashboard、Spaces／Collections、頁面樹、回收桶與 Space 設定，維持相同 rollout 與 Legacy 回退
+2. #253 全品質閘門與 browser QA 全綠後開 PR（Fixes #253），CI N-02／N-04 通過再合併
 3. 部署到公司內部伺服器：`.env` 填正式值（含 SMTP_*；要開 Office 預覽加 `PREVIEW_CONVERTER_URL=http://gotenberg:3000`）、`docker compose up -d --build`、跑 `db:migrate`（0020）
 4. 串接真實 AI 端點（ANTHROPIC_API_KEY + local BGE-M3）；MCP 依 docs/guides/mcp-server.md 讓 Claude 接上知識庫（每人自建 API token；寫入需勾選 write scope）
 5. 其餘 backlog 候選見 #93（變更請求、行內評論、webhooks、PDF 匯出、KaTeX 等，依回饋再拆）
