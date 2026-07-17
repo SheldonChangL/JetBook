@@ -52,13 +52,19 @@ export function CreateGroupButton() {
           {t("createGroup")}
         </Button>
       </ModalTrigger>
-      <ModalContent size="sm" title={t("createGroupTitle")} closeLabel={t("cancel")}>
+      <ModalContent
+        size="sm"
+        title={t("createGroupTitle")}
+        closeLabel={t("cancel")}
+        className="archive-admin-modal"
+      >
         <form action={onSubmit} className="flex flex-col gap-4">
           <Input
             name="name"
             label={t("fieldName")}
             required
             maxLength={80}
+            autoFocus
             error={error === "NAME_TAKEN" ? t("errorNameTaken") : undefined}
           />
           <Textarea name="description" label={t("fieldDescription")} maxLength={300} rows={3} />

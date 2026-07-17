@@ -7,7 +7,7 @@ import { Pencil, Trash2 } from "lucide-react";
 import { deleteGroupAction, updateGroupAction } from "@/actions/group";
 import { Button } from "@/components/ui/button";
 import { Input, Textarea } from "@/components/ui/input";
-import { Modal, ModalContent } from "@/components/ui/modal";
+import { Modal, ModalContent, ModalTrigger } from "@/components/ui/modal";
 import { useToast } from "@/components/ui/toast";
 
 /** 群組列操作（F-ADMIN-02）：重新命名（名稱／描述）、刪除（含確認）。 */
@@ -76,25 +76,18 @@ export function GroupRowActions({
 
   return (
     <>
-      <Button
-        variant="ghost"
-        size="sm"
-        onClick={() => onEditOpenChange(true)}
-        aria-label={t("edit")}
-      >
-        <Pencil aria-hidden className="size-4" />
-      </Button>
-      <Button
-        variant="ghost"
-        size="sm"
-        onClick={() => setDeleteOpen(true)}
-        aria-label={t("delete")}
-      >
-        <Trash2 aria-hidden className="size-4" />
-      </Button>
-
       <Modal open={editOpen} onOpenChange={onEditOpenChange}>
-        <ModalContent size="sm" title={t("editGroupTitle")} closeLabel={t("cancel")}>
+        <ModalTrigger asChild>
+          <Button variant="ghost" size="sm" aria-label={t("edit")}>
+            <Pencil aria-hidden className="size-4" />
+          </Button>
+        </ModalTrigger>
+        <ModalContent
+          size="sm"
+          title={t("editGroupTitle")}
+          closeLabel={t("cancel")}
+          className="archive-admin-modal"
+        >
           <form action={onSave} className="flex flex-col gap-4">
             <Input
               name="name"
@@ -102,6 +95,7 @@ export function GroupRowActions({
               defaultValue={name}
               required
               maxLength={80}
+              autoFocus
               error={error === "NAME_TAKEN" ? t("errorNameTaken") : undefined}
             />
             <Textarea
@@ -129,7 +123,17 @@ export function GroupRowActions({
       </Modal>
 
       <Modal open={deleteOpen} onOpenChange={setDeleteOpen}>
-        <ModalContent size="sm" title={t("deleteGroupTitle")} closeLabel={t("cancel")}>
+        <ModalTrigger asChild>
+          <Button variant="ghost" size="sm" aria-label={t("delete")}>
+            <Trash2 aria-hidden className="size-4" />
+          </Button>
+        </ModalTrigger>
+        <ModalContent
+          size="sm"
+          title={t("deleteGroupTitle")}
+          closeLabel={t("cancel")}
+          className="archive-admin-modal"
+        >
           <div className="flex flex-col gap-4">
             <p className="text-body-ui text-fg-secondary">{t("deleteConfirmBody", { name })}</p>
             <div className="flex justify-end gap-2">

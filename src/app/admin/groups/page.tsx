@@ -24,9 +24,10 @@ export default async function AdminGroupsPage() {
   const list = await listGroups();
 
   return (
-    <div className="mx-auto flex max-w-5xl flex-col gap-6 px-6 py-8">
-      <header className="flex items-center justify-between gap-4">
+    <div className="archive-admin-page archive-admin-groups mx-auto flex max-w-5xl flex-col gap-6 px-6 py-8">
+      <header className="archive-admin-page-header flex items-center justify-between gap-4">
         <div className="flex flex-col gap-1">
+          <p className="archive-admin-kicker ui-archive-only">{t("archiveKicker")}</p>
           <h1 className="text-h1 text-fg">{t("title")}</h1>
           <p className="text-body-ui text-fg-secondary">{t("desc")}</p>
         </div>
@@ -34,12 +35,17 @@ export default async function AdminGroupsPage() {
       </header>
 
       {list.length === 0 ? (
-        <p className="rounded-md border border-edge bg-raised px-4 py-6 text-center text-body-ui text-fg-tertiary">
+        <p className="archive-admin-empty rounded-md border border-edge bg-raised px-4 py-6 text-center text-body-ui text-fg-tertiary">
           {t("empty")}
         </p>
       ) : (
-        <div className="overflow-x-auto rounded-md border border-edge">
-          <table className="w-full text-body-ui">
+        <div
+          className="archive-admin-table-wrap overflow-x-auto rounded-md border border-edge"
+          role="region"
+          aria-label={t("title")}
+          tabIndex={0}
+        >
+          <table className="archive-admin-table w-full text-body-ui">
             <thead>
               <tr className="border-b border-edge bg-sidebar text-left text-caption text-fg-tertiary">
                 <th className="px-3 py-2 font-medium">{t("colName")}</th>

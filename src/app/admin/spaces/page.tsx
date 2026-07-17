@@ -31,8 +31,9 @@ export default async function AdminSpacesPage() {
   const dateFormat = new Intl.DateTimeFormat("zh-TW", { dateStyle: "medium", timeStyle: "short" });
 
   return (
-    <div className="mx-auto flex max-w-4xl flex-col gap-6 px-6 py-8">
-      <header className="flex flex-col gap-1">
+    <div className="archive-admin-page archive-admin-spaces mx-auto flex max-w-4xl flex-col gap-6 px-6 py-8">
+      <header className="archive-admin-page-header flex flex-col gap-1">
+        <p className="archive-admin-kicker ui-archive-only">{t("archiveSpacesKicker")}</p>
         <h1 className="text-h1 text-fg">{t("spacesTitle")}</h1>
         <p className="text-body-ui text-fg-secondary">{t("spacesDesc")}</p>
       </header>
@@ -40,8 +41,13 @@ export default async function AdminSpacesPage() {
       {list.length === 0 ? (
         <EmptyState title={t("spacesEmpty")} />
       ) : (
-        <div className="overflow-x-auto rounded-md border border-edge">
-          <table className="w-full text-body-ui">
+        <div
+          className="archive-admin-table-wrap overflow-x-auto rounded-md border border-edge"
+          role="region"
+          aria-label={t("spacesTitle")}
+          tabIndex={0}
+        >
+          <table className="archive-admin-table w-full text-body-ui">
             <thead>
               <tr className="border-b border-edge bg-sidebar text-left text-caption text-fg-tertiary">
                 <th className="px-3 py-2 font-medium">{t("spacesColSpace")}</th>

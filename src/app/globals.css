@@ -4039,3 +4039,360 @@ html[data-ui-version="archive"] .archive-api-method[data-method="delete"] {
     overflow-wrap: anywhere;
   }
 }
+
+/* Admin archive — identity, access groups and recovery queue (#261). */
+html[data-ui-version="archive"] .archive-admin-page {
+  width: 100%;
+  max-width: 1180px;
+  gap: 24px;
+  padding: 42px 48px 72px;
+}
+
+html[data-ui-version="archive"] .archive-admin-page-header {
+  min-height: 94px;
+  align-items: flex-end;
+  padding-bottom: 22px;
+  border-bottom: 1px solid var(--border-strong);
+}
+
+html[data-ui-version="archive"] .archive-admin-page-header h1 {
+  letter-spacing: -0.025em;
+}
+
+html[data-ui-version="archive"] .archive-admin-kicker {
+  display: block;
+  margin-bottom: 8px;
+  color: var(--primary);
+  font-family: var(--font-mono);
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+}
+
+html[data-ui-version="archive"] .archive-admin-subtitle {
+  display: block;
+  margin-top: 6px;
+  color: var(--text-secondary);
+  font-size: var(--text-body-ui);
+}
+
+html[data-ui-version="archive"] .archive-admin-header-actions {
+  flex: none;
+}
+
+html[data-ui-version="archive"] .archive-admin-header-actions button,
+html[data-ui-version="archive"] .archive-admin-toolbar button,
+html[data-ui-version="archive"] .archive-admin-modal,
+html[data-ui-version="archive"] .archive-admin-modal button,
+html[data-ui-version="archive"] .archive-admin-modal input,
+html[data-ui-version="archive"] .archive-admin-modal textarea {
+  border-radius: var(--radius-xs);
+}
+
+html[data-ui-version="archive"] .archive-admin-toolbar {
+  padding: 14px 0;
+  border-block: 1px solid var(--border-default);
+}
+
+html[data-ui-version="archive"] .archive-admin-table-wrap {
+  border-width: 1px 0 0;
+  border-radius: 0;
+  border-color: var(--border-strong);
+  background: transparent;
+  scrollbar-color: var(--border-strong) transparent;
+  scrollbar-width: thin;
+}
+
+html[data-ui-version="archive"] .archive-admin-table-wrap:focus-visible {
+  outline: 2px solid var(--focus-ring);
+  outline-offset: 3px;
+}
+
+html[data-ui-version="archive"] .archive-admin-table {
+  border-collapse: collapse;
+}
+
+html[data-ui-version="archive"] .archive-admin-users .archive-admin-table {
+  min-width: 980px;
+}
+
+html[data-ui-version="archive"] .archive-admin-groups .archive-admin-table {
+  min-width: 720px;
+}
+
+html[data-ui-version="archive"] .archive-admin-group-detail .archive-admin-table {
+  min-width: 640px;
+}
+
+html[data-ui-version="archive"] .archive-admin-spaces .archive-admin-table {
+  min-width: 700px;
+}
+
+html[data-ui-version="archive"] .archive-admin-table thead tr {
+  border-bottom-color: var(--border-strong);
+  background: transparent;
+}
+
+html[data-ui-version="archive"] .archive-admin-table th {
+  height: 38px;
+  color: var(--text-tertiary);
+  font-family: var(--font-mono);
+  font-size: 10px;
+  font-weight: 500;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+html[data-ui-version="archive"] .archive-admin-table tbody tr {
+  min-height: 52px;
+  border-bottom-color: var(--border-default);
+  transition: background-color 120ms ease;
+}
+
+html[data-ui-version="archive"] .archive-admin-table tbody tr:hover {
+  background: color-mix(in srgb, var(--bg-raised) 66%, transparent);
+}
+
+html[data-ui-version="archive"] .archive-admin-table td {
+  padding-block: 11px;
+}
+
+html[data-ui-version="archive"] .archive-admin-table td:first-child,
+html[data-ui-version="archive"] .archive-admin-table th:first-child {
+  padding-left: 0;
+}
+
+html[data-ui-version="archive"] .archive-admin-table td:last-child,
+html[data-ui-version="archive"] .archive-admin-table th:last-child {
+  padding-right: 0;
+}
+
+html[data-ui-version="archive"] .archive-admin-pagination {
+  min-height: 42px;
+  padding-top: 4px;
+  border-top: 1px solid var(--border-default);
+  font-family: var(--font-mono);
+  font-size: 11px;
+}
+
+html[data-ui-version="archive"] .archive-admin-pagination :is(a, span) {
+  border-radius: var(--radius-xs);
+}
+
+html[data-ui-version="archive"] .archive-admin-empty {
+  min-height: 160px;
+  display: grid;
+  place-items: center;
+  border-radius: 0;
+  border-style: dashed;
+  background: color-mix(in srgb, var(--bg-raised) 40%, transparent);
+}
+
+html[data-ui-version="archive"] .archive-admin-section {
+  padding-top: 4px;
+}
+
+html[data-ui-version="archive"] .archive-admin-modal {
+  max-height: calc(100dvh - 32px);
+  overflow-y: auto;
+  border-color: var(--border-strong);
+  border-top: 4px solid var(--archive-index);
+}
+
+html[data-ui-version="archive"] .archive-admin-modal > div:first-child {
+  padding-bottom: 10px;
+  border-bottom: 1px solid var(--border-default);
+}
+
+@media (max-width: 767px) {
+  html[data-ui-version="archive"] .archive-admin-page {
+    gap: 20px;
+    padding: 30px 20px 52px;
+  }
+
+  html[data-ui-version="archive"] .archive-admin-page-header {
+    min-height: 0;
+    align-items: stretch;
+    flex-direction: column;
+    gap: 18px;
+  }
+
+  html[data-ui-version="archive"] .archive-admin-header-actions {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    width: 100%;
+  }
+
+  html[data-ui-version="archive"] .archive-admin-header-actions button {
+    width: 100%;
+  }
+
+  html[data-ui-version="archive"] .archive-admin-toolbar {
+    align-items: stretch;
+  }
+
+  html[data-ui-version="archive"] .archive-admin-toolbar > div,
+  html[data-ui-version="archive"] .archive-admin-toolbar button {
+    width: 100%;
+    min-width: 0;
+  }
+
+  html[data-ui-version="archive"] .archive-admin-pagination {
+    align-items: flex-start;
+    flex-direction: column;
+    gap: 12px;
+  }
+
+  html[data-ui-version="archive"] .archive-admin-modal {
+    width: calc(100vw - 24px);
+    padding: 20px;
+  }
+}
+
+/* Admin archive — intelligence, governance and service ledger (#261). */
+html[data-ui-version="archive"] .archive-admin-shell > div > header {
+  border-bottom-color: var(--border-strong);
+  background: color-mix(in srgb, var(--bg-raised) 88%, transparent);
+}
+
+html[data-ui-version="archive"] .archive-admin-card {
+  overflow: hidden;
+  border-radius: 0;
+  border-color: var(--border-strong);
+  background: color-mix(in srgb, var(--bg-raised) 54%, transparent);
+}
+
+html[data-ui-version="archive"] .archive-admin-card > .archive-admin-card-head {
+  min-height: 42px;
+  border-bottom-color: var(--border-default);
+  background: transparent;
+}
+
+html[data-ui-version="archive"] .archive-admin-card > .archive-admin-card-head h2,
+html[data-ui-version="archive"] .archive-admin-card > h2.archive-admin-card-head {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+}
+
+html[data-ui-version="archive"] .archive-admin-connection-card,
+html[data-ui-version="archive"] .archive-admin-status-card {
+  position: relative;
+  padding: 18px;
+  border-top: 3px solid var(--archive-index);
+}
+
+html[data-ui-version="archive"] .archive-admin-connection-card:nth-child(2) {
+  border-top-color: var(--ai);
+}
+
+html[data-ui-version="archive"] .archive-admin-connection-card > .archive-admin-card-head,
+html[data-ui-version="archive"] .archive-admin-status-card > .archive-admin-card-head {
+  min-height: 30px;
+  border-bottom: 0;
+}
+
+html[data-ui-version="archive"] .archive-admin-ai-grid,
+html[data-ui-version="archive"] .archive-admin-system-grid {
+  gap: 16px;
+}
+
+html[data-ui-version="archive"] .archive-admin-connection-test button,
+html[data-ui-version="archive"] .archive-admin-quota button,
+html[data-ui-version="archive"] .archive-admin-reindex button {
+  border-radius: var(--radius-xs);
+}
+
+html[data-ui-version="archive"] .archive-admin-usage-stats {
+  gap: 0;
+  border-block: 1px solid var(--border-default);
+}
+
+html[data-ui-version="archive"] .archive-admin-usage-stat {
+  min-width: 150px;
+  padding: 10px 16px;
+  border-width: 0 1px 0 3px;
+  border-color: var(--border-default);
+  border-left-color: var(--archive-index);
+  border-radius: 0;
+  background: color-mix(in srgb, var(--bg-raised) 60%, transparent);
+}
+
+html[data-ui-version="archive"] .archive-admin-usage-stat dd,
+html[data-ui-version="archive"] .archive-admin-usage-stat > span:nth-child(2) {
+  font-family: var(--font-mono);
+  letter-spacing: -0.03em;
+}
+
+html[data-ui-version="archive"] .archive-admin-usage-bars {
+  background-image: repeating-linear-gradient(
+    to top,
+    transparent 0,
+    transparent 39px,
+    var(--border-default) 40px
+  );
+}
+
+html[data-ui-version="archive"] .archive-admin-audit-filters {
+  padding: 14px 0;
+  border-width: 1px 0;
+  border-radius: 0;
+  border-color: var(--border-default);
+  background: transparent;
+}
+
+html[data-ui-version="archive"] .archive-admin-audit-filters input,
+html[data-ui-version="archive"] .archive-admin-audit-filters button {
+  border-radius: var(--radius-xs);
+}
+
+html[data-ui-version="archive"] .archive-admin-audit .archive-admin-table tbody tr:has(+ tr pre) {
+  border-bottom-color: transparent;
+}
+
+html[data-ui-version="archive"] .archive-admin-audit .archive-admin-table pre {
+  border-radius: var(--radius-xs);
+  border-color: var(--border-strong);
+  background: var(--bg-raised);
+}
+
+html[data-ui-version="archive"] .archive-admin-reindex-progress {
+  border-radius: var(--radius-xs);
+  border-color: var(--border-strong);
+  background: color-mix(in srgb, var(--ai-tint) 38%, transparent);
+}
+
+@media (max-width: 767px) {
+  html[data-ui-version="archive"] .archive-admin-ai-grid,
+  html[data-ui-version="archive"] .archive-admin-system-grid {
+    grid-template-columns: 1fr;
+  }
+
+  html[data-ui-version="archive"] .archive-admin-usage-stats {
+    width: 100%;
+  }
+
+  html[data-ui-version="archive"] .archive-admin-usage-stat {
+    min-width: 0;
+    flex: 1;
+    padding-inline: 10px;
+  }
+
+  html[data-ui-version="archive"] .archive-admin-audit-filters {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  html[data-ui-version="archive"] .archive-admin-audit-filters > :is(label, div) {
+    width: 100%;
+    min-width: 0;
+  }
+
+  html[data-ui-version="archive"] .archive-admin-audit-filters > div > button,
+  html[data-ui-version="archive"] .archive-admin-audit-filters > div:last-child > button {
+    flex: 1;
+  }
+}

@@ -65,7 +65,7 @@ export function ReindexButton({ embeddingConfigured }: { embeddingConfigured: bo
   const running = jobId !== null && !done;
 
   return (
-    <div className="flex flex-col gap-3">
+    <div className="archive-admin-reindex flex flex-col gap-3">
       <div className="flex flex-wrap items-center gap-3">
         <Button
           variant="ai"
@@ -90,7 +90,7 @@ function ReindexProgressView({ progress }: { progress: ReindexAllProgress }) {
   const pct = progress.total > 0 ? Math.round((progress.done / progress.total) * 100) : 0;
 
   return (
-    <div className="flex flex-col gap-2 rounded-md border border-edge bg-sidebar p-3">
+    <div className="archive-admin-reindex-progress flex flex-col gap-2 rounded-md border border-edge bg-sidebar p-3">
       <div className="flex items-center justify-between gap-2 text-body-ui">
         <span className="font-medium text-fg">{t(`reindexPhase.${progress.phase}`)}</span>
         <span className="text-fg-secondary">

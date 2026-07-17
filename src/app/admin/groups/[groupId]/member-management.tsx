@@ -13,7 +13,7 @@ import type { ImportEmailsResult } from "@/lib/admin/groups";
 import { Button } from "@/components/ui/button";
 import { Combobox, type ComboboxOption } from "@/components/ui/combobox";
 import { Textarea } from "@/components/ui/input";
-import { Modal, ModalContent } from "@/components/ui/modal";
+import { Modal, ModalContent, ModalTrigger } from "@/components/ui/modal";
 import { useToast } from "@/components/ui/toast";
 
 interface Candidate {
@@ -56,7 +56,7 @@ export function AddGroupMemberForm({
   }
 
   return (
-    <div className="flex flex-col gap-2 sm:flex-row sm:items-end">
+    <div className="archive-admin-toolbar flex flex-col gap-2 sm:flex-row sm:items-end">
       <div className="flex flex-1 flex-col gap-1">
         <span className="text-caption text-fg-tertiary">{t("addMemberLabel")}</span>
         <Combobox
@@ -113,57 +113,63 @@ export function CsvImportForm({ groupId }: { groupId: string }) {
   }
 
   return (
-    <>
-      <Button variant="secondary" onClick={() => onOpenChange(true)}>
-        <Upload aria-hidden className="size-4" />
-        {t("csvImport")}
-      </Button>
-      <Modal open={open} onOpenChange={onOpenChange}>
-        <ModalContent size="md" title={t("csvImportTitle")} closeLabel={t("cancel")}>
-          <div className="flex flex-col gap-4">
-            <Textarea
-              label={t("csvImportLabel")}
-              helper={t("csvImportHelper")}
-              value={text}
-              onChange={(e) => setText(e.target.value)}
-              rows={6}
-              maxLength={50000}
-              disabled={pending}
-            />
+    <Modal open={open} onOpenChange={onOpenChange}>
+      <ModalTrigger asChild>
+        <Button variant="secondary">
+          <Upload aria-hidden className="size-4" />
+          {t("csvImport")}
+        </Button>
+      </ModalTrigger>
+      <ModalContent
+        size="md"
+        title={t("csvImportTitle")}
+        closeLabel={t("cancel")}
+        className="archive-admin-modal"
+      >
+        <div className="flex flex-col gap-4">
+          <Textarea
+            label={t("csvImportLabel")}
+            helper={t("csvImportHelper")}
+            value={text}
+            onChange={(e) => setText(e.target.value)}
+            rows={6}
+            maxLength={50000}
+            disabled={pending}
+            autoFocus
+          />
 
-            {result ? (
-              <div className="flex flex-col gap-2 rounded-md border border-edge bg-raised px-4 py-3 text-body-ui">
-                <p className="text-fg">
-                  {t("csvResultSummary", {
-                    added: result.added,
-                    already: result.alreadyMember,
-                  })}
-                </p>
-                {result.notFound.length > 0 ? (
-                  <div className="flex flex-col gap-1">
-                    <span className="text-caption text-warning">
-                      {t("csvResultNotFound", { count: result.notFound.length })}
-                    </span>
-                    <span className="break-words text-caption text-fg-tertiary">
-                      {result.notFound.join("、")}
-                    </span>
-                  </div>
-                ) : null}
-              </div>
-            ) : null}
-
-            <div className="flex justify-end gap-2">
-              <Button variant="secondary" onClick={() => onOpenChange(false)} disabled={pending}>
-                {result ? t("done") : t("cancel")}
-              </Button>
-              <Button onClick={onImport} loading={pending} disabled={!text.trim()}>
-                {t("csvImportSubmit")}
-              </Button>
+          {result ? (
+            <div className="flex flex-col gap-2 rounded-md border border-edge bg-raised px-4 py-3 text-body-ui">
+              <p className="text-fg">
+                {t("csvResultSummary", {
+                  added: result.added,
+                  already: result.alreadyMember,
+                })}
+              </p>
+              {result.notFound.length > 0 ? (
+                <div className="flex flex-col gap-1">
+                  <span className="text-caption text-warning">
+                    {t("csvResultNotFound", { count: result.notFound.length })}
+                  </span>
+                  <span className="break-words text-caption text-fg-tertiary">
+                    {result.notFound.join("、")}
+                  </span>
+                </div>
+              ) : null}
             </div>
+          ) : null}
+
+          <div className="flex justify-end gap-2">
+            <Button variant="secondary" onClick={() => onOpenChange(false)} disabled={pending}>
+              {result ? t("done") : t("cancel")}
+            </Button>
+            <Button onClick={onImport} loading={pending} disabled={!text.trim()}>
+              {t("csvImportSubmit")}
+            </Button>
           </div>
-        </ModalContent>
-      </Modal>
-    </>
+        </div>
+      </ModalContent>
+    </Modal>
   );
 }
 
@@ -198,25 +204,30 @@ export function RemoveGroupMemberButton({
   }
 
   return (
-    <>
-      <Button variant="ghost" size="sm" onClick={() => setOpen(true)} aria-label={t("remove")}>
-        <Trash2 aria-hidden className="size-4" />
-      </Button>
-      <Modal open={open} onOpenChange={setOpen}>
-        <ModalContent size="sm" title={t("removeMemberTitle")} closeLabel={t("cancel")}>
-          <div className="flex flex-col gap-4">
-            <p className="text-body-ui text-fg-secondary">{t("removeConfirmBody", { name })}</p>
-            <div className="flex justify-end gap-2">
-              <Button variant="secondary" onClick={() => setOpen(false)} disabled={pending}>
-                {t("cancel")}
-              </Button>
-              <Button variant="danger" loading={pending} onClick={onConfirm}>
-                {t("remove")}
-              </Button>
-            </div>
+    <Modal open={open} onOpenChange={setOpen}>
+      <ModalTrigger asChild>
+        <Button variant="ghost" size="sm" aria-label={t("remove")}>
+          <Trash2 aria-hidden className="size-4" />
+        </Button>
+      </ModalTrigger>
+      <ModalContent
+        size="sm"
+        title={t("removeMemberTitle")}
+        closeLabel={t("cancel")}
+        className="archive-admin-modal"
+      >
+        <div className="flex flex-col gap-4">
+          <p className="text-body-ui text-fg-secondary">{t("removeConfirmBody", { name })}</p>
+          <div className="flex justify-end gap-2">
+            <Button variant="secondary" onClick={() => setOpen(false)} disabled={pending}>
+              {t("cancel")}
+            </Button>
+            <Button variant="danger" loading={pending} onClick={onConfirm}>
+              {t("remove")}
+            </Button>
           </div>
-        </ModalContent>
-      </Modal>
-    </>
+        </div>
+      </ModalContent>
+    </Modal>
   );
 }

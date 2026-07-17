@@ -50,8 +50,8 @@ export default async function AdminGroupDetailPage({
   const dateFormat = new Intl.DateTimeFormat("zh-TW", { dateStyle: "medium" });
 
   return (
-    <div className="mx-auto flex max-w-4xl flex-col gap-6 px-6 py-8">
-      <header className="flex flex-col gap-2">
+    <div className="archive-admin-page archive-admin-group-detail mx-auto flex max-w-4xl flex-col gap-6 px-6 py-8">
+      <header className="archive-admin-page-header flex flex-col gap-2">
         <Link
           href="/admin/groups"
           className="inline-flex w-fit items-center gap-1 text-caption text-fg-tertiary transition-colors hover:text-fg"
@@ -59,13 +59,14 @@ export default async function AdminGroupDetailPage({
           <ChevronLeft aria-hidden className="size-3.5" />
           {t("backToGroups")}
         </Link>
+        <p className="archive-admin-kicker ui-archive-only">{t("archiveDetailKicker")}</p>
         <h1 className="text-h1 text-fg">{group.name}</h1>
         {group.description ? (
           <p className="text-body-ui text-fg-secondary">{group.description}</p>
         ) : null}
       </header>
 
-      <section aria-labelledby="members-heading" className="flex flex-col gap-4">
+      <section aria-labelledby="members-heading" className="archive-admin-section flex flex-col gap-4">
         <div className="flex items-center justify-between gap-4">
           <div className="flex flex-col gap-1">
             <h2 id="members-heading" className="text-h4 text-fg">
@@ -79,12 +80,17 @@ export default async function AdminGroupDetailPage({
         <AddGroupMemberForm groupId={groupId} candidates={candidatesNotMembers} />
 
         {members.length === 0 ? (
-          <p className="rounded-md border border-edge bg-raised px-4 py-6 text-center text-body-ui text-fg-tertiary">
+          <p className="archive-admin-empty rounded-md border border-edge bg-raised px-4 py-6 text-center text-body-ui text-fg-tertiary">
             {t("emptyMembers")}
           </p>
         ) : (
-          <div className="overflow-x-auto rounded-md border border-edge">
-            <table className="w-full text-body-ui">
+          <div
+            className="archive-admin-table-wrap overflow-x-auto rounded-md border border-edge"
+            role="region"
+            aria-label={t("membersHeading")}
+            tabIndex={0}
+          >
+            <table className="archive-admin-table w-full text-body-ui">
               <thead>
                 <tr className="border-b border-edge bg-sidebar text-left text-caption text-fg-tertiary">
                   <th className="px-3 py-2 font-medium">{t("colMember")}</th>

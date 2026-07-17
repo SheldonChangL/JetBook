@@ -99,7 +99,12 @@ export function ImportUsersButton() {
           {t("button")}
         </Button>
       </ModalTrigger>
-      <ModalContent size="lg" title={t("title")} closeLabel={t("close")}>
+      <ModalContent
+        size="lg"
+        title={t("title")}
+        closeLabel={t("close")}
+        className="archive-admin-modal archive-admin-import-modal"
+      >
         <div className="flex flex-col gap-4">
           {result === null && (
             <>

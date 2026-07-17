@@ -10,7 +10,7 @@ import {
   setUserOrgRoleAction,
 } from "@/actions/admin";
 import { Button } from "@/components/ui/button";
-import { Modal, ModalContent } from "@/components/ui/modal";
+import { Modal, ModalContent, ModalTrigger } from "@/components/ui/modal";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useToast } from "@/components/ui/toast";
 
@@ -139,49 +139,50 @@ export function ResetPasswordButton({ userId, name }: { userId: string; name: st
   }
 
   return (
-    <>
-      <Button size="sm" variant="secondary" onClick={() => onOpenChange(true)}>
-        <KeyRound aria-hidden className="size-3.5" />
-        {t("resetPassword")}
-      </Button>
-      <Modal open={open} onOpenChange={onOpenChange}>
-        <ModalContent
-          size="sm"
-          title={t("resetPasswordTitle", { name })}
-          closeLabel={t("cancel")}
-        >
-          {password ? (
-            <div className="flex flex-col gap-4">
-              <p className="text-body-ui text-fg-secondary">{t("resetPasswordDone")}</p>
-              <div className="flex items-center gap-2 rounded-sm border border-edge bg-sidebar px-3 py-2">
-                <code className="flex-1 break-all font-mono text-body-ui text-fg">{password}</code>
-                <Button size="sm" variant="ghost" onClick={onCopy}>
-                  <Copy aria-hidden className="size-3.5" />
-                  {t("copy")}
-                </Button>
-              </div>
-              <p className="text-caption text-warning">{t("resetPasswordOnce")}</p>
-              <div className="flex justify-end">
-                <Button variant="secondary" onClick={() => onOpenChange(false)}>
-                  {t("done")}
-                </Button>
-              </div>
+    <Modal open={open} onOpenChange={onOpenChange}>
+      <ModalTrigger asChild>
+        <Button size="sm" variant="secondary">
+          <KeyRound aria-hidden className="size-3.5" />
+          {t("resetPassword")}
+        </Button>
+      </ModalTrigger>
+      <ModalContent
+        size="sm"
+        title={t("resetPasswordTitle", { name })}
+        closeLabel={t("cancel")}
+        className="archive-admin-modal"
+      >
+        {password ? (
+          <div className="flex flex-col gap-4">
+            <p className="text-body-ui text-fg-secondary">{t("resetPasswordDone")}</p>
+            <div className="flex items-center gap-2 rounded-sm border border-edge bg-sidebar px-3 py-2">
+              <code className="flex-1 break-all font-mono text-body-ui text-fg">{password}</code>
+              <Button size="sm" variant="ghost" onClick={onCopy}>
+                <Copy aria-hidden className="size-3.5" />
+                {t("copy")}
+              </Button>
             </div>
-          ) : (
-            <div className="flex flex-col gap-4">
-              <p className="text-body-ui text-fg-secondary">{t("resetPasswordConfirm")}</p>
-              <div className="flex justify-end gap-2">
-                <Button variant="secondary" onClick={() => onOpenChange(false)}>
-                  {t("cancel")}
-                </Button>
-                <Button variant="danger" loading={pending} onClick={onConfirm}>
-                  {t("resetPassword")}
-                </Button>
-              </div>
+            <p className="text-caption text-warning">{t("resetPasswordOnce")}</p>
+            <div className="flex justify-end">
+              <Button variant="secondary" onClick={() => onOpenChange(false)}>
+                {t("done")}
+              </Button>
             </div>
-          )}
-        </ModalContent>
-      </Modal>
-    </>
+          </div>
+        ) : (
+          <div className="flex flex-col gap-4">
+            <p className="text-body-ui text-fg-secondary">{t("resetPasswordConfirm")}</p>
+            <div className="flex justify-end gap-2">
+              <Button variant="secondary" onClick={() => onOpenChange(false)}>
+                {t("cancel")}
+              </Button>
+              <Button variant="danger" loading={pending} onClick={onConfirm}>
+                {t("resetPassword")}
+              </Button>
+            </div>
+          </div>
+        )}
+      </ModalContent>
+    </Modal>
   );
 }
