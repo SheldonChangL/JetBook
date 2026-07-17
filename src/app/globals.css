@@ -2914,6 +2914,18 @@ html[data-ui-version="archive"] .archive-editor-toolbar-actions > button {
   border-radius: var(--radius-xs);
 }
 
+html[data-ui-version="archive"] .archive-editor-toolbar-actions > .archive-editor-done {
+  border-color: transparent;
+  color: var(--on-primary);
+  background: var(--primary);
+}
+
+html[data-ui-version="archive"] .archive-editor-toolbar-actions > .archive-editor-done:hover,
+html[data-ui-version="archive"] .archive-editor-toolbar-actions > .archive-editor-done:focus-visible {
+  color: var(--on-primary);
+  background: var(--primary-hover);
+}
+
 html[data-ui-version="archive"] .archive-editor-save-state {
   display: inline-flex;
   min-width: 96px;

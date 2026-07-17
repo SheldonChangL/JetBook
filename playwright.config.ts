@@ -32,6 +32,7 @@ export default defineConfig({
   projects: [{ name: "chromium", use: { ...devices["Desktop Chrome"] } }],
   webServer: {
     command: `npm run dev -- --port ${PORT}`,
+    env: { UI_V2_ROLLOUT: "on" },
     // /api/healthz 為免驗證 200 存活探針，作為 dev server 就緒判斷
     url: `${BASE_URL}/api/healthz`,
     reuseExistingServer: !isCI,

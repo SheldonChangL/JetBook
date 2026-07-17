@@ -380,10 +380,12 @@ export function PageEditor({
             {lockLost ? t("archiveReadOnly") : t("archiveEditing")}
           </span>
           <EditorStatusPopover lockLost={lockLost} versionNo={versionNo} aiEnabled={aiEnabled} />
-          <Button variant="secondary" size="sm" onClick={goToReading} className="ui-legacy-only">
-            {t("done")}
-          </Button>
-          <Button variant="primary" size="sm" onClick={goToReading} className="ui-archive-only">
+          <Button
+            variant="secondary"
+            size="sm"
+            onClick={goToReading}
+            className="archive-editor-done"
+          >
             {t("done")}
           </Button>
         </div>
