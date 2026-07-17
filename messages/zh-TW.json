@@ -516,6 +516,7 @@
   },
   "trash": {
     "title": "垃圾桶",
+    "archiveKicker": "保留 30 天 / 到期自動清除",
     "subtitleGlobal": "跨空間彙整，僅顯示你有還原權限的項目。刪除的頁面保留 30 天後自動清除。",
     "subtitleSpace": "「{space}」已刪除的頁面，保留 30 天後自動清除。",
     "emptyTitle": "垃圾桶是空的",
