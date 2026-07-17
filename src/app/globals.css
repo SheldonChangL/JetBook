@@ -2652,189 +2652,7 @@ html[data-ui-version="archive"] .archive-history-snapshot > div:first-child {
   }
 }
 
-/* UI v2 slice 4 — Editor workspace：狀態列＋文件 Canvas＋編輯 Inspector。 */
-html[data-ui-version="archive"] .archive-editor-page {
-  width: 100%;
-  max-width: none;
-  height: 100%;
-  min-height: 0;
-  margin: 0;
-  gap: 0;
-  padding: 0;
-  overflow: hidden;
-}
-
-html[data-ui-version="archive"] .archive-editor-toolbar {
-  min-height: 56px;
-  flex: none;
-  padding: 0 24px;
-  border-bottom: 1px solid var(--border-strong);
-  background: var(--bg-base);
-}
-
-html[data-ui-version="archive"] .archive-editor-back {
-  min-height: 32px;
-  padding-inline: 8px;
-  border-radius: var(--radius-xs);
-}
-
-html[data-ui-version="archive"] .archive-editor-back:hover,
-html[data-ui-version="archive"] .archive-editor-back:focus-visible {
-  background: var(--bg-hover);
-}
-
-html[data-ui-version="archive"] .archive-editor-toolbar-actions > button {
-  border-radius: var(--radius-xs);
-}
-
-html[data-ui-version="archive"] .archive-editor-save-state {
-  display: inline-flex;
-  min-height: 24px;
-  align-items: center;
-  gap: 6px;
-  color: var(--text-secondary);
-  font-family: var(--font-mono);
-  font-size: 10px;
-  letter-spacing: 0.02em;
-}
-
-html[data-ui-version="archive"] .archive-editor-save-state::before {
-  width: 7px;
-  height: 7px;
-  border-radius: 999px;
-  background: var(--text-tertiary);
-  content: "";
-}
-
-html[data-ui-version="archive"] .archive-editor-save-state[data-state="saving"]::before {
-  background: var(--warning);
-}
-
-html[data-ui-version="archive"] .archive-editor-save-state[data-state="saved"]::before {
-  background: var(--success);
-}
-
-html[data-ui-version="archive"] .archive-editor-save-state[data-state="conflict"]::before,
-html[data-ui-version="archive"] .archive-editor-save-state[data-state="error"]::before {
-  background: var(--danger);
-}
-
-html[data-ui-version="archive"] .archive-editor-layout {
-  display: grid;
-  min-height: 0;
-  flex: 1;
-  grid-template-columns: minmax(0, 1fr) 292px;
-}
-
-html[data-ui-version="archive"] .archive-editor-document {
-  min-width: 0;
-  padding: 36px 44px 80px;
-  overflow-y: auto;
-}
-
-html[data-ui-version="archive"] .archive-editor-kicker,
-html[data-ui-version="archive"] .archive-editor-title,
-html[data-ui-version="archive"] .archive-editor-alert,
-html[data-ui-version="archive"] .archive-editor-surface {
-  width: 100%;
-  max-width: 760px;
-  margin-inline: auto;
-}
-
-html[data-ui-version="archive"] .archive-editor-kicker {
-  margin-bottom: -6px;
-  color: var(--primary);
-  font-family: var(--font-mono);
-  font-size: 10px;
-  font-weight: 600;
-  letter-spacing: 0.12em;
-  text-transform: uppercase;
-}
-
-html[data-ui-version="archive"] .archive-editor-title {
-  padding-bottom: 18px;
-  border-bottom: 1px solid var(--border-strong);
-}
-
-html[data-ui-version="archive"] .archive-editor-title > button {
-  border-radius: var(--radius-xs);
-}
-
-html[data-ui-version="archive"] .archive-editor-title input {
-  min-width: 0;
-  letter-spacing: -0.025em;
-}
-
-html[data-ui-version="archive"] .archive-editor-alert {
-  border-radius: var(--radius-xs);
-}
-
-html[data-ui-version="archive"] .archive-editor-surface {
-  min-height: 64vh;
-  padding-block: 8px 40px;
-}
-
-html[data-ui-version="archive"] .archive-editor-surface .prose-editor {
-  min-height: 64vh;
-  color: var(--text-secondary);
-  font-size: 15px;
-  line-height: 1.78;
-}
-
-html[data-ui-version="archive"] .archive-editor-surface .prose-editor :where(h1, h2, h3) {
-  color: var(--text-primary);
-  letter-spacing: -0.015em;
-}
-
-html[data-ui-version="archive"] .archive-editor-surface .prose-editor :where(h2) {
-  margin-top: 2.15em;
-  padding-top: 0.2em;
-  border-top: 1px solid var(--border-default);
-}
-
-html[data-ui-version="archive"] .archive-editor-surface .prose-editor :where(.jb-callout, .jb-code, .jb-tabs, .jb-details, .jb-embed, .content-attachment, .content-document) {
-  border-radius: var(--radius-xs);
-  box-shadow: none;
-}
-
-html[data-ui-version="archive"] .archive-editor-inspector {
-  display: flex;
-  min-width: 0;
-  flex-direction: column;
-  overflow-y: auto;
-  border-left: 1px solid var(--border-strong);
-  background: var(--bg-sidebar);
-}
-
-html[data-ui-version="archive"] .archive-editor-inspector-head {
-  display: flex;
-  min-height: 52px;
-  flex: none;
-  align-items: center;
-  justify-content: space-between;
-  padding: 0 16px;
-  border-bottom: 1px solid var(--border-strong);
-  font-size: var(--text-body-ui);
-}
-
-html[data-ui-version="archive"] .archive-editor-inspector-head > span {
-  border-radius: var(--radius-xs);
-}
-
-html[data-ui-version="archive"] .archive-editor-inspector-section {
-  padding: 18px 16px;
-  border-bottom: 1px solid var(--border-default);
-}
-
-html[data-ui-version="archive"] .archive-editor-inspector-section > h2 {
-  margin-bottom: 10px;
-  font-family: var(--font-mono);
-  font-size: 10px;
-  font-weight: 600;
-  letter-spacing: 0.1em;
-  text-transform: uppercase;
-}
-
+/* UI v2 slice 4 — Archive editor command layers、lock gate 與 import/export presentation。 */
 html[data-ui-version="archive"] .archive-editor-lock-card {
   display: flex;
   gap: 9px;
@@ -2899,47 +2717,6 @@ html[data-ui-version="archive"] .archive-editor-facts dd {
   font-size: 10px;
   text-overflow: ellipsis;
   white-space: nowrap;
-}
-
-html[data-ui-version="archive"] .archive-editor-tool-list {
-  display: flex;
-  flex-direction: column;
-}
-
-html[data-ui-version="archive"] .archive-editor-tool-list li {
-  display: flex;
-  min-height: 34px;
-  align-items: center;
-  gap: 9px;
-  border-bottom: 1px solid var(--border-default);
-  color: var(--text-secondary);
-  font-size: var(--text-caption);
-}
-
-html[data-ui-version="archive"] .archive-editor-tool-list svg {
-  width: 14px;
-  height: 14px;
-  color: var(--text-tertiary);
-}
-
-html[data-ui-version="archive"] .archive-editor-ai-note {
-  display: flex;
-  align-items: flex-start;
-  gap: 8px;
-  color: var(--text-secondary);
-  font-size: var(--text-caption);
-  line-height: 1.55;
-}
-
-html[data-ui-version="archive"] .archive-editor-ai-note svg {
-  flex: none;
-  color: var(--ai);
-}
-
-html[data-ui-version="archive"] .archive-editor-protection p {
-  color: var(--text-tertiary);
-  font-size: var(--text-caption);
-  line-height: 1.55;
 }
 
 /* Editor 浮動工作層保留原 TipTap command，只調整 Archive presentation。 */
@@ -3049,91 +2826,10 @@ html[data-ui-version="archive"] .archive-transfer-toolbar > label {
   border-radius: var(--radius-xs);
 }
 
-@media (max-width: 1279px) {
-  html[data-ui-version="archive"] .archive-editor-page {
-    height: auto;
-    min-height: 100%;
-    overflow: visible;
-  }
-
-  html[data-ui-version="archive"] .archive-editor-toolbar {
-    position: sticky;
-    z-index: 10;
-    top: 0;
-  }
-
-  html[data-ui-version="archive"] .archive-editor-layout {
-    display: block;
-  }
-
-  html[data-ui-version="archive"] .archive-editor-document {
-    padding: 36px 36px 48px;
-    overflow: visible;
-  }
-
-  html[data-ui-version="archive"] .archive-editor-inspector {
-    display: grid;
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-    overflow: visible;
-    border-top: 1px solid var(--border-strong);
-    border-left: 0;
-  }
-
-  html[data-ui-version="archive"] .archive-editor-inspector-head {
-    grid-column: 1 / -1;
-  }
-
-  html[data-ui-version="archive"] .archive-editor-inspector-section {
-    min-width: 0;
-  }
-}
-
 @media (max-width: 767px) {
   html[data-ui-version="archive"] div:has(> .archive-editor-insert) {
     right: 8px !important;
     left: auto !important;
-  }
-
-  html[data-ui-version="archive"] .archive-editor-toolbar {
-    min-height: 52px;
-    gap: 8px;
-    padding-inline: 12px;
-  }
-
-  html[data-ui-version="archive"] .archive-editor-toolbar-actions {
-    gap: 8px;
-  }
-
-  html[data-ui-version="archive"] .archive-editor-save-state {
-    max-width: 112px;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
-  }
-
-  html[data-ui-version="archive"] .archive-editor-document {
-    padding: 28px 20px 40px;
-  }
-
-  html[data-ui-version="archive"] .archive-editor-title {
-    align-items: flex-start;
-  }
-
-  html[data-ui-version="archive"] .archive-editor-title input {
-    font-size: var(--text-h2);
-  }
-
-  html[data-ui-version="archive"] .archive-editor-surface,
-  html[data-ui-version="archive"] .archive-editor-surface .prose-editor {
-    min-height: 55vh;
-  }
-
-  html[data-ui-version="archive"] .archive-editor-surface .prose-editor {
-    font-size: 14px;
-  }
-
-  html[data-ui-version="archive"] .archive-editor-inspector {
-    display: flex;
   }
 
   html[data-ui-version="archive"] .archive-lock-notice {
@@ -3154,6 +2850,576 @@ html[data-ui-version="archive"] .archive-transfer-toolbar > label {
   html[data-ui-version="archive"] .archive-transfer-toolbar > :last-child {
     width: 100%;
     margin-left: 0;
+  }
+}
+
+/* Issue #263 — 寫作優先的 Archive 編輯工作區。 */
+html[data-ui-version="archive"] .archive-space-layout:has(.archive-editor-page) {
+  min-height: 0;
+}
+
+html[data-ui-version="archive"]
+  .archive-space-layout:has(.archive-editor-page)
+  > .archive-space-tree {
+  display: none;
+}
+
+html[data-ui-version="archive"]
+  .archive-space-layout:has(.archive-editor-page)
+  > .archive-space-content {
+  overflow: hidden;
+}
+
+html[data-ui-version="archive"] .archive-editor-page {
+  width: 100%;
+  max-width: none;
+  height: 100%;
+  min-height: 0;
+  margin: 0;
+  gap: 0;
+  padding: 0;
+  overflow: hidden;
+}
+
+html[data-ui-version="archive"] .archive-editor-toolbar {
+  position: relative;
+  z-index: 20;
+  min-height: 52px;
+  flex: none;
+  padding: 0 20px;
+  border-bottom: 1px solid var(--border-default);
+  background: var(--archive-paper);
+  box-shadow: 0 1px 0 rgb(0 0 0 / 0.02);
+}
+
+html[data-ui-version="archive"] .archive-editor-back {
+  min-height: 32px;
+  padding-inline: 8px;
+  border-radius: var(--radius-xs);
+}
+
+html[data-ui-version="archive"] .archive-editor-back:hover,
+html[data-ui-version="archive"] .archive-editor-back:focus-visible {
+  background: var(--bg-hover);
+}
+
+html[data-ui-version="archive"] .archive-editor-toolbar-actions {
+  gap: 8px;
+}
+
+html[data-ui-version="archive"] .archive-editor-toolbar-actions > button {
+  display: inline-flex;
+  min-height: 30px;
+  padding-inline: 12px;
+  border-radius: var(--radius-xs);
+}
+
+html[data-ui-version="archive"] .archive-editor-save-state {
+  display: inline-flex;
+  min-width: 96px;
+  min-height: 24px;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 6px;
+  color: var(--text-secondary);
+  font-family: var(--font-mono);
+  font-size: 10px;
+  letter-spacing: 0.02em;
+}
+
+html[data-ui-version="archive"] .archive-editor-save-state::before {
+  width: 7px;
+  height: 7px;
+  flex: none;
+  border-radius: 999px;
+  background: var(--text-tertiary);
+  content: "";
+}
+
+html[data-ui-version="archive"] .archive-editor-save-state[data-state="saving"]::before {
+  background: var(--warning);
+}
+
+html[data-ui-version="archive"] .archive-editor-save-state[data-state="saved"]::before {
+  background: var(--success);
+}
+
+html[data-ui-version="archive"] .archive-editor-save-state[data-state="conflict"]::before,
+html[data-ui-version="archive"] .archive-editor-save-state[data-state="error"]::before {
+  background: var(--danger);
+}
+
+html[data-ui-version="archive"] .archive-editor-lock-state {
+  display: inline-flex;
+  min-height: 26px;
+  align-items: center;
+  gap: 5px;
+  padding: 0 8px;
+  border: 1px solid var(--border-default);
+  border-radius: var(--radius-xs);
+  color: var(--success);
+  background: var(--success-tint);
+  font-family: var(--font-mono);
+  font-size: 9px;
+  font-weight: 600;
+  letter-spacing: 0.05em;
+}
+
+html[data-ui-version="archive"] .archive-editor-lock-state[data-state="lost"] {
+  color: var(--warning);
+  background: var(--warning-tint);
+}
+
+html[data-ui-version="archive"] .archive-editor-lock-state svg {
+  width: 12px;
+  height: 12px;
+}
+
+html[data-ui-version="archive"] .archive-editor-status-trigger {
+  display: inline-flex;
+  min-height: 30px;
+  align-items: center;
+  gap: 5px;
+  padding: 0 9px;
+  border: 1px solid transparent;
+  border-radius: var(--radius-xs);
+  color: var(--text-secondary);
+  font-size: var(--text-caption);
+  font-weight: 500;
+}
+
+html[data-ui-version="archive"] .archive-editor-status-trigger:hover,
+html[data-ui-version="archive"] .archive-editor-status-trigger:focus-visible,
+html[data-ui-version="archive"] .archive-editor-status-trigger[data-state="open"] {
+  border-color: var(--border-default);
+  color: var(--text-primary);
+  background: var(--bg-hover);
+}
+
+html[data-ui-version="archive"] .archive-editor-status-trigger svg {
+  width: 14px;
+  height: 14px;
+  flex: none;
+}
+
+html[data-ui-version="archive"] .archive-editor-status-chevron {
+  transition: transform 150ms ease;
+}
+
+html[data-ui-version="archive"]
+  .archive-editor-status-trigger[data-state="open"]
+  .archive-editor-status-chevron {
+  transform: rotate(180deg);
+}
+
+html[data-ui-version="archive"] .archive-editor-layout {
+  display: block;
+  min-height: 0;
+  flex: 1;
+  overflow: hidden;
+}
+
+html[data-ui-version="archive"] .archive-editor-document {
+  min-width: 0;
+  height: 100%;
+  padding: 30px clamp(24px, 4vw, 56px) 48px;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  scrollbar-gutter: stable;
+}
+
+html[data-ui-version="archive"] .archive-editor-sheet {
+  width: min(100%, 880px);
+  min-height: calc(100% - 2px);
+  margin-inline: auto;
+  padding: 42px clamp(40px, 6vw, 64px) 96px;
+  border: 1px solid var(--border-default);
+  border-top: 3px solid var(--archive-index);
+  background: var(--archive-paper);
+  box-shadow: var(--shadow-sm);
+}
+
+html[data-ui-version="archive"] .archive-editor-kicker,
+html[data-ui-version="archive"] .archive-editor-title,
+html[data-ui-version="archive"] .archive-editor-alert,
+html[data-ui-version="archive"] .archive-editor-surface {
+  width: 100%;
+  max-width: none;
+  margin-inline: 0;
+}
+
+html[data-ui-version="archive"] .archive-editor-kicker {
+  margin-bottom: -4px;
+  color: var(--primary);
+  font-family: var(--font-mono);
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+html[data-ui-version="archive"] .archive-editor-title {
+  padding-bottom: 20px;
+  border-bottom: 0;
+}
+
+html[data-ui-version="archive"] .archive-editor-title > button {
+  border-radius: var(--radius-xs);
+}
+
+html[data-ui-version="archive"] .archive-editor-title input {
+  min-width: 0;
+  font-size: clamp(30px, 4vw, 40px);
+  line-height: 1.15;
+  letter-spacing: -0.025em;
+}
+
+html[data-ui-version="archive"] .archive-editor-alert {
+  border-radius: var(--radius-xs);
+}
+
+html[data-ui-version="archive"] .archive-editor-commandbar {
+  display: flex;
+  min-height: 42px;
+  align-items: center;
+  gap: 10px;
+  margin-block: -2px 4px;
+  padding-block: 7px;
+  border-block: 1px solid var(--border-default);
+}
+
+html[data-ui-version="archive"] .archive-editor-commandbar-label {
+  flex: none;
+  color: var(--text-tertiary);
+  font-family: var(--font-mono);
+  font-size: 9px;
+  font-weight: 600;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+
+html[data-ui-version="archive"] .archive-editor-commandbar-actions {
+  display: flex;
+  min-width: 0;
+  align-items: center;
+  gap: 3px;
+}
+
+html[data-ui-version="archive"] .archive-editor-commandbar-actions button {
+  display: inline-flex;
+  min-height: 28px;
+  align-items: center;
+  gap: 5px;
+  padding: 0 8px;
+  border-radius: var(--radius-xs);
+  color: var(--text-secondary);
+  font-size: var(--text-caption);
+  white-space: nowrap;
+}
+
+html[data-ui-version="archive"] .archive-editor-commandbar-actions button:hover,
+html[data-ui-version="archive"] .archive-editor-commandbar-actions button:focus-visible {
+  color: var(--text-primary);
+  background: var(--bg-hover);
+}
+
+html[data-ui-version="archive"] .archive-editor-commandbar-actions button:disabled {
+  color: var(--text-disabled);
+  background: transparent;
+}
+
+html[data-ui-version="archive"] .archive-editor-commandbar-actions svg {
+  width: 14px;
+  height: 14px;
+}
+
+html[data-ui-version="archive"] .archive-editor-ai-hint {
+  display: inline-flex;
+  min-width: 0;
+  align-items: center;
+  gap: 5px;
+  margin-left: auto;
+  overflow: hidden;
+  color: var(--ai);
+  font-size: var(--text-caption);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+html[data-ui-version="archive"] .archive-editor-ai-hint svg {
+  width: 13px;
+  height: 13px;
+  flex: none;
+}
+
+html[data-ui-version="archive"] .archive-editor-surface {
+  min-height: 62vh;
+  padding: 8px 2px 40px;
+}
+
+html[data-ui-version="archive"] .archive-editor-surface .prose-editor {
+  min-height: 62vh;
+  color: var(--text-secondary);
+  font-size: 16px;
+  line-height: 1.82;
+}
+
+html[data-ui-version="archive"] .archive-editor-surface .prose-editor :where(h1, h2, h3) {
+  color: var(--text-primary);
+  letter-spacing: -0.015em;
+}
+
+html[data-ui-version="archive"] .archive-editor-surface .prose-editor :where(h2) {
+  margin-top: 2.3em;
+  padding-top: 0;
+  border-top: 0;
+}
+
+html[data-ui-version="archive"]
+  .archive-editor-surface
+  .prose-editor
+  :where(
+    .jb-callout,
+    .jb-code,
+    .jb-tabs,
+    .jb-details,
+    .jb-embed,
+    .content-attachment,
+    .content-document
+  ) {
+  border-radius: var(--radius-xs);
+  box-shadow: none;
+}
+
+html[data-ui-version="archive"] .archive-editor-status-popover {
+  width: min(360px, calc(100vw - 24px));
+  padding: 0;
+  overflow: hidden;
+  border-color: var(--border-strong);
+  border-radius: var(--radius-xs);
+  background: var(--archive-paper);
+  box-shadow: var(--shadow-lg);
+}
+
+html[data-ui-version="archive"] .archive-formatting-menu {
+  display: flex;
+  border-color: var(--border-strong);
+  border-radius: var(--radius-xs);
+  box-shadow: var(--shadow-md);
+}
+
+html[data-ui-version="archive"] .archive-formatting-menu button {
+  border-radius: var(--radius-xs);
+}
+
+html[data-ui-version="archive"] .archive-editor-status-head {
+  display: flex;
+  min-height: 62px;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 12px 14px;
+  border-bottom: 1px solid var(--border-strong);
+}
+
+html[data-ui-version="archive"] .archive-editor-status-head p {
+  margin-bottom: 2px;
+  color: var(--primary);
+  font-family: var(--font-mono);
+  font-size: 9px;
+  letter-spacing: 0.09em;
+  text-transform: uppercase;
+}
+
+html[data-ui-version="archive"] .archive-editor-status-head strong {
+  font-size: var(--text-body-ui);
+}
+
+html[data-ui-version="archive"] .archive-editor-status-popover .archive-editor-lock-card {
+  margin: 14px 14px 0;
+}
+
+html[data-ui-version="archive"] .archive-editor-status-popover .archive-editor-facts {
+  margin: 12px 14px 0;
+}
+
+html[data-ui-version="archive"] .archive-editor-status-note {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  margin-top: 14px;
+  padding: 12px 14px;
+  border-top: 1px solid var(--border-default);
+  color: var(--text-secondary);
+  font-size: var(--text-caption);
+  line-height: 1.55;
+}
+
+html[data-ui-version="archive"] .archive-editor-status-note svg {
+  width: 14px;
+  height: 14px;
+  flex: none;
+  margin-top: 2px;
+  color: var(--ai);
+}
+
+html[data-ui-version="archive"] .archive-editor-protection-note {
+  padding: 0 14px 14px 36px;
+  color: var(--text-tertiary);
+  font-size: var(--text-caption);
+  line-height: 1.5;
+}
+
+html[data-ui-version="archive"] .archive-editor-mobile-dock.ui-archive-only {
+  display: none;
+}
+
+@media (max-width: 1023px) {
+  html[data-ui-version="archive"] .archive-editor-document {
+    padding: 24px 24px 40px;
+  }
+
+  html[data-ui-version="archive"] .archive-editor-sheet {
+    padding-inline: 48px;
+  }
+
+  html[data-ui-version="archive"] .archive-editor-ai-hint {
+    display: none;
+  }
+}
+
+@media (max-width: 767px) {
+  html[data-ui-version="archive"] .archive-editor-toolbar {
+    position: relative;
+    min-height: 50px;
+    padding-inline: 10px;
+  }
+
+  html[data-ui-version="archive"] .archive-editor-toolbar-actions {
+    gap: 4px;
+  }
+
+  html[data-ui-version="archive"] .archive-editor-save-state {
+    min-width: 0;
+    max-width: 88px;
+    justify-content: flex-start;
+  }
+
+  html[data-ui-version="archive"] .archive-editor-lock-state {
+    display: none;
+  }
+
+  html[data-ui-version="archive"] .archive-editor-status-trigger {
+    width: 30px;
+    justify-content: center;
+    padding: 0;
+    overflow: hidden;
+    font-size: 0;
+  }
+
+  html[data-ui-version="archive"] .archive-editor-status-trigger .archive-editor-status-icon {
+    width: 15px;
+    height: 15px;
+  }
+
+  html[data-ui-version="archive"] .archive-editor-status-chevron {
+    display: none;
+  }
+
+  html[data-ui-version="archive"] .archive-editor-toolbar-actions > button {
+    padding-inline: 9px;
+  }
+
+  html[data-ui-version="archive"] .archive-editor-layout {
+    min-height: 0;
+  }
+
+  html[data-ui-version="archive"] .archive-editor-document {
+    height: 100%;
+    padding: 0;
+    scrollbar-gutter: auto;
+  }
+
+  html[data-ui-version="archive"] .archive-editor-sheet {
+    min-height: 100%;
+    padding: 28px 20px 92px;
+    border: 0;
+    border-top: 2px solid var(--archive-index);
+    box-shadow: none;
+  }
+
+  html[data-ui-version="archive"] .archive-editor-title {
+    padding-bottom: 12px;
+  }
+
+  html[data-ui-version="archive"] .archive-editor-title input {
+    font-size: 27px;
+  }
+
+  html[data-ui-version="archive"] .archive-editor-commandbar {
+    display: none;
+  }
+
+  html[data-ui-version="archive"] .archive-editor-surface,
+  html[data-ui-version="archive"] .archive-editor-surface .prose-editor {
+    min-height: 58vh;
+  }
+
+  html[data-ui-version="archive"] .archive-editor-surface .prose-editor {
+    font-size: 15px;
+  }
+
+  html[data-ui-version="archive"] .archive-editor-mobile-dock.ui-archive-only {
+    z-index: 20;
+    display: grid;
+    min-height: calc(60px + env(safe-area-inset-bottom));
+    flex: none;
+    grid-template-columns: repeat(5, minmax(0, 1fr));
+    padding: 4px 6px env(safe-area-inset-bottom);
+    border-top: 1px solid var(--border-strong);
+    background: var(--archive-paper);
+    box-shadow: 0 -8px 22px rgb(0 0 0 / 0.08);
+  }
+
+  html[data-ui-version="archive"] .archive-editor-mobile-dock button {
+    display: flex;
+    min-width: 0;
+    min-height: 52px;
+    align-items: center;
+    justify-content: center;
+    flex-direction: column;
+    gap: 3px;
+    border-radius: var(--radius-xs);
+    color: var(--text-secondary);
+    font-size: 9px;
+  }
+
+  html[data-ui-version="archive"] .archive-editor-mobile-dock button:hover,
+  html[data-ui-version="archive"] .archive-editor-mobile-dock button:focus-visible {
+    color: var(--text-primary);
+    background: var(--bg-hover);
+  }
+
+  html[data-ui-version="archive"] .archive-editor-mobile-dock button:disabled {
+    color: var(--text-disabled);
+  }
+
+  html[data-ui-version="archive"] .archive-editor-mobile-dock svg {
+    width: 17px;
+    height: 17px;
+  }
+
+  html[data-ui-version="archive"] .archive-editor-mobile-dock .archive-editor-mobile-done {
+    color: var(--on-primary);
+    background: var(--primary);
+  }
+
+  html[data-ui-version="archive"] .archive-editor-mobile-dock .archive-editor-mobile-done:hover,
+  html[data-ui-version="archive"]
+    .archive-editor-mobile-dock
+    .archive-editor-mobile-done:focus-visible {
+    color: var(--on-primary);
+    background: var(--primary-hover);
   }
 }
 

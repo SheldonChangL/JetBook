@@ -120,8 +120,16 @@ Next.js（App Router、TS strict）全端 + PostgreSQL 16/pgvector/pgroonga + Do
 - [x] 本機品質閘門：lint ✅ typecheck ✅ 單元 532/532 ✅ 整合 304/304（含 N-04）✅ N-02 Playwright 2/2（Archive rollout）✅ production build ✅
 - [x] PR #262 的 Validate（含 N-04，3m45s）與 N-02（3m29s）全綠；符合既有 self-merge 授權
 
+### UI Design v2 編輯體驗迭代（2026-07-17，#263）
+
+- [x] Archive 編輯路由改為寫作優先 focus mode：收起 Space 頁面樹與常駐 Inspector，改以置中的文件紙張 Canvas、精簡頂列及按需展開的文件狀態 Popover；Legacy fallback、路由、儲存、鎖定、衝突與權限邏輯均不變
+- [x] 新增桌面快捷插入列（區塊／圖片／附件／表格）、行動版固定底部工具列，以及選取文字時的 TipTap BubbleMenu（粗體／斜體／刪除線／行內程式碼）；完整 Slash menu、進階區塊與 AI 寫作工作層保持可用
+- [x] Production browser QA：320／768／1024／1440、light／dark、Archive ⇄ Legacy、繁中輸入、autosave、檔案選擇、Slash／表格、Popover Esc＋focus restore、reduced-motion 與格式狀態均通過，零水平溢位與零 console warning/error
+- [x] QA 抓出並修正 320px 頁面樹占用寫作空間、格式按鈕 `aria-pressed` 未即時同步，以及重複 autosave live region 造成 Playwright strict locator 失敗
+- [x] 本機品質閘門：lint ✅ typecheck ✅ 單元 532/532 ✅ 整合 304/304（含 N-04）✅ N-02 Playwright 2/2（Archive rollout）✅ production build ✅
+
 ### 尚未完成（v1 之後）
-- **UI Design v2 已完成**：#251／PR #252、#253／PR #254、#255／PR #256、#257／PR #258、#259／PR #260、#261／PR #262 六批皆完成實作與驗證；Legacy fallback 依漸進 rollout 決策暫時保留
+- **UI Design v2 已完成**：#251／PR #252、#253／PR #254、#255／PR #256、#257／PR #258、#259／PR #260、#261／PR #262 六批與 #263 編輯體驗迭代皆完成實作及本機驗證；Legacy fallback 依漸進 rollout 決策暫時保留
 - **#93 M4 backlog**：變更請求、行內評論、webhooks（暫停）、PDF 匯出、KaTeX、多欄、snippets、內容分析等——其餘候選項依回饋再拆
 - 真實 LLM/Embedding 端點串接為部署設定（本機開發以 mock 驗證介面）；上線時以 /admin/ai 測試連線驗證
 
@@ -129,9 +137,9 @@ Next.js（App Router、TS strict）全端 + PostgreSQL 16/pgvector/pgroonga + Do
 ## GitHub 執行狀態
 
 - Repo：https://github.com/SheldonChangL/JetBook（private）
-- Issues：#93 追蹤 M4 backlog；Archive Studio UI v2 由 #251／PR #252、#253／PR #254、#255／PR #256、#257／PR #258、#259／PR #260、#261／PR #262 六批交付
+- Issues：#93 追蹤 M4 backlog；Archive Studio UI v2 由 #251／PR #252、#253／PR #254、#255／PR #256、#257／PR #258、#259／PR #260、#261／PR #262 六批交付，#263 追蹤編輯體驗迭代
 - Milestones：M0 10/10 ✅／M1 42/42 ✅／M2 16/16 ✅／M3 23/23 ✅／M4 已交付 15 功能＋多項修復（backlog 追蹤 #93）
-- 工作流：branch `feature/issue-<n>-<slug>` → PR（Fixes #n）→ squash merge（使用者已授權 self-merge）；#261／PR #262 required checks 全綠
+- 工作流：branch `feature/issue-<n>-<slug>` → PR（Fixes #n）→ squash merge（使用者已授權 self-merge）；目前分支 `feature/issue-263-editor-writing-workspace`
 
 ## 已完成
 
