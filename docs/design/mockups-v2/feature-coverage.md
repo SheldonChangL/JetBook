@@ -2,7 +2,7 @@
 
 > 本矩陣以 2026-07-16 `main` 的路由、元件、`messages/zh-TW.json` 與 `PROJECT_STATE.md` 為來源。Mock 圖是代表畫面，不等於只改四頁；表內所有現有 UI 都必須在選案後的實作 issue 中得到對應設計。
 
-正式規格見 `docs/design/ui-design-v2.md`。Archive Studio 第一批 #251／PR #252 已建立可逆 rollout、語意 token、App／Admin Shell、Auth Frame 與 403／404／error／offline presentation；第二批 #253 已覆蓋 Dashboard、Spaces／Collections、Space overview／page tree、回收桶與 Space settings。後續頁面仍依本矩陣的 slice 3–6 逐批遷移，未完成前保留 Legacy。
+正式規格見 `docs/design/ui-design-v2.md`。Archive Studio 第一批 #251／PR #252 已建立可逆 rollout、語意 token、App／Admin Shell、Auth Frame 與 403／404／error／offline presentation；第二批 #253／PR #254 已覆蓋 Dashboard、Spaces／Collections、Space overview／page tree、回收桶與 Space settings；第三批 #255 開始遷移閱讀、內容區塊、留言、版本、附件與預覽。後續頁面仍依本矩陣的 slice 3–6 逐批遷移，未完成前保留 Legacy。
 
 ## 正式實作對應（#253）
 
