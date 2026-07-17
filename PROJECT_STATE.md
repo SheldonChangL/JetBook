@@ -9,7 +9,7 @@ Next.js（App Router、TS strict）全端 + PostgreSQL 16/pgvector/pgroonga + Do
 
 ## 目前階段
 
-**v1 商品化完成 ✅（2026-07-13）。** M0–M3 全部 91 個 issue 關閉並合併；目前開放 #93 M4 backlog 與 #255 UI Design v2 第三批實作。
+**v1 商品化完成 ✅（2026-07-13）。** M0–M3 全部 91 個 issue 關閉並合併；目前開放 #93 M4 backlog 與 #257 UI Design v2 第四批實作。
 
 ### 出貨閘門與終驗證據（全數實測通過）
 - **N-02 MVP E2E 冒煙**：Playwright 全旅程（登入→建空間→建頁→編輯→閱讀→搜尋→私有隔離→登出），CI 綠（PR #151、#186 head run）
@@ -87,16 +87,25 @@ Next.js（App Router、TS strict）全端 + PostgreSQL 16/pgvector/pgroonga + Do
 - [x] 本機品質閘門：lint ✅ typecheck ✅ 單元 530/530 ✅ 整合 304/304（含 N-04）✅ N-02 Playwright 2/2（Archive rollout）✅ production build ✅
 - [x] PR #254 的 Validate（含 N-04）與 N-02 全綠並已 squash merge
 
-### UI Design v2 第三批（2026-07-17，#255，進行中）
+### UI Design v2 第三批（2026-07-17，#255／PR #256）
 
 - [x] Archive 閱讀工作區、H2／H3 TOC scroll-spy、內容 renderer、留言 Inspector、版本歷史／差異／還原、附件與 PDF／Office 預覽 presentation
 - [x] Legacy 與 rollout 回退、既有路由／action／權限／資料規則保持不變；無 schema、REST、MCP、SSE 或 authz 變更
 - [x] Production browser QA：Reader light／dark、TOC 錨點、留言新增／刪除、版本任兩版比較、還原 Modal Esc＋focus restore、Archive ⇄ Legacy；Playwright 320／768／1024／1440 light／dark 零水平溢位、零 console warning/error 與非預期 request failure；viewer／commenter／editor／admin 實際角色驗證確認編輯入口、留言輸入與他人留言刪除權限正確
 - [x] 本機品質閘門：lint ✅ typecheck ✅ 單元 532/532 ✅ 整合 304/304（含 N-04 與 Office preview 狀態）✅ N-02 Playwright 2/2（Archive rollout）✅ production build ✅
+- [x] PR #256 的 Validate（含 N-04）與 N-02 全綠並已 squash merge
+
+### UI Design v2 第四批（2026-07-17，#257，進行中）
+
+- [x] Archive 編輯器 Canvas／Inspector、autosave、鎖定／搶鎖／失鎖、版本衝突、既有完整區塊工具、AI 寫作與 import/export presentation；功能覆蓋矩陣同步校正為實際產品能力
+- [x] Legacy 與 rollout 回退保持可用；既有 URL、Server Action、REST、MCP、SSE、schema、authz、儲存與衝突規則不變
+- [x] 瀏覽器功能 QA：繁中 IME、autosave、Slash／表格、閱讀回寫、import/export 入口、AI SSE 產生→確認套用；editor／admin／viewer 權限、Admin 搶鎖、原編輯者 30 秒心跳後轉唯讀，以及獨立 DB version bump 觸發 `VERSION_CONFLICT` 並保留本機文字均通過
+- [x] Production browser QA：320／768／1024／1440、light／dark、Archive ⇄ Legacy 內容不變、零水平溢位與零 console warning/error；QA 抓出並修正空行「＋」浮動插入控制在 320px 超出 viewport
+- [x] 本機品質閘門：lint ✅ typecheck ✅ 單元 532/532 ✅ 整合 304/304（含 N-04）✅ N-02 Playwright 2/2（Archive rollout）✅ production build ✅
 - [ ] PR／CI 全綠後 squash merge
 
 ### 尚未完成（v1 之後）
-- **UI Design v2**：#251／PR #252 與 #253／PR #254 已完成；#255 第三批程式碼、browser QA 與本機品質閘門已完成，待 PR／CI；後續 slice 4–6 依功能覆蓋矩陣逐批遷移
+- **UI Design v2**：#251／PR #252、#253／PR #254、#255／PR #256 已完成；#257 第四批進行中；後續 slice 5–6 依功能覆蓋矩陣逐批遷移
 - **#93 M4 backlog**：變更請求、行內評論、webhooks（暫停）、PDF 匯出、KaTeX、多欄、snippets、內容分析等——其餘候選項依回饋再拆
 - 真實 LLM/Embedding 端點串接為部署設定（本機開發以 mock 驗證介面）；上線時以 /admin/ai 測試連線驗證
 
@@ -104,9 +113,9 @@ Next.js（App Router、TS strict）全端 + PostgreSQL 16/pgvector/pgroonga + Do
 ## GitHub 執行狀態
 
 - Repo：https://github.com/SheldonChangL/JetBook（private）
-- Issues：開放 #93（M4 backlog 彙總）與 #255（Archive reading）；#251／PR #252、#253／PR #254 已完成
+- Issues：開放 #93（M4 backlog 彙總）與 #257（Archive editor）；#251／PR #252、#253／PR #254、#255／PR #256 已完成
 - Milestones：M0 10/10 ✅／M1 42/42 ✅／M2 16/16 ✅／M3 23/23 ✅／M4 已交付 15 功能＋多項修復（backlog 追蹤 #93）
-- 工作流：branch `feature/issue-<n>-<slug>` → PR（Fixes #n）→ squash merge（使用者已授權 self-merge）；目前分支 `feature/issue-255-archive-reading`，active issue #255，最新已合併 PR #254
+- 工作流：branch `feature/issue-<n>-<slug>` → PR（Fixes #n）→ squash merge（使用者已授權 self-merge）；目前分支 `feature/issue-257-archive-editor`，active issue #257，最新已合併 PR #256
 
 ## 已完成
 
@@ -162,8 +171,8 @@ Space 封存/軟刪、跨 Space 移動複製、死鏈標示、附件 GC、Tabs/�
 
 ## 下一步
 
-1. 開 #255 PR（Fixes #255），CI N-02／N-04 通過後 squash merge
-2. 建立 UI Design v2 第四批 issue：Archive 編輯器、鎖定／衝突、完整區塊、AI 寫作與匯入
+1. Push #257、開 PR，待 CI N-02／N-04 全綠後 squash merge
+2. 拆分並實作 UI Design v2 第五批：搜尋、Cmd+K、全域 AI、通知、個人設定、API Token／Docs
 3. 部署到公司內部伺服器：`.env` 填正式值（含 SMTP_*；要開 Office 預覽加 `PREVIEW_CONVERTER_URL=http://gotenberg:3000`）、`docker compose up -d --build`、跑 `db:migrate`（0020）
 4. 串接真實 AI 端點（ANTHROPIC_API_KEY + local BGE-M3）；MCP 依 docs/guides/mcp-server.md 讓 Claude 接上知識庫（每人自建 API token；寫入需勾選 write scope）
 5. 其餘 backlog 候選見 #93（變更請求、行內評論、webhooks、PDF 匯出、KaTeX 等，依回饋再拆）

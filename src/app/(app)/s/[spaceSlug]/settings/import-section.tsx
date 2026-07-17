@@ -137,7 +137,7 @@ export function ImportSection({ spaceId, spaceSlug }: { spaceId: string; spaceSl
   }
 
   return (
-    <section id="import" aria-labelledby="import-heading" className="flex flex-col gap-3">
+    <section id="import" aria-labelledby="import-heading" className="archive-transfer-section flex flex-col gap-3">
       <div className="flex flex-col gap-1">
         <h2 id="import-heading" className="text-h4 text-fg">
           {t("importHeading")}
@@ -145,8 +145,8 @@ export function ImportSection({ spaceId, spaceSlug }: { spaceId: string; spaceSl
         <p className="text-body-ui text-fg-secondary">{t("importDesc")}</p>
       </div>
 
-      <div className="flex flex-col gap-4 rounded-md border border-edge bg-raised p-4">
-        <div className="flex flex-wrap items-center gap-3">
+      <div className="archive-transfer-card flex flex-col gap-4 rounded-md border border-edge bg-raised p-4">
+        <div className="archive-transfer-toolbar flex flex-wrap items-center gap-3">
           <input
             ref={fileInputRef}
             type="file"

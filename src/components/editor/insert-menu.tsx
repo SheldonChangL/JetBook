@@ -31,7 +31,7 @@ export function InsertMenu({ editor }: { editor: Editor | null }) {
         aria-label={t("insertBlock")}
         title={t("insertBlock")}
         onClick={() => editor.chain().focus().insertContent("/").run()}
-        className="flex size-6 items-center justify-center rounded-md border border-edge bg-raised text-fg-secondary shadow-sm hover:bg-hover hover:text-fg"
+        className="archive-editor-insert flex size-6 items-center justify-center rounded-md border border-edge bg-raised text-fg-secondary shadow-sm hover:bg-hover hover:text-fg"
       >
         <Plus className="size-4" aria-hidden />
       </button>

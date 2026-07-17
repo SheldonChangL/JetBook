@@ -126,8 +126,8 @@ Archive token 只在 `html[data-ui-version="archive"]` 覆寫現有語意別名�
 
 1. Token、基礎元件、可逆 rollout、App／Admin Shell、Auth 與 system states。**已完成：#251／PR #252。**
 2. Dashboard、Spaces／Collections、頁面樹、回收桶與 Space 設定。**已完成：#253／PR #254。**
-3. 閱讀、內容區塊、留言、版本、附件與預覽。**進行中：#255。**
-4. 編輯器、鎖定／衝突、完整區塊、AI 寫作與匯入。
+3. 閱讀、內容區塊、留言、版本、附件與預覽。**已完成：#255／PR #256。**
+4. 編輯器、鎖定／衝突、完整區塊、AI 寫作與匯入。**進行中：#257。**
 5. 搜尋、Cmd+K、AI、通知、個人設定、API Token／Docs。
 6. 管理後台完整視覺、響應式收尾、無障礙與視覺回歸。
 

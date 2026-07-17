@@ -102,7 +102,7 @@ export function AiAssistMenu({ editor, pageId, enabled }: AiAssistMenuProps) {
         <div
           role="dialog"
           aria-label={t("panelLabel")}
-          className="w-80 rounded-md border border-edge bg-raised shadow-md"
+          className="archive-ai-assist-panel w-80 rounded-md border border-edge bg-raised shadow-md"
           onMouseDown={(e) => e.preventDefault()}
         >
           <div className="flex items-center gap-1.5 border-b border-edge px-3 py-2">
@@ -169,7 +169,7 @@ export function AiAssistMenu({ editor, pageId, enabled }: AiAssistMenuProps) {
         </div>
       ) : (
         <div
-          className="rounded-md border border-edge bg-raised p-1 shadow-md"
+          className="archive-ai-assist-trigger rounded-md border border-edge bg-raised p-1 shadow-md"
           onMouseDown={(e) => e.preventDefault()}
         >
           <button

@@ -89,7 +89,7 @@ export function TableMenu({ editor }: { editor: Editor | null }) {
       pluginKey="tableMenu"
       shouldShow={({ editor: ed }) => ed.isEditable && ed.isActive("table")}
       options={{ placement: "top", offset: 8 }}
-      className="flex items-center gap-0.5 rounded-md border border-edge bg-raised p-1 shadow-md"
+      className="archive-table-menu flex items-center gap-0.5 rounded-md border border-edge bg-raised p-1 shadow-md"
     >
       {TABLE_ACTIONS.map((action) => {
         const Icon = action.icon;
