@@ -9,7 +9,7 @@ Next.js（App Router、TS strict）全端 + PostgreSQL 16/pgvector/pgroonga + Do
 
 ## 目前階段
 
-**v1 商品化完成 ✅（2026-07-13）。** M0–M3 全部 91 個 issue 關閉並合併；目前開放 #93 M4 backlog 與 #259 UI Design v2 第五批實作。
+**v1 商品化完成 ✅（2026-07-13）。** M0–M3 全部 91 個 issue 關閉並合併；目前開放 #93 M4 backlog 與 #261 UI Design v2 第六批實作。
 
 ### 出貨閘門與終驗證據（全數實測通過）
 - **N-02 MVP E2E 冒煙**：Playwright 全旅程（登入→建空間→建頁→編輯→閱讀→搜尋→私有隔離→登出），CI 綠（PR #151、#186 head run）
@@ -104,16 +104,23 @@ Next.js（App Router、TS strict）全端 + PostgreSQL 16/pgvector/pgroonga + Do
 - [x] 本機品質閘門：lint ✅ typecheck ✅ 單元 532/532 ✅ 整合 304/304（含 N-04）✅ N-02 Playwright 2/2（Archive rollout）✅ production build ✅
 - [x] PR #258 的 Validate（含 N-04）與 N-02 全綠並已 squash merge
 
-### UI Design v2 第五批（2026-07-17，#259，進行中）
+### UI Design v2 第五批（2026-07-17，#259／PR #260）
 
 - [x] Archive 搜尋、Cmd+K、AI Drawer／歷史／引用、通知、個人設定、API Token 與 API Docs presentation；功能覆蓋矩陣同步校正 `/search` 全文／附件與 Cmd+K 語意搜尋的實際邊界
 - [x] Legacy 與 rollout 回退保持可用；既有路由、Server Action、REST、MCP、SSE、schema、authz、全文／語意搜尋、AI governance 與 Token 規則不變
 - [x] Browser QA：320／768／1024／1440、light／dark、搜尋／設定／API Docs 零水平溢位與零 console warning/error；Cmd+K 全文／語意／AI、繁中 IME、AI SSE／引用／歷史、通知空狀態、Token Modal、Archive ⇄ Legacy 查詢狀態保留均通過。QA 抓出並修正 Cmd+K 關閉焦點未復原及 Token Modal 未聚焦名稱欄
 - [x] 本機品質閘門：lint ✅ typecheck ✅ 單元 532/532 ✅ 整合 304/304（含 N-04）✅ N-02 Playwright 2/2（Archive rollout）✅ production build ✅ production bundle browser smoke ✅
+- [x] PR #260 的 Validate（含 N-04，3m51s）與 N-02（3m04s）全綠並已 squash merge
+
+### UI Design v2 第六批（2026-07-17，#261，進行中）
+
+- [ ] Archive 管理後台：使用者／CSV、群組、已刪除 Space、AI、稽核與系統 presentation
+- [ ] 全站 responsive／keyboard／focus／IME／reduced-motion／深淺色與 Legacy 回退收尾
+- [ ] 功能覆蓋矩陣、Production browser QA 與本機品質閘門
 - [ ] PR／CI 全綠後 squash merge
 
 ### 尚未完成（v1 之後）
-- **UI Design v2**：#251／PR #252、#253／PR #254、#255／PR #256、#257／PR #258 已完成；#259 第五批進行中；後續 slice 6 依功能覆蓋矩陣遷移
+- **UI Design v2**：#251／PR #252、#253／PR #254、#255／PR #256、#257／PR #258、#259／PR #260 已完成；#261 第六批進行中
 - **#93 M4 backlog**：變更請求、行內評論、webhooks（暫停）、PDF 匯出、KaTeX、多欄、snippets、內容分析等——其餘候選項依回饋再拆
 - 真實 LLM/Embedding 端點串接為部署設定（本機開發以 mock 驗證介面）；上線時以 /admin/ai 測試連線驗證
 
@@ -121,9 +128,9 @@ Next.js（App Router、TS strict）全端 + PostgreSQL 16/pgvector/pgroonga + Do
 ## GitHub 執行狀態
 
 - Repo：https://github.com/SheldonChangL/JetBook（private）
-- Issues：開放 #93（M4 backlog 彙總）與 #259（Archive work layer）；#251／PR #252、#253／PR #254、#255／PR #256、#257／PR #258 已完成
+- Issues：開放 #93（M4 backlog 彙總）與 #261（Archive admin console）；#251／PR #252、#253／PR #254、#255／PR #256、#257／PR #258、#259／PR #260 已完成
 - Milestones：M0 10/10 ✅／M1 42/42 ✅／M2 16/16 ✅／M3 23/23 ✅／M4 已交付 15 功能＋多項修復（backlog 追蹤 #93）
-- 工作流：branch `feature/issue-<n>-<slug>` → PR（Fixes #n）→ squash merge（使用者已授權 self-merge）；目前分支 `feature/issue-259-archive-work-layer`，active issue #259，最新已合併 PR #258
+- 工作流：branch `feature/issue-<n>-<slug>` → PR（Fixes #n）→ squash merge（使用者已授權 self-merge）；目前分支 `feature/issue-261-archive-admin-console`，active issue #261，最新已合併 PR #260
 
 ## 已完成
 
@@ -179,8 +186,8 @@ Space 封存/軟刪、跨 Space 移動複製、死鏈標示、附件 GC、Tabs/�
 
 ## 下一步
 
-1. Push #259 分支、開 PR，等待 Validate／N-02 全綠後 squash merge
-2. 建立 UI Design v2 slice 6 issue：管理後台、全站 responsive／無障礙與視覺回歸收尾
+1. 完成 #261 管理後台 presentation 與全站 responsive／無障礙收尾
+2. #261 browser QA 與本機／CI N-02、N-04 全綠後 squash merge
 3. 部署到公司內部伺服器：`.env` 填正式值（含 SMTP_*；要開 Office 預覽加 `PREVIEW_CONVERTER_URL=http://gotenberg:3000`）、`docker compose up -d --build`、跑 `db:migrate`（0020）
 4. 串接真實 AI 端點（ANTHROPIC_API_KEY + local BGE-M3）；MCP 依 docs/guides/mcp-server.md 讓 Claude 接上知識庫（每人自建 API token；寫入需勾選 write scope）
 5. 其餘 backlog 候選見 #93（變更請求、行內評論、webhooks、PDF 匯出、KaTeX 等，依回饋再拆）
