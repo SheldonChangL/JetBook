@@ -1743,3 +1743,99 @@ html[data-ui-version="archive"] .archive-dashboard-updates > li {
     margin-left: 0;
   }
 }
+
+/* UI v2 slice 2 — Spaces／Collections：以檔案索引呈現分組與管理動作。 */
+html[data-ui-version="archive"] .archive-spaces-page {
+  width: 100%;
+  max-width: 1120px;
+  gap: 36px;
+  padding: 44px;
+}
+
+html[data-ui-version="archive"] .archive-spaces-header {
+  align-items: flex-end;
+  padding-bottom: 20px;
+  border-bottom: 1px solid var(--border-strong);
+}
+
+html[data-ui-version="archive"] .archive-spaces-header > :last-child {
+  flex-wrap: wrap;
+  justify-content: flex-end;
+}
+
+html[data-ui-version="archive"] .archive-collection-list {
+  gap: 42px;
+  counter-reset: archive-collection;
+}
+
+html[data-ui-version="archive"] .archive-collection {
+  gap: 0;
+  counter-increment: archive-collection;
+}
+
+html[data-ui-version="archive"] .archive-collection > div:first-child {
+  min-height: 40px;
+  padding-bottom: 8px;
+  border-color: var(--border-strong);
+}
+
+html[data-ui-version="archive"] .archive-collection > div:first-child h2::before {
+  margin-right: 10px;
+  color: var(--primary);
+  content: counter(archive-collection, decimal-leading-zero) " /";
+  font-family: var(--font-mono);
+  font-size: 10px;
+  letter-spacing: 0.08em;
+}
+
+html[data-ui-version="archive"] .archive-space-index {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+}
+
+html[data-ui-version="archive"] .archive-space-index-item {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(150px, 220px);
+  align-items: center;
+  gap: 16px;
+  border-bottom: 1px solid var(--border-default);
+}
+
+html[data-ui-version="archive"] .archive-space-index-link {
+  min-height: 72px;
+  justify-content: center;
+  padding: 12px 0;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+}
+
+html[data-ui-version="archive"] .archive-space-index-link:hover {
+  padding-inline: 12px;
+  background: var(--bg-hover);
+}
+
+@media (max-width: 767px) {
+  html[data-ui-version="archive"] .archive-spaces-page {
+    gap: 28px;
+    padding: 28px 20px 40px;
+  }
+
+  html[data-ui-version="archive"] .archive-spaces-header {
+    align-items: flex-start;
+    flex-direction: column;
+    gap: 16px;
+  }
+
+  html[data-ui-version="archive"] .archive-spaces-header > :last-child {
+    justify-content: flex-start;
+  }
+
+  html[data-ui-version="archive"] .archive-space-index-item {
+    display: flex;
+    align-items: stretch;
+    gap: 8px;
+  }
+}

@@ -34,9 +34,14 @@ export default async function SpacesPage() {
   const groups = groupSpacesByCollection(list, collectionRefs, { includeEmpty: admin });
 
   return (
-    <main className="mx-auto flex max-w-4xl flex-col gap-6 px-6 py-8">
-      <header className="flex items-center justify-between gap-2">
-        <h1 className="text-h1 text-fg">{t("title")}</h1>
+    <main className="archive-spaces-page mx-auto flex max-w-4xl flex-col gap-6 px-6 py-8">
+      <header className="archive-spaces-header flex items-center justify-between gap-2">
+        <div>
+          <h1 className="text-h1 text-fg">{t("title")}</h1>
+          <p className="ui-archive-only mt-1 text-body-ui text-fg-secondary">
+            {t("archiveSubtitle")}
+          </p>
+        </div>
         <div className="flex items-center gap-2">
           {admin ? <CreateCollectionButton /> : null}
           <CreateSpaceButton />
@@ -46,13 +51,13 @@ export default async function SpacesPage() {
       {groups.length === 0 ? (
         <EmptyState title={t("emptyTitle")} description={t("emptyDesc")} />
       ) : (
-        <div className="flex flex-col gap-8">
+        <div className="archive-collection-list flex flex-col gap-8">
           {groups.map((group) => {
             const showHeader = group.collection !== null || groups.length > 1;
             return (
               <section
                 key={group.collection?.id ?? "__ungrouped__"}
-                className="flex flex-col gap-3"
+                className="archive-collection flex flex-col gap-3"
               >
                 {showHeader ? (
                   <div className="flex items-center justify-between gap-2 border-b border-edge pb-1.5">
@@ -71,12 +76,12 @@ export default async function SpacesPage() {
                 {group.spaces.length === 0 ? (
                   <p className="text-body-ui text-fg-tertiary">{t("collectionEmpty")}</p>
                 ) : (
-                  <ul className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+                  <ul className="archive-space-index grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
                     {group.spaces.map((space) => (
-                      <li key={space.id} className="flex flex-col gap-1.5">
+                      <li key={space.id} className="archive-space-index-item flex flex-col gap-1.5">
                         <Link
                           href={`/s/${space.slug}`}
-                          className="flex flex-1 flex-col gap-2 rounded-md border border-edge bg-raised p-4 transition-shadow hover:shadow-sm"
+                          className="archive-space-index-link flex flex-1 flex-col gap-2 rounded-md border border-edge bg-raised p-4 transition-shadow hover:shadow-sm"
                         >
                           <div className="flex items-center justify-between gap-2">
                             <span className="text-h4 text-fg">
