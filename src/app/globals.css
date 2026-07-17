@@ -2651,3 +2651,503 @@ html[data-ui-version="archive"] .archive-history-snapshot > div:first-child {
     padding: 28px 20px 44px;
   }
 }
+
+/* UI v2 slice 4 — Editor workspace：狀態列＋文件 Canvas＋編輯 Inspector。 */
+html[data-ui-version="archive"] .archive-editor-page {
+  width: 100%;
+  max-width: none;
+  height: 100%;
+  min-height: 0;
+  margin: 0;
+  gap: 0;
+  padding: 0;
+  overflow: hidden;
+}
+
+html[data-ui-version="archive"] .archive-editor-toolbar {
+  min-height: 56px;
+  flex: none;
+  padding: 0 24px;
+  border-bottom: 1px solid var(--border-strong);
+  background: var(--bg-base);
+}
+
+html[data-ui-version="archive"] .archive-editor-back {
+  min-height: 32px;
+  padding-inline: 8px;
+  border-radius: var(--radius-xs);
+}
+
+html[data-ui-version="archive"] .archive-editor-back:hover,
+html[data-ui-version="archive"] .archive-editor-back:focus-visible {
+  background: var(--bg-hover);
+}
+
+html[data-ui-version="archive"] .archive-editor-toolbar-actions > button {
+  border-radius: var(--radius-xs);
+}
+
+html[data-ui-version="archive"] .archive-editor-save-state {
+  display: inline-flex;
+  min-height: 24px;
+  align-items: center;
+  gap: 6px;
+  color: var(--text-secondary);
+  font-family: var(--font-mono);
+  font-size: 10px;
+  letter-spacing: 0.02em;
+}
+
+html[data-ui-version="archive"] .archive-editor-save-state::before {
+  width: 7px;
+  height: 7px;
+  border-radius: 999px;
+  background: var(--text-tertiary);
+  content: "";
+}
+
+html[data-ui-version="archive"] .archive-editor-save-state[data-state="saving"]::before {
+  background: var(--warning);
+}
+
+html[data-ui-version="archive"] .archive-editor-save-state[data-state="saved"]::before {
+  background: var(--success);
+}
+
+html[data-ui-version="archive"] .archive-editor-save-state[data-state="conflict"]::before,
+html[data-ui-version="archive"] .archive-editor-save-state[data-state="error"]::before {
+  background: var(--danger);
+}
+
+html[data-ui-version="archive"] .archive-editor-layout {
+  display: grid;
+  min-height: 0;
+  flex: 1;
+  grid-template-columns: minmax(0, 1fr) 292px;
+}
+
+html[data-ui-version="archive"] .archive-editor-document {
+  min-width: 0;
+  padding: 36px 44px 80px;
+  overflow-y: auto;
+}
+
+html[data-ui-version="archive"] .archive-editor-kicker,
+html[data-ui-version="archive"] .archive-editor-title,
+html[data-ui-version="archive"] .archive-editor-alert,
+html[data-ui-version="archive"] .archive-editor-surface {
+  width: 100%;
+  max-width: 760px;
+  margin-inline: auto;
+}
+
+html[data-ui-version="archive"] .archive-editor-kicker {
+  margin-bottom: -6px;
+  color: var(--primary);
+  font-family: var(--font-mono);
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+html[data-ui-version="archive"] .archive-editor-title {
+  padding-bottom: 18px;
+  border-bottom: 1px solid var(--border-strong);
+}
+
+html[data-ui-version="archive"] .archive-editor-title > button {
+  border-radius: var(--radius-xs);
+}
+
+html[data-ui-version="archive"] .archive-editor-title input {
+  min-width: 0;
+  letter-spacing: -0.025em;
+}
+
+html[data-ui-version="archive"] .archive-editor-alert {
+  border-radius: var(--radius-xs);
+}
+
+html[data-ui-version="archive"] .archive-editor-surface {
+  min-height: 64vh;
+  padding-block: 8px 40px;
+}
+
+html[data-ui-version="archive"] .archive-editor-surface .prose-editor {
+  min-height: 64vh;
+  color: var(--text-secondary);
+  font-size: 15px;
+  line-height: 1.78;
+}
+
+html[data-ui-version="archive"] .archive-editor-surface .prose-editor :where(h1, h2, h3) {
+  color: var(--text-primary);
+  letter-spacing: -0.015em;
+}
+
+html[data-ui-version="archive"] .archive-editor-surface .prose-editor :where(h2) {
+  margin-top: 2.15em;
+  padding-top: 0.2em;
+  border-top: 1px solid var(--border-default);
+}
+
+html[data-ui-version="archive"] .archive-editor-surface .prose-editor :where(.jb-callout, .jb-code, .jb-tabs, .jb-details, .jb-embed, .content-attachment, .content-document) {
+  border-radius: var(--radius-xs);
+  box-shadow: none;
+}
+
+html[data-ui-version="archive"] .archive-editor-inspector {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+  overflow-y: auto;
+  border-left: 1px solid var(--border-strong);
+  background: var(--bg-sidebar);
+}
+
+html[data-ui-version="archive"] .archive-editor-inspector-head {
+  display: flex;
+  min-height: 52px;
+  flex: none;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 16px;
+  border-bottom: 1px solid var(--border-strong);
+  font-size: var(--text-body-ui);
+}
+
+html[data-ui-version="archive"] .archive-editor-inspector-head > span {
+  border-radius: var(--radius-xs);
+}
+
+html[data-ui-version="archive"] .archive-editor-inspector-section {
+  padding: 18px 16px;
+  border-bottom: 1px solid var(--border-default);
+}
+
+html[data-ui-version="archive"] .archive-editor-inspector-section > h2 {
+  margin-bottom: 10px;
+  font-family: var(--font-mono);
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+
+html[data-ui-version="archive"] .archive-editor-lock-card {
+  display: flex;
+  gap: 9px;
+  padding: 12px;
+  border-left: 3px solid var(--success);
+  color: var(--text-primary);
+  background: var(--success-tint);
+}
+
+html[data-ui-version="archive"] .archive-editor-lock-card[data-state="lost"] {
+  border-left-color: var(--warning);
+  background: var(--warning-tint);
+}
+
+html[data-ui-version="archive"] .archive-editor-lock-card > svg {
+  flex: none;
+  margin-top: 1px;
+  color: var(--success);
+}
+
+html[data-ui-version="archive"] .archive-editor-lock-card[data-state="lost"] > svg {
+  color: var(--warning);
+}
+
+html[data-ui-version="archive"] .archive-editor-lock-card strong {
+  display: block;
+  font-size: var(--text-body-ui);
+}
+
+html[data-ui-version="archive"] .archive-editor-lock-card p {
+  margin-top: 3px;
+  color: var(--text-secondary);
+  font-size: var(--text-caption);
+  line-height: 1.45;
+}
+
+html[data-ui-version="archive"] .archive-editor-facts {
+  display: flex;
+  flex-direction: column;
+  margin-top: 12px;
+  border-top: 1px solid var(--border-default);
+}
+
+html[data-ui-version="archive"] .archive-editor-facts > div {
+  display: flex;
+  min-height: 34px;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  border-bottom: 1px solid var(--border-default);
+}
+
+html[data-ui-version="archive"] .archive-editor-facts dt {
+  color: var(--text-tertiary);
+  font-size: var(--text-caption);
+}
+
+html[data-ui-version="archive"] .archive-editor-facts dd {
+  overflow: hidden;
+  color: var(--text-secondary);
+  font-family: var(--font-mono);
+  font-size: 10px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+html[data-ui-version="archive"] .archive-editor-tool-list {
+  display: flex;
+  flex-direction: column;
+}
+
+html[data-ui-version="archive"] .archive-editor-tool-list li {
+  display: flex;
+  min-height: 34px;
+  align-items: center;
+  gap: 9px;
+  border-bottom: 1px solid var(--border-default);
+  color: var(--text-secondary);
+  font-size: var(--text-caption);
+}
+
+html[data-ui-version="archive"] .archive-editor-tool-list svg {
+  width: 14px;
+  height: 14px;
+  color: var(--text-tertiary);
+}
+
+html[data-ui-version="archive"] .archive-editor-ai-note {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  color: var(--text-secondary);
+  font-size: var(--text-caption);
+  line-height: 1.55;
+}
+
+html[data-ui-version="archive"] .archive-editor-ai-note svg {
+  flex: none;
+  color: var(--ai);
+}
+
+html[data-ui-version="archive"] .archive-editor-protection p {
+  color: var(--text-tertiary);
+  font-size: var(--text-caption);
+  line-height: 1.55;
+}
+
+/* Editor 浮動工作層保留原 TipTap command，只調整 Archive presentation。 */
+html[data-ui-version="archive"] .archive-editor-insert,
+html[data-ui-version="archive"] .archive-table-menu,
+html[data-ui-version="archive"] .archive-slash-menu,
+html[data-ui-version="archive"] .archive-ai-assist-panel,
+html[data-ui-version="archive"] .archive-ai-assist-trigger {
+  border-radius: var(--radius-xs);
+  box-shadow: var(--shadow-lg);
+}
+
+html[data-ui-version="archive"] .archive-editor-insert {
+  border-color: var(--border-strong);
+}
+
+html[data-ui-version="archive"] .archive-slash-menu {
+  width: min(360px, calc(100vw - 24px));
+  padding: 6px;
+}
+
+html[data-ui-version="archive"] .archive-slash-label {
+  font-family: var(--font-mono);
+  font-size: 9px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+
+html[data-ui-version="archive"] .archive-slash-item {
+  min-height: 48px;
+  border-left: 3px solid transparent;
+  border-radius: var(--radius-xs);
+}
+
+html[data-ui-version="archive"] .archive-slash-item[aria-selected="true"] {
+  border-left-color: var(--archive-index);
+  background: var(--primary-tint);
+}
+
+html[data-ui-version="archive"] .archive-ai-assist-panel > :first-child,
+html[data-ui-version="archive"] .archive-ai-assist-panel > :last-child {
+  border-color: var(--border-strong);
+}
+
+/* 編輯鎖 gate：沿用原 acquire/steal action，以檔案室警示面板呈現。 */
+html[data-ui-version="archive"] .archive-lock-notice {
+  width: min(100% - 40px, 660px);
+  margin-block: 56px;
+  padding: 48px;
+  border: 1px solid var(--border-strong);
+  border-top: 4px solid var(--warning);
+  border-radius: var(--radius-xs);
+  background: var(--bg-raised);
+}
+
+html[data-ui-version="archive"] .archive-lock-notice-icon {
+  width: 44px;
+  height: 44px;
+  margin: 0 auto 14px;
+  padding: 11px;
+  color: var(--warning);
+  background: var(--warning-tint);
+}
+
+html[data-ui-version="archive"] .archive-lock-notice-icon svg {
+  width: 100%;
+  height: 100%;
+}
+
+html[data-ui-version="archive"] .archive-lock-notice-kicker {
+  margin-bottom: 6px;
+  color: var(--warning);
+  font-family: var(--font-mono);
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+html[data-ui-version="archive"] .archive-lock-notice-copy {
+  line-height: 1.65;
+}
+
+html[data-ui-version="archive"] .archive-lock-notice-actions > button {
+  border-radius: var(--radius-xs);
+}
+
+/* Import / Export job panels：沿用既有 API polling 與結果狀態。 */
+html[data-ui-version="archive"] .archive-transfer-section > div:first-child {
+  padding-bottom: 10px;
+  border-bottom: 1px solid var(--border-default);
+}
+
+html[data-ui-version="archive"] .archive-transfer-card {
+  padding: 16px 0;
+  border-width: 0 0 1px;
+  border-radius: 0;
+  background: transparent;
+}
+
+html[data-ui-version="archive"] .archive-transfer-toolbar {
+  min-height: 40px;
+}
+
+html[data-ui-version="archive"] .archive-transfer-toolbar > button,
+html[data-ui-version="archive"] .archive-transfer-toolbar > label {
+  border-radius: var(--radius-xs);
+}
+
+@media (max-width: 1279px) {
+  html[data-ui-version="archive"] .archive-editor-page {
+    height: auto;
+    min-height: 100%;
+    overflow: visible;
+  }
+
+  html[data-ui-version="archive"] .archive-editor-toolbar {
+    position: sticky;
+    z-index: 10;
+    top: 0;
+  }
+
+  html[data-ui-version="archive"] .archive-editor-layout {
+    display: block;
+  }
+
+  html[data-ui-version="archive"] .archive-editor-document {
+    padding: 36px 36px 48px;
+    overflow: visible;
+  }
+
+  html[data-ui-version="archive"] .archive-editor-inspector {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    overflow: visible;
+    border-top: 1px solid var(--border-strong);
+    border-left: 0;
+  }
+
+  html[data-ui-version="archive"] .archive-editor-inspector-head {
+    grid-column: 1 / -1;
+  }
+
+  html[data-ui-version="archive"] .archive-editor-inspector-section {
+    min-width: 0;
+  }
+}
+
+@media (max-width: 767px) {
+  html[data-ui-version="archive"] .archive-editor-toolbar {
+    min-height: 52px;
+    gap: 8px;
+    padding-inline: 12px;
+  }
+
+  html[data-ui-version="archive"] .archive-editor-toolbar-actions {
+    gap: 8px;
+  }
+
+  html[data-ui-version="archive"] .archive-editor-save-state {
+    max-width: 112px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  html[data-ui-version="archive"] .archive-editor-document {
+    padding: 28px 20px 40px;
+  }
+
+  html[data-ui-version="archive"] .archive-editor-title {
+    align-items: flex-start;
+  }
+
+  html[data-ui-version="archive"] .archive-editor-title input {
+    font-size: var(--text-h2);
+  }
+
+  html[data-ui-version="archive"] .archive-editor-surface,
+  html[data-ui-version="archive"] .archive-editor-surface .prose-editor {
+    min-height: 55vh;
+  }
+
+  html[data-ui-version="archive"] .archive-editor-surface .prose-editor {
+    font-size: 14px;
+  }
+
+  html[data-ui-version="archive"] .archive-editor-inspector {
+    display: flex;
+  }
+
+  html[data-ui-version="archive"] .archive-lock-notice {
+    width: calc(100% - 32px);
+    margin-block: 32px;
+    padding: 32px 20px;
+  }
+
+  html[data-ui-version="archive"] .archive-lock-notice-actions {
+    flex-direction: column;
+  }
+
+  html[data-ui-version="archive"] .archive-transfer-toolbar {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  html[data-ui-version="archive"] .archive-transfer-toolbar > :last-child {
+    width: 100%;
+    margin-left: 0;
+  }
+}

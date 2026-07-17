@@ -101,7 +101,7 @@ export function ExportSection({ spaceId }: { spaceId: string }) {
   }
 
   return (
-    <section id="export" aria-labelledby="export-heading" className="flex flex-col gap-3">
+    <section id="export" aria-labelledby="export-heading" className="archive-transfer-section flex flex-col gap-3">
       <div className="flex flex-col gap-1">
         <h2 id="export-heading" className="text-h4 text-fg">
           {t("exportHeading")}
@@ -109,8 +109,8 @@ export function ExportSection({ spaceId }: { spaceId: string }) {
         <p className="text-body-ui text-fg-secondary">{t("exportDesc")}</p>
       </div>
 
-      <div className="flex flex-col gap-4 rounded-md border border-edge bg-raised p-4">
-        <div className="flex flex-wrap items-center gap-3">
+      <div className="archive-transfer-card flex flex-col gap-4 rounded-md border border-edge bg-raised p-4">
+        <div className="archive-transfer-toolbar flex flex-wrap items-center gap-3">
           <Button variant="primary" onClick={onStart} disabled={busy} loading={busy}>
             <FileDown aria-hidden className="size-4" />
             {t("exportStartButton")}

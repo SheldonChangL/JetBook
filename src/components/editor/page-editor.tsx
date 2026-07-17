@@ -4,7 +4,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useTranslations } from "next-intl";
 import { EditorContent, useEditor, type Editor } from "@tiptap/react";
-import { ArrowLeft } from "lucide-react";
+import { ArrowLeft, Blocks, Braces, FileText, Image as ImageIcon, LockKeyhole, Sparkles } from "lucide-react";
 import { renamePage, savePage, setPageIcon } from "@/actions/page";
 import { heartbeatLockAction, releaseLockAction } from "@/actions/lock";
 import { buildExtensions } from "./extensions";
@@ -22,6 +22,7 @@ import { startAttachmentUpload } from "./attachment/attachment-upload";
 import { attachmentAcceptAttr } from "./attachment/attachment-utils";
 import type { ProseMirrorDoc } from "@/lib/content/types";
 import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
 import { EmojiPickerButton } from "@/components/ui/emoji-picker";
 import { useToast } from "@/components/ui/toast";
 
@@ -68,6 +69,7 @@ export function PageEditor({
   const [title, setTitle] = useState(initialTitle);
   const [icon, setIcon] = useState<string | null>(initialIcon);
   const [saveState, setSaveState] = useState<SaveState>("idle");
+  const [versionNo, setVersionNo] = useState(initialVersionNo);
   // 編輯鎖被搶/逾時接手 → 降級唯讀（F-COLLAB-01 驗收 3）；記住新持有者姓名供提示
   const [lockLostBy, setLockLostBy] = useState<string | null>(null);
   const [lockLost, setLockLost] = useState(false);
@@ -273,6 +275,7 @@ export function PageEditor({
         content: doc,
       });
       versionRef.current = result.versionNo;
+      setVersionNo(result.versionNo);
       setSaveState("saved");
     } catch (err) {
       const message = err instanceof Error ? err.message : "";
@@ -325,7 +328,7 @@ export function PageEditor({
     };
   }, [pageId, toast, t]);
 
-  const statusText =
+  const legacyStatusText =
     saveState === "saving"
       ? t("saving")
       : saveState === "saved"
@@ -333,21 +336,30 @@ export function PageEditor({
         : saveState === "conflict"
           ? t("conflict")
           : "";
+  const archiveStatusText =
+    saveState === "error" ? t("saveError") : legacyStatusText || t("archiveReady");
 
   return (
-    <div className="mx-auto flex max-w-3xl flex-col gap-4 px-6 py-6">
-      <div className="flex items-center justify-between">
+    <div className="archive-editor-page mx-auto flex max-w-3xl flex-col gap-4 px-6 py-6">
+      <div className="archive-editor-toolbar flex items-center justify-between">
         <button
           type="button"
           onClick={() => router.push(`/s/${spaceSlug}/${pageSlug}`)}
-          className="flex items-center gap-1 text-body-ui text-fg-secondary hover:text-fg"
+          className="archive-editor-back flex items-center gap-1 text-body-ui text-fg-secondary hover:text-fg"
         >
           <ArrowLeft className="size-4" />
           {t("back")}
         </button>
-        <div className="flex items-center gap-3">
-          <span className="text-caption text-fg-tertiary" aria-live="polite">
-            {statusText}
+        <div className="archive-editor-toolbar-actions flex items-center gap-3">
+          <span className="ui-legacy-only text-caption text-fg-tertiary" aria-live="polite">
+            {legacyStatusText}
+          </span>
+          <span
+            className="archive-editor-save-state ui-archive-only text-caption text-fg-tertiary"
+            data-state={saveState}
+            aria-live="polite"
+          >
+            {archiveStatusText}
           </span>
           <Button variant="secondary" size="sm" onClick={() => router.push(`/s/${spaceSlug}/${pageSlug}`)}>
             {t("done")}
@@ -355,64 +367,127 @@ export function PageEditor({
         </div>
       </div>
 
-      <div className="flex items-center gap-2">
-        <EmojiPickerButton
-          value={icon}
-          disabled={lockLost}
-          ariaLabel={t("iconPicker")}
-          onChange={(next) => {
-            const prev = icon;
-            setIcon(next);
-            void setPageIcon({ pageId, icon: next }).catch(() => {
-              setIcon(prev);
-              toast({ variant: "error", title: t("iconError") });
-            });
-          }}
-        />
-        <input
-          value={title}
-          readOnly={lockLost}
-          onChange={(e) => setTitle(e.target.value)}
-          onBlur={() => {
-            if (lockLost) return;
-            const trimmed = title.trim();
-            if (trimmed && trimmed !== initialTitle) {
-              void renamePage({ pageId, title: trimmed });
-            }
-          }}
-          placeholder={t("titlePlaceholder")}
-          className="w-full bg-transparent text-h1 text-fg outline-none placeholder:text-fg-tertiary"
-          aria-label={t("titlePlaceholder")}
-        />
+      <div className="archive-editor-layout">
+        <main className="archive-editor-document flex flex-col gap-4">
+          <p className="archive-editor-kicker ui-archive-only">{t("archiveKicker")}</p>
+          <div className="archive-editor-title flex items-center gap-2">
+            <EmojiPickerButton
+              value={icon}
+              disabled={lockLost}
+              ariaLabel={t("iconPicker")}
+              onChange={(next) => {
+                const prev = icon;
+                setIcon(next);
+                void setPageIcon({ pageId, icon: next }).catch(() => {
+                  setIcon(prev);
+                  toast({ variant: "error", title: t("iconError") });
+                });
+              }}
+            />
+            <input
+              value={title}
+              readOnly={lockLost}
+              onChange={(e) => setTitle(e.target.value)}
+              onBlur={() => {
+                if (lockLost) return;
+                const trimmed = title.trim();
+                if (trimmed && trimmed !== initialTitle) {
+                  void renamePage({ pageId, title: trimmed });
+                }
+              }}
+              placeholder={t("titlePlaceholder")}
+              className="w-full bg-transparent text-h1 text-fg outline-none placeholder:text-fg-tertiary"
+              aria-label={t("titlePlaceholder")}
+            />
+          </div>
+
+          {lockLost ? (
+            <div
+              role="alert"
+              className="archive-editor-alert flex flex-col gap-2 rounded-sm border border-warning/40 bg-warning-tint px-3 py-2 text-body-ui text-warning"
+            >
+              <span>
+                {lockLostBy ? t("lockLostByHint", { name: lockLostBy }) : t("lockLostHint")}
+              </span>
+              <div>
+                <Button
+                  variant="secondary"
+                  size="sm"
+                  onClick={() => router.push(`/s/${spaceSlug}/${pageSlug}`)}
+                >
+                  {t("backToReading")}
+                </Button>
+              </div>
+            </div>
+          ) : null}
+
+          {saveState === "conflict" ? (
+            <div
+              role="alert"
+              className="archive-editor-alert rounded-sm border border-warning/40 bg-warning-tint px-3 py-2 text-body-ui text-warning"
+            >
+              {t("conflictHint")}
+            </div>
+          ) : null}
+
+          <div className="archive-editor-surface">
+            <EditorContent editor={editor} />
+          </div>
+        </main>
+
+        <aside className="archive-editor-inspector ui-archive-only" aria-label={t("archiveContext")}>
+          <div className="archive-editor-inspector-head">
+            <strong>{t("archiveContext")}</strong>
+            <Badge variant={lockLost ? "warning" : "success"}>
+              {lockLost ? t("archiveReadOnly") : t("archiveConnected")}
+            </Badge>
+          </div>
+
+          <section className="archive-editor-inspector-section">
+            <div className="archive-editor-lock-card" data-state={lockLost ? "lost" : "held"}>
+              <LockKeyhole aria-hidden className="size-4" />
+              <div>
+                <strong>{lockLost ? t("archiveLockLost") : t("archiveLockHeld")}</strong>
+                <p>{lockLost ? t("archiveLockLostDetail") : t("archiveLockDetail")}</p>
+              </div>
+            </div>
+            <dl className="archive-editor-facts">
+              <div>
+                <dt>{t("archiveVersion")}</dt>
+                <dd>{t("archiveVersionValue", { version: versionNo })}</dd>
+              </div>
+              <div>
+                <dt>{t("archiveAutosave")}</dt>
+                <dd>{archiveStatusText}</dd>
+              </div>
+            </dl>
+          </section>
+
+          <section className="archive-editor-inspector-section">
+            <h2>{t("archiveTools")}</h2>
+            <ul className="archive-editor-tool-list">
+              <li><ImageIcon aria-hidden />{t("archiveToolsMedia")}</li>
+              <li><FileText aria-hidden />{t("archiveToolsDocument")}</li>
+              <li><Blocks aria-hidden />{t("archiveToolsStructured")}</li>
+              <li><Braces aria-hidden />{t("archiveToolsTechnical")}</li>
+            </ul>
+          </section>
+
+          <section className="archive-editor-inspector-section">
+            <h2>{t("archiveAi")}</h2>
+            <p className="archive-editor-ai-note">
+              <Sparkles aria-hidden className="size-4" />
+              {aiEnabled && !lockLost ? t("archiveAiEnabled") : t("archiveAiUnavailable")}
+            </p>
+          </section>
+
+          <section className="archive-editor-inspector-section archive-editor-protection">
+            <h2>{t("archiveProtection")}</h2>
+            <p>{t("archiveProtectionHint")}</p>
+          </section>
+        </aside>
       </div>
 
-      {lockLost ? (
-        <div
-          role="alert"
-          className="flex flex-col gap-2 rounded-sm border border-warning/40 bg-warning-tint px-3 py-2 text-body-ui text-warning"
-        >
-          <span>
-            {lockLostBy ? t("lockLostByHint", { name: lockLostBy }) : t("lockLostHint")}
-          </span>
-          <div>
-            <Button
-              variant="secondary"
-              size="sm"
-              onClick={() => router.push(`/s/${spaceSlug}/${pageSlug}`)}
-            >
-              {t("backToReading")}
-            </Button>
-          </div>
-        </div>
-      ) : null}
-
-      {saveState === "conflict" ? (
-        <div role="alert" className="rounded-sm border border-warning/40 bg-warning-tint px-3 py-2 text-body-ui text-warning">
-          {t("conflictHint")}
-        </div>
-      ) : null}
-
-      <EditorContent editor={editor} />
       <InsertMenu editor={editor} />
       <TableMenu editor={editor} />
       <AiAssistMenu editor={editor} pageId={pageId} enabled={aiEnabled && !lockLost} />

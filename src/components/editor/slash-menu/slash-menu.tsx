@@ -80,14 +80,14 @@ export const SlashMenu = forwardRef<SlashMenuHandle, SlashMenuProps>(
       <div
         role="listbox"
         aria-label={t("label")}
-        className="max-h-[400px] w-80 overflow-y-auto rounded-md border border-edge bg-raised p-1 shadow-md"
+        className="archive-slash-menu max-h-[400px] w-80 overflow-y-auto rounded-md border border-edge bg-raised p-1 shadow-md"
       >
         {flatItems.length === 0 ? (
           <div className="px-2 py-2 text-body-ui text-fg-tertiary">{t("empty")}</div>
         ) : (
           grouped.map(({ group, items: groupItems }) => (
-            <div key={group}>
-              <div className="px-2 pb-1 pt-2 text-caption font-medium text-fg-tertiary">
+            <div key={group} className="archive-slash-group">
+              <div className="archive-slash-label px-2 pb-1 pt-2 text-caption font-medium text-fg-tertiary">
                 {t(`groups.${group}`)}
               </div>
               {groupItems.map((item) => {
@@ -104,7 +104,7 @@ export const SlashMenu = forwardRef<SlashMenuHandle, SlashMenuProps>(
                     role="option"
                     aria-selected={index === selectedIndex}
                     className={cn(
-                      "flex w-full items-center gap-2.5 rounded-sm px-2 py-1.5 text-left",
+                      "archive-slash-item flex w-full items-center gap-2.5 rounded-sm px-2 py-1.5 text-left",
                       index === selectedIndex && "bg-hover",
                     )}
                     onMouseDown={(e) => e.preventDefault()}
