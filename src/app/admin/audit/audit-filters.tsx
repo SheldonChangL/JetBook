@@ -77,7 +77,7 @@ export function AuditFilters({
   return (
     <form
       onSubmit={apply}
-      className="flex flex-wrap items-end gap-3 rounded-md border border-edge bg-raised p-3"
+      className="archive-admin-audit-filters flex flex-wrap items-end gap-3 rounded-md border border-edge bg-raised p-3"
     >
       {/* actor 搜尋 */}
       <label className="flex min-w-[200px] flex-1 flex-col gap-1">

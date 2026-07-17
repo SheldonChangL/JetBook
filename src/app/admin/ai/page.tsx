@@ -43,13 +43,14 @@ export default async function AdminAiPage() {
   const { llm, embedding } = settings;
 
   return (
-    <div className="mx-auto flex max-w-5xl flex-col gap-6 px-6 py-8">
-      <header className="flex flex-col gap-1">
+    <div className="archive-admin-page archive-admin-ai mx-auto flex max-w-5xl flex-col gap-6 px-6 py-8">
+      <header className="archive-admin-page-header flex flex-col gap-1">
+        <p className="archive-admin-kicker ui-archive-only">{t("archiveAiKicker")}</p>
         <h1 className="text-h1 text-fg">{t("aiTitle")}</h1>
         <p className="text-body-ui text-fg-secondary">{t("aiDesc")}</p>
       </header>
 
-      <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+      <div className="archive-admin-ai-grid grid grid-cols-1 gap-4 md:grid-cols-2">
         {/* 卡片一：LLM Provider（唯讀，C6） */}
         <ConnectionCard
           title={t("aiLlmCardTitle")}
@@ -116,8 +117,8 @@ export default async function AdminAiPage() {
       </div>
 
       {/* 卡片三：全庫重嵌（營運操作，可執行；含進度與失敗清單） */}
-      <section className="rounded-md border border-edge">
-        <div className="border-b border-edge bg-sidebar px-4 py-2.5">
+      <section className="archive-admin-card rounded-md border border-edge">
+        <div className="archive-admin-card-head border-b border-edge bg-sidebar px-4 py-2.5">
           <h2 className="text-body-ui font-semibold text-fg">{t("reindexSectionTitle")}</h2>
         </div>
         <div className="flex flex-col gap-3 px-4 py-4">
@@ -127,8 +128,8 @@ export default async function AdminAiPage() {
       </section>
 
       {/* 卡片四：每人每日用量配額（I-09，F-AI-11） */}
-      <section className="rounded-md border border-edge">
-        <div className="border-b border-edge bg-sidebar px-4 py-2.5">
+      <section className="archive-admin-card rounded-md border border-edge">
+        <div className="archive-admin-card-head border-b border-edge bg-sidebar px-4 py-2.5">
           <h2 className="text-body-ui font-semibold text-fg">{t("aiQuotaCardTitle")}</h2>
         </div>
         <div className="px-4 py-4">
@@ -137,8 +138,8 @@ export default async function AdminAiPage() {
       </section>
 
       {/* 卡片五：近 30 日用量統計 */}
-      <section className="rounded-md border border-edge">
-        <div className="border-b border-edge bg-sidebar px-4 py-2.5">
+      <section className="archive-admin-card rounded-md border border-edge">
+        <div className="archive-admin-card-head border-b border-edge bg-sidebar px-4 py-2.5">
           <h2 className="text-body-ui font-semibold text-fg">{t("aiUsageCardTitle")}</h2>
         </div>
         <div className="px-4 py-4">
@@ -159,8 +160,8 @@ function ConnectionCard({
   children: ReactNode;
 }) {
   return (
-    <section className="flex flex-col gap-3 rounded-md border border-edge p-4">
-      <div className="flex items-center justify-between gap-2">
+    <section className="archive-admin-card archive-admin-connection-card flex flex-col gap-3 rounded-md border border-edge p-4">
+      <div className="archive-admin-card-head flex items-center justify-between gap-2">
         <h2 className="text-body-ui font-semibold text-fg">{title}</h2>
         {badge}
       </div>

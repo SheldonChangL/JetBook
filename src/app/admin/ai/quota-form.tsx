@@ -50,7 +50,7 @@ export function QuotaForm({ currentQuota }: { currentQuota: number | null }) {
   }
 
   return (
-    <div className="flex flex-col gap-3">
+    <div className="archive-admin-quota flex flex-col gap-3">
       <p className="text-body-ui text-fg-secondary">{t("aiQuotaDesc")}</p>
       <div className="flex flex-wrap items-end gap-3">
         <div className="flex items-end gap-2">

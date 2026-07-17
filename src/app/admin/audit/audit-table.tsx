@@ -36,12 +36,18 @@ export function AuditTable({ rows }: { rows: AuditTableRow[] }) {
   const t = useTranslations("admin");
 
   if (rows.length === 0) {
-    return <EmptyState title={t("auditEmptyTitle")} description={t("auditEmptyDesc")} />;
+    return (
+      <EmptyState
+        title={t("auditEmptyTitle")}
+        description={t("auditEmptyDesc")}
+        className="archive-admin-empty"
+      />
+    );
   }
 
   return (
-    <div className="overflow-x-auto rounded-md border border-edge">
-      <table className="w-full text-body-ui">
+    <div className="archive-admin-table-wrap overflow-x-auto rounded-md border border-edge">
+      <table className="archive-admin-table w-full min-w-[920px] text-body-ui">
         <thead>
           <tr className="border-b border-edge bg-sidebar text-left text-caption text-fg-tertiary">
             <th className="w-8 px-2 py-2" />

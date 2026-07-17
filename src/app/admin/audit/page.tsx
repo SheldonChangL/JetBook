@@ -89,9 +89,10 @@ export default async function AdminAuditPage({
   const firstPageHref = `/admin/audit${baseQuery.size > 0 ? `?${baseQuery}` : ""}`;
 
   return (
-    <div className="mx-auto flex max-w-6xl flex-col gap-5 px-6 py-8">
-      <header className="flex flex-wrap items-center justify-between gap-3">
+    <div className="archive-admin-page archive-admin-audit mx-auto flex max-w-6xl flex-col gap-5 px-6 py-8">
+      <header className="archive-admin-page-header flex flex-wrap items-center justify-between gap-3">
         <div className="flex flex-col gap-1">
+          <p className="archive-admin-kicker ui-archive-only">{t("archiveAuditKicker")}</p>
           <h1 className="text-h1 text-fg">{t("auditTitle")}</h1>
           <p className="text-body-ui text-fg-secondary">{t("auditDesc")}</p>
         </div>
@@ -115,7 +116,7 @@ export default async function AdminAuditPage({
 
       <AuditTable rows={rows} />
 
-      <nav className="flex items-center justify-between gap-3" aria-label={t("auditPagination")}>
+      <nav className="archive-admin-pagination flex items-center justify-between gap-3" aria-label={t("auditPagination")}>
         <div>
           {cursor ? (
             <Button asChild variant="ghost" size="sm">

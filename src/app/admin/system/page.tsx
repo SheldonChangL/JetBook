@@ -36,13 +36,14 @@ export default async function AdminSystemPage() {
   const embeddingConfigured = isEmbeddingConfigured();
 
   return (
-    <div className="mx-auto flex max-w-5xl flex-col gap-6 px-6 py-8">
-      <header className="flex flex-col gap-1">
+    <div className="archive-admin-page archive-admin-system mx-auto flex max-w-5xl flex-col gap-6 px-6 py-8">
+      <header className="archive-admin-page-header flex flex-col gap-1">
+        <p className="archive-admin-kicker ui-archive-only">{t("archiveSystemKicker")}</p>
         <h1 className="text-h1 text-fg">{t("systemTitle")}</h1>
         <p className="text-body-ui text-fg-secondary">{t("systemDesc")}</p>
       </header>
 
-      <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
+      <div className="archive-admin-system-grid grid grid-cols-1 gap-4 md:grid-cols-3">
         {/* DB：SELECT 1 ＋延遲 */}
         <StatusCard
           title={t("systemCardDb")}
@@ -99,8 +100,8 @@ export default async function AdminSystemPage() {
       </div>
 
       {/* 環境摘要（DATABASE_URL 已遮罩憑證） */}
-      <section className="rounded-md border border-edge">
-        <h2 className="border-b border-edge bg-sidebar px-4 py-2.5 text-body-ui font-semibold text-fg">
+      <section className="archive-admin-card rounded-md border border-edge">
+        <h2 className="archive-admin-card-head border-b border-edge bg-sidebar px-4 py-2.5 text-body-ui font-semibold text-fg">
           {t("systemEnvTitle")}
         </h2>
         <dl className="flex flex-col divide-y divide-edge">
@@ -116,8 +117,8 @@ export default async function AdminSystemPage() {
       </section>
 
       {/* 附件儲存用量（M-03，F-ADMIN-07）：全站與各空間附件數／大小＋孤兒待回收 */}
-      <section className="rounded-md border border-edge">
-        <div className="border-b border-edge bg-sidebar px-4 py-2.5">
+      <section className="archive-admin-card rounded-md border border-edge">
+        <div className="archive-admin-card-head border-b border-edge bg-sidebar px-4 py-2.5">
           <h2 className="text-body-ui font-semibold text-fg">{t("storageUsageTitle")}</h2>
         </div>
         <div className="flex flex-col gap-4 px-4 py-4">
@@ -138,8 +139,8 @@ export default async function AdminSystemPage() {
             {usage.perSpace.length === 0 ? (
               <p className="text-body-ui text-fg-tertiary">{t("storageUsageEmpty")}</p>
             ) : (
-              <div className="overflow-x-auto rounded-md border border-edge">
-                <table className="w-full border-collapse text-body-ui">
+              <div className="archive-admin-table-wrap overflow-x-auto rounded-md border border-edge">
+                <table className="archive-admin-table w-full min-w-[560px] border-collapse text-body-ui">
                   <thead>
                     <tr className="border-b border-edge bg-sidebar text-left text-fg-secondary">
                       <th className="px-3 py-2 font-medium">{t("storageUsageColSpace")}</th>
@@ -168,8 +169,8 @@ export default async function AdminSystemPage() {
       </section>
 
       {/* AI 全庫重嵌（H-07，F-AI-02）：換模型／維度變更後重建索引；關閉索引空間一併清除 */}
-      <section className="rounded-md border border-edge">
-        <div className="border-b border-edge bg-sidebar px-4 py-2.5">
+      <section className="archive-admin-card rounded-md border border-edge">
+        <div className="archive-admin-card-head border-b border-edge bg-sidebar px-4 py-2.5">
           <h2 className="text-body-ui font-semibold text-fg">{t("reindexSectionTitle")}</h2>
         </div>
         <div className="flex flex-col gap-3 px-4 py-4">
@@ -191,8 +192,8 @@ function StatusCard({
   children?: ReactNode;
 }) {
   return (
-    <section className="flex flex-col gap-2 rounded-md border border-edge p-4">
-      <div className="flex items-center justify-between gap-2">
+    <section className="archive-admin-card archive-admin-status-card flex flex-col gap-2 rounded-md border border-edge p-4">
+      <div className="archive-admin-card-head flex items-center justify-between gap-2">
         <h2 className="text-body-ui font-semibold text-fg">{title}</h2>
         {badge}
       </div>
@@ -203,7 +204,7 @@ function StatusCard({
 
 function UsageStat({ label, value, hint }: { label: string; value: string; hint?: string }) {
   return (
-    <div className="flex flex-col gap-1 rounded-md border border-edge p-4">
+    <div className="archive-admin-usage-stat flex flex-col gap-1 rounded-md border border-edge p-4">
       <span className="text-caption text-fg-secondary">{label}</span>
       <span className="text-h2 tabular-nums text-fg">{value}</span>
       {hint && <span className="text-caption text-fg-tertiary">{hint}</span>}

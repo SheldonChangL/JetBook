@@ -23,7 +23,7 @@ export function UsageChart({ summary }: { summary: AiUsageSummary }) {
 
   if (summary.totalCount === 0) {
     return (
-      <div className="flex flex-col items-center gap-1 rounded-md border border-dashed border-edge px-4 py-10 text-center">
+      <div className="archive-admin-empty flex flex-col items-center gap-1 rounded-md border border-dashed border-edge px-4 py-10 text-center">
         <p className="text-body-ui font-medium text-fg">{t("aiUsageEmptyTitle")}</p>
         <p className="text-caption text-fg-tertiary">
           {t("aiUsageEmptyDesc", { days: summary.rangeDays })}
@@ -33,9 +33,9 @@ export function UsageChart({ summary }: { summary: AiUsageSummary }) {
   }
 
   return (
-    <div className="flex flex-col gap-4">
+    <div className="archive-admin-usage-chart flex flex-col gap-4">
       <div className="flex flex-wrap items-center justify-between gap-3">
-        <dl className="flex gap-4">
+        <dl className="archive-admin-usage-stats flex gap-4">
           <StatTile label={t("aiUsageTotalQueries")} value={numberFormat.format(summary.totalCount)} />
           <StatTile label={t("aiUsageTotalTokens")} value={numberFormat.format(summary.totalTokens)} />
         </dl>
@@ -51,7 +51,7 @@ export function UsageChart({ summary }: { summary: AiUsageSummary }) {
 
       <div className="flex flex-col gap-1">
         <div
-          className="flex h-40 items-end gap-px border-b border-edge"
+          className="archive-admin-usage-bars flex h-40 items-end gap-px border-b border-edge"
           role="img"
           aria-label={t("aiUsageChartAria", { days: summary.rangeDays })}
         >
@@ -129,7 +129,7 @@ function MetricToggle({
 
 function StatTile({ label, value }: { label: string; value: string }) {
   return (
-    <div className="flex flex-col">
+    <div className="archive-admin-usage-stat flex flex-col">
       <dt className="text-caption text-fg-tertiary">{label}</dt>
       <dd className="text-h3 font-semibold text-fg">{value}</dd>
     </div>

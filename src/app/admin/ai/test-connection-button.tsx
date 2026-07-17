@@ -35,7 +35,7 @@ export function TestConnectionButton({
   }
 
   return (
-    <div className="flex flex-col gap-2">
+    <div className="archive-admin-connection-test flex flex-col gap-2">
       <div>
         <Button variant="secondary" onClick={onTest} loading={pending} disabled={!configured}>
           <Plug aria-hidden className="size-4" />
