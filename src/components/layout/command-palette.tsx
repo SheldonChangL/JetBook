@@ -4,7 +4,7 @@ import { useEffect, useRef, useState, type KeyboardEvent as ReactKeyboardEvent }
 import { useRouter } from "next/navigation";
 import { useTranslations } from "next-intl";
 import { Command } from "cmdk";
-import { ArrowRight, Clock, FileText, Search, Sparkles } from "lucide-react";
+import { ArrowRight, Clock, Command as CommandIcon, FileText, Search, Sparkles } from "lucide-react";
 import type { SearchHit } from "@/lib/search/fulltext";
 import type { SemanticHit } from "@/lib/search/semantic";
 import { createAskAiEvent } from "@/lib/ai/ask-ai-event";
@@ -237,12 +237,12 @@ export function CommandPalette({
   }
 
   const itemClass =
-    "flex cursor-default select-none items-center gap-3 rounded-md px-3 py-2 text-body-ui text-fg data-[disabled=true]:cursor-not-allowed data-[disabled=true]:opacity-60 data-[selected=true]:bg-hover";
-  const statusClass = "px-3 py-6 text-center text-body-ui text-fg-tertiary";
+    "archive-command-item flex cursor-default select-none items-center gap-3 rounded-md px-3 py-2 text-body-ui text-fg data-[disabled=true]:cursor-not-allowed data-[disabled=true]:opacity-60 data-[selected=true]:bg-hover";
+  const statusClass = "archive-command-status px-3 py-6 text-center text-body-ui text-fg-tertiary";
 
   // 語意相關區標題（載入骨架與結果兩態共用，維持一致），含 ✦ 與 AI 徽章。
   const semanticHeadingEl = (
-    <div className="flex items-center gap-1.5 px-3 py-1.5">
+    <div className="archive-command-semantic-heading flex items-center gap-1.5 px-3 py-1.5">
       <Sparkles aria-hidden className="size-3.5 shrink-0 text-ai" />
       <span className="text-caption font-medium text-fg-tertiary">{t("semanticHeading")}</span>
       <Badge variant="ai">{t("aiBadge")}</Badge>
@@ -257,10 +257,15 @@ export function CommandPalette({
       shouldFilter={false}
       loop
       onKeyDown={onKeyDown}
-      overlayClassName="fixed inset-0 z-50 bg-black/40"
-      contentClassName="fixed left-1/2 top-[15vh] z-50 flex max-h-[70vh] w-[calc(100vw-32px)] max-w-[640px] -translate-x-1/2 flex-col overflow-hidden rounded-xl border border-edge bg-raised shadow-lg"
+      overlayClassName="archive-command-overlay fixed inset-0 z-50 bg-black/40"
+      contentClassName="archive-command-layer fixed left-1/2 top-[15vh] z-50 flex max-h-[70vh] w-[calc(100vw-32px)] max-w-[640px] -translate-x-1/2 flex-col overflow-hidden rounded-xl border border-edge bg-raised shadow-lg"
     >
-      <div className="flex items-center gap-2 border-b border-edge px-4">
+      <div className="archive-command-context ui-archive-only">
+        <span><CommandIcon aria-hidden />{t("archiveLayer")}</span>
+        <span>{t(embeddingConfigured ? "archiveScopeSemantic" : "archiveScopeFullText")}</span>
+        {llmConfigured ? <span>{t("archiveScopeAi")}</span> : null}
+      </div>
+      <div className="archive-command-input-row flex items-center gap-2 border-b border-edge px-4">
         <Search aria-hidden className="size-4 shrink-0 text-fg-tertiary" />
         <Command.Input
           value={query}
@@ -270,7 +275,7 @@ export function CommandPalette({
         />
       </div>
 
-      <Command.List className="min-h-0 flex-1 overflow-y-auto overscroll-contain p-2">
+      <Command.List className="archive-command-list min-h-0 flex-1 overflow-y-auto overscroll-contain p-2">
         {showAi ? (
           <Command.Item
             value="__ask_ai__"
@@ -298,7 +303,7 @@ export function CommandPalette({
             {!loading && !error && hits.length > 0 ? (
               <Command.Group
                 heading={t("resultsHeading")}
-                className="[&_[cmdk-group-heading]]:px-3 [&_[cmdk-group-heading]]:py-1.5 [&_[cmdk-group-heading]]:text-caption [&_[cmdk-group-heading]]:font-medium [&_[cmdk-group-heading]]:text-fg-tertiary"
+                className="archive-command-group [&_[cmdk-group-heading]]:px-3 [&_[cmdk-group-heading]]:py-1.5 [&_[cmdk-group-heading]]:text-caption [&_[cmdk-group-heading]]:font-medium [&_[cmdk-group-heading]]:text-fg-tertiary"
               >
                 {hits.slice(0, 8).map((hit) => {
                   const href = `/s/${hit.spaceSlug}/${hit.slug}`;
@@ -332,7 +337,7 @@ export function CommandPalette({
                 <Command.Item
                   value="__show_all__"
                   onSelect={() => go(`/search?q=${encodeURIComponent(trimmed)}`)}
-                  className="flex cursor-default select-none items-center gap-2 rounded-md px-3 py-2 text-body-ui font-medium text-primary data-[selected=true]:bg-hover"
+                  className="archive-command-show-all flex cursor-default select-none items-center gap-2 rounded-md px-3 py-2 text-body-ui font-medium text-primary data-[selected=true]:bg-hover"
                 >
                   <span className="flex-1">{t("showAll", { count: hits.length })}</span>
                   <ArrowRight aria-hidden className="size-4 shrink-0" />
@@ -399,7 +404,7 @@ export function CommandPalette({
             {!loading && !error && recent.length > 0 ? (
               <Command.Group
                 heading={t("recentHeading")}
-                className="[&_[cmdk-group-heading]]:px-3 [&_[cmdk-group-heading]]:py-1.5 [&_[cmdk-group-heading]]:text-caption [&_[cmdk-group-heading]]:font-medium [&_[cmdk-group-heading]]:text-fg-tertiary"
+                className="archive-command-group [&_[cmdk-group-heading]]:px-3 [&_[cmdk-group-heading]]:py-1.5 [&_[cmdk-group-heading]]:text-caption [&_[cmdk-group-heading]]:font-medium [&_[cmdk-group-heading]]:text-fg-tertiary"
               >
                 {recent.map((item) => {
                   const href = `/s/${item.spaceSlug}/${item.slug}`;
@@ -433,7 +438,7 @@ export function CommandPalette({
         )}
       </Command.List>
 
-      <div className="flex items-center gap-3 border-t border-edge px-4 py-2 text-caption text-fg-tertiary">
+      <div className="archive-command-footer flex items-center gap-3 border-t border-edge px-4 py-2 text-caption text-fg-tertiary">
         <span className="flex items-center gap-1">
           <Kbd>{KBD_UP}</Kbd>
           <Kbd>{KBD_DOWN}</Kbd>

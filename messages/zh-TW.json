@@ -540,6 +540,12 @@
     "title": "搜尋",
     "searchPlaceholder": "搜尋…",
     "noResults": "找不到符合的結果",
+    "archiveKicker": "DISCOVERY / KNOWLEDGE INDEX",
+    "archiveSubtitle": "跨空間搜尋頁面與附件；Cmd+K 同時提供語意相關結果與 AI 問答。",
+    "archiveFilterHeading": "縮小索引範圍",
+    "archiveResultsHeading": "頁面結果",
+    "archiveResultCount": "{count} 筆頁面結果",
+    "archiveAttachmentIndex": "附件索引",
     "attachmentsHeading": "附件（{count}）",
     "attachmentPageLocation": "{space}／{page}",
     "untitledPage": "未命名頁面",
@@ -572,7 +578,11 @@
     "hintSelect": "選擇",
     "hintOpen": "開啟",
     "hintNewTab": "新分頁",
-    "hintClose": "關閉"
+    "hintClose": "關閉",
+    "archiveLayer": "COMMAND / 探索工作層",
+    "archiveScopeFullText": "全文索引",
+    "archiveScopeSemantic": "全文＋語意",
+    "archiveScopeAi": "AI 可用"
   },
   "editor": {
     "back": "返回",
