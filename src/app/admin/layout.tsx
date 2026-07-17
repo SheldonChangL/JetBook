@@ -13,6 +13,8 @@ import {
 } from "lucide-react";
 import { requireSession } from "@/lib/auth/current";
 import { isOrgAdmin } from "@/lib/authz/permission";
+import { getUiVersion, isUiVersionSwitcherEnabled } from "@/lib/ui-version-server";
+import { ArchiveAdminShell } from "@/components/layout/archive-admin-shell";
 
 /**
  * 管理後台獨立版面（§3.11）：左側固定管理選單（220px）＋內容區。
@@ -22,6 +24,19 @@ export default async function AdminLayout({ children }: { children: ReactNode })
   const { user } = await requireSession("/admin");
   if (!isOrgAdmin(user)) notFound();
   const t = await getTranslations("admin");
+  const uiVersion = await getUiVersion();
+
+  if (uiVersion === "archive") {
+    return (
+      <ArchiveAdminShell
+        user={{ name: user.name, email: user.email }}
+        uiVersion={uiVersion}
+        uiVersionSwitchEnabled={isUiVersionSwitcherEnabled()}
+      >
+        {children}
+      </ArchiveAdminShell>
+    );
+  }
 
   return (
     <div className="flex h-dvh flex-col">

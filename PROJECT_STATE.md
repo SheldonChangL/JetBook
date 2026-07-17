@@ -9,7 +9,7 @@ Next.js（App Router、TS strict）全端 + PostgreSQL 16/pgvector/pgroonga + Do
 
 ## 目前階段
 
-**v1 商品化完成 ✅（2026-07-13）。** M0–M3 全部 91 個 issue 關閉並合併；目前開放 #93 M4 backlog 與 #249 UI Design v2 設計交付。
+**v1 商品化完成 ✅（2026-07-13）。** M0–M3 全部 91 個 issue 關閉並合併；目前開放 #93 M4 backlog 與 #251 UI Design v2 第一批實作。
 
 ### 出貨閘門與終驗證據（全數實測通過）
 - **N-02 MVP E2E 冒煙**：Playwright 全旅程（登入→建空間→建頁→編輯→閱讀→搜尋→私有隔離→登出），CI 綠（PR #151、#186 head run）
@@ -67,9 +67,19 @@ Next.js（App Router、TS strict）全端 + PostgreSQL 16/pgvector/pgroonga + Do
 - [x] 新增可切換方案／畫面／主題的離線 HTML 索引、方案比較與完整功能覆蓋矩陣；深淺模式內容與狀態完全一致，瀏覽器驗證零 console error／warning，並支援 reduced-motion
 - [x] 本階段僅新增 `docs/design/mockups-v2/`，未修改正式產品 `src/`；選定方向後才拆六個順序 issue／PR 實作
 - [x] 使用者選定 **Archive Studio／知識工坊**；正式實作採 Legacy／Archive presentation layer 並存、全域 kill switch＋使用者 cookie 切換的漸進遷移策略，未完成覆蓋前不移除舊 UI
+- [x] PR #250 已合併、#249 已關閉；正式規格移至 `docs/design/ui-design-v2.md`
+
+### UI Design v2 第一批（2026-07-16，#251）
+
+- [x] 建立 `UI_V2_ROLLOUT=off|opt-in|on` 與 HttpOnly `legacy|archive` 偏好：`off` 強制 Legacy、`opt-in` 預設 Legacy、`on` 預設 Archive；非 `off` 均可雙向切換
+- [x] Archive light／dark 語意 token 與原創 SVG `ArchiveMark`；Legacy token 保持原值，未新增字型、動畫或 UI 相依
+- [x] App Shell（Command Rail＋Space Dock＋Canvas）、Admin Shell、登入／忘記密碼／重設密碼 Auth Frame，以及 403／404／error／offline presentation；既有路由、action、REST、MCP、SSE、schema 與 authz 未變
+- [x] Production build 真實瀏覽器驗證：320／768／1024／1440 無水平溢位、light／dark、Archive ⇄ Legacy、`off` cookie override、`opt-in`、Cmd+K、Drawer focus trap／restore、reduced-motion；除刻意載入 404 文件本身的預期 404 response 外，console warning/error 與失敗網路請求皆為零
+- [x] Browser QA 發現並修正 App／Admin 行動 Drawer 關閉後焦點未返回 trigger，以及 App Drawer 換頁後未關閉；`IconButton` 支援 ref forwarding，Playwright 同情境回歸通過
+- [x] 品質閘門：lint ✅ typecheck ✅ 單元 526/526 ✅ 整合 304/304（含 N-04）✅ N-02 Playwright 2/2 ✅ production build ✅
 
 ### 尚未完成（v1 之後）
-- **UI Design v2**：Archive Studio 已選定；依六個順序 issue／PR 實作，第一批為 token、基礎元件、Legacy 回退機制、App/Admin Shell、登入與錯誤頁
+- **UI Design v2**：#251 第一批程式碼、browser QA 與品質閘門已完成，待 PR／CI；後續 slice 2–6 依功能覆蓋矩陣逐批遷移
 - **#93 M4 backlog**：變更請求、行內評論、webhooks（暫停）、PDF 匯出、KaTeX、多欄、snippets、內容分析等——其餘候選項依回饋再拆
 - 真實 LLM/Embedding 端點串接為部署設定（本機開發以 mock 驗證介面）；上線時以 /admin/ai 測試連線驗證
 
@@ -77,9 +87,9 @@ Next.js（App Router、TS strict）全端 + PostgreSQL 16/pgvector/pgroonga + Do
 ## GitHub 執行狀態
 
 - Repo：https://github.com/SheldonChangL/JetBook（private）
-- Issues：開放 #93（M4 backlog 彙總）與 #249（UI Design v2 mockup／選案）；M4 已交付 #192–#199、#207、#211/#212、#215/#216、#218/#219/#220、#222、#224/#225（task ID ↔ issue 對照見 docs/plans/issue-plan.md）
+- Issues：開放 #93（M4 backlog 彙總）與 #251（Archive Studio foundation）；#249／PR #250 已完成 UI v2 選案
 - Milestones：M0 10/10 ✅／M1 42/42 ✅／M2 16/16 ✅／M3 23/23 ✅／M4 已交付 15 功能＋多項修復（backlog 追蹤 #93）
-- 工作流：branch `feature/issue-<n>-<slug>` → PR（Fixes #n）→ squash merge（使用者已授權 self-merge）；目前分支 `feature/issue-249-ui-redesign-mockups`，active issue #249，最新已合併 PR #248
+- 工作流：branch `feature/issue-<n>-<slug>` → PR（Fixes #n）→ squash merge（使用者已授權 self-merge）；目前分支 `feature/issue-251-archive-foundation`，active issue #251，最新已合併 PR #250
 
 ## 已完成
 
@@ -135,8 +145,8 @@ Space 封存/軟刪、跨 Space 移動複製、死鏈標示、附件 GC、Tabs/�
 
 ## 下一步
 
-1. 合併 #249 設計 PR；建立 UI Design v2 第一批 issue，實作 Archive Studio token、Legacy 回退機制、Shell、登入與錯誤頁
-2. 後續依六個順序 issue／PR 逐步遷移內容工作區、編輯器、搜尋／AI 與管理後台；每批以使用者切換與全域 kill switch 驗證可回退
+1. 開啟 #251 PR（Fixes #251）；CI N-02／N-04 全綠後合併
+2. 建立 UI v2 slice 2 issue：Dashboard、Spaces／Collections、頁面樹、回收桶與 Space 設定；維持相同 rollout 與 Legacy 回退
 3. 部署到公司內部伺服器：`.env` 填正式值（含 SMTP_*；要開 Office 預覽加 `PREVIEW_CONVERTER_URL=http://gotenberg:3000`）、`docker compose up -d --build`、跑 `db:migrate`（0020）
 4. 串接真實 AI 端點（ANTHROPIC_API_KEY + local BGE-M3）；MCP 依 docs/guides/mcp-server.md 讓 Claude 接上知識庫（每人自建 API token；寫入需勾選 write scope）
 5. 其餘 backlog 候選見 #93（變更請求、行內評論、webhooks、PDF 匯出、KaTeX 等，依回饋再拆）

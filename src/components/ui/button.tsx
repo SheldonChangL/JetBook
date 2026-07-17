@@ -9,12 +9,12 @@ const buttonVariants = cva(
   {
     variants: {
       variant: {
-        primary: "bg-primary text-white hover:bg-primary-hover disabled:bg-hover",
+        primary: "bg-primary text-on-primary hover:bg-primary-hover disabled:bg-hover",
         secondary: "border border-edge-strong bg-raised text-fg hover:bg-hover disabled:bg-base",
         ghost: "text-fg-secondary hover:bg-hover hover:text-fg",
-        danger: "bg-danger text-white hover:opacity-90 disabled:bg-hover",
+        danger: "bg-danger text-on-danger hover:opacity-90 disabled:bg-hover",
         // AI 專用紫（僅限 AI 相關動作，見設計規範 §4.1）
-        ai: "bg-ai text-white hover:opacity-90 disabled:bg-hover",
+        ai: "bg-ai text-on-ai hover:opacity-90 disabled:bg-hover",
       },
       size: {
         sm: "h-7 px-2.5 text-caption",

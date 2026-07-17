@@ -7,6 +7,8 @@ import { spaces } from "@/lib/db/schema";
 import { requireSession, isSafeReturnTo } from "@/lib/auth/current";
 import { getSpaceRole } from "@/lib/authz/permission";
 import { listSpaceAdmins } from "@/lib/spaces/queries";
+import { getUiVersion } from "@/lib/ui-version-server";
+import { ArchiveSystemState } from "@/components/layout/archive-system-state";
 import { Button } from "@/components/ui/button";
 import { EmptyState } from "@/components/ui/empty-state";
 
@@ -24,9 +26,9 @@ export default async function ForbiddenPage({
   const { user } = await requireSession("/");
   const { from } = await searchParams;
   const t = await getTranslations("errors.forbidden");
+  const uiVersion = await getUiVersion();
 
-  const spaceSlug =
-    from && isSafeReturnTo(from) ? /^\/s\/([^/?#]+)/.exec(from)?.[1] : undefined;
+  const spaceSlug = from && isSafeReturnTo(from) ? /^\/s\/([^/?#]+)/.exec(from)?.[1] : undefined;
 
   let spaceInfo: { name: string; admins: { name: string; email: string }[] } | null = null;
   if (spaceSlug) {
@@ -37,6 +39,42 @@ export default async function ForbiddenPage({
     if (space && (await getSpaceRole(user, space.id))) {
       spaceInfo = { name: space.name, admins: await listSpaceAdmins(space.id) };
     }
+  }
+
+  const adminDetails =
+    spaceInfo && spaceInfo.admins.length > 0 ? (
+      <div className="w-full max-w-sm border-l-2 border-primary bg-sidebar px-4 py-3">
+        <p className="mb-1 text-caption font-medium text-fg-secondary">
+          {t("spaceAdmins", { space: spaceInfo.name })}
+        </p>
+        <ul className="flex flex-col gap-0.5">
+          {spaceInfo.admins.map((admin) => (
+            <li key={admin.email} className="text-caption text-fg-tertiary">
+              {admin.name}
+              {" ("}
+              {admin.email}
+              {")"}
+            </li>
+          ))}
+        </ul>
+      </div>
+    ) : null;
+
+  if (uiVersion === "archive") {
+    return (
+      <ArchiveSystemState
+        code={t("code")}
+        icon={<ShieldAlert />}
+        title={t("title")}
+        description={t("description")}
+        details={adminDetails}
+        action={
+          <Button asChild variant="primary">
+            <Link href="/">{t("backHome")}</Link>
+          </Button>
+        }
+      />
+    );
   }
 
   return (
