@@ -2,7 +2,7 @@
 
 > 本矩陣以 2026-07-16 `main` 的路由、元件、`messages/zh-TW.json` 與 `PROJECT_STATE.md` 為來源。Mock 圖是代表畫面，不等於只改四頁；表內所有現有 UI 都必須在選案後的實作 issue 中得到對應設計。
 
-正式規格見 `docs/design/ui-design-v2.md`。Archive Studio 第一批 #251／PR #252 已建立可逆 rollout、語意 token、App／Admin Shell、Auth Frame 與 403／404／error／offline presentation；第二批 #253／PR #254 已覆蓋 Dashboard、Spaces／Collections、Space overview／page tree、回收桶與 Space settings；第三批 #255 開始遷移閱讀、內容區塊、留言、版本、附件與預覽。後續頁面仍依本矩陣的 slice 3–6 逐批遷移，未完成前保留 Legacy。
+正式規格見 `docs/design/ui-design-v2.md`。Archive Studio 第一批 #251／PR #252 已建立可逆 rollout、語意 token、App／Admin Shell、Auth Frame 與 403／404／error／offline presentation；第二批 #253／PR #254 已覆蓋 Dashboard、Spaces／Collections、Space overview／page tree、回收桶與 Space settings；第三批 #255／PR #256 已完成閱讀、內容區塊、留言、版本、附件與預覽；第四批 #257 開始遷移編輯器、衝突防護、AI 寫作與 import/export job presentation。後續頁面仍依本矩陣的 slice 4–6 逐批遷移，未完成前保留 Legacy。
 
 ## 正式實作對應（#253）
 
@@ -106,19 +106,32 @@
 | 現有入口       | 功能與必要狀態                                                 | Mock 證據                | 後續 slice |
 | -------------- | -------------------------------------------------------------- | ------------------------ | ---------- |
 | `/edit`        | 返回、完成編輯、title、icon、正文、編輯資訊                    | 編輯主圖                 | 4          |
-| Autosave       | saving／saved／network error／retry、`⌘S` 回饋                 | 編輯頂列                 | 4          |
-| 編輯鎖         | 取得、心跳、接近逾時、逾時重取、他人持鎖唯讀、Admin 搶鎖、確認 | 編輯 Inspector＋矩陣     | 4          |
-| 樂觀衝突       | currentVersion、保留本機內容、複製我的變更、重新載入           | 編輯 Inspector＋矩陣     | 4          |
-| Block controls | hover 把手、插入、拖曳、複製、轉換、上下移動、刪除             | 編輯主圖                 | 4          |
+| Autosave       | 2 秒 debounce、saving／saved／error、儲存後版本更新             | 編輯頂列                 | 4          |
+| 編輯鎖         | 取得、30 秒心跳、失鎖轉唯讀、他人持鎖 gate、Admin 搶鎖確認      | 編輯 Inspector＋矩陣     | 4          |
+| 樂觀衝突       | currentVersion、保留畫面內容、衝突 alert 與重新載入指引         | 編輯 Inspector＋矩陣     | 4          |
+| Block controls | 空行 `+` 插入；圖片／附件／Mermaid／Embed 等 atom block 可拖曳   | 編輯主圖                 | 4          |
 | Slash menu     | 分組、中英關鍵字、keyboard、H1–H3、完整 block 清單             | 編輯主圖                 | 4          |
-| Inline toolbar | B／I／U／S／code／link／文字色／底色、`⌘K` 雙義                | 矩陣                     | 4          |
 | Markdown       | 快捷輸入、貼上、表格與 Mermaid fence 轉換                      | 編輯主圖＋矩陣           | 4          |
-| 圖片上傳       | 選檔、拖放、貼上、進度、失敗重試、resize、caption              | 編輯主圖                 | 4          |
+| 圖片上傳       | 多選、拖放、貼上、進度、失敗重試、caption                      | 編輯主圖                 | 4          |
 | 多附件         | 多選、拖放、個別進度／失敗、Office preview 狀態                | 編輯主圖                 | 4          |
-| Table editor   | 插入格數、增刪欄列、表頭、對齊、欄寬                           | 編輯主圖＋矩陣           | 4          |
-| Code editor    | 語言搜尋、行號、Tab、Esc                                       | 矩陣                     | 4          |
-| AI assist      | 續寫、摘要、翻譯、精簡、正式化、修正文法、stream／stop／error  | 編輯主圖                 | 4          |
+| Table editor   | 預設 3×3 含表頭、增刪欄列、表頭切換、欄寬拖曳                  | 編輯主圖＋矩陣           | 4          |
+| Code editor    | 語言搜尋、語法高亮、行號、Tab、Esc                             | 矩陣                     | 4          |
+| AI assist      | 改寫、精簡、正式化、修正文法、英譯、stream／stop／error、套用確認 | 編輯主圖                 | 4          |
 | IME            | composition 中不觸發單鍵或送出快捷鍵                           | 矩陣；browser acceptance | 4、6       |
+
+### Slice 4 實作對應（#257）
+
+| 覆蓋面 | 實際路由／元件 |
+| ------ | -------------- |
+| Editor Canvas、狀態列、title／emoji、版本與 responsive Inspector | `src/app/(app)/s/[spaceSlug]/[pageSlug]/edit/page.tsx`、`src/components/editor/page-editor.tsx` |
+| Autosave、樂觀版本、心跳失鎖唯讀 | `page-editor.tsx` 重用既有 `savePage`、`heartbeatLockAction`、`releaseLockAction`；只新增 presentation state |
+| 他人持鎖 gate、Org Admin 搶鎖確認 | `src/app/(app)/s/[spaceSlug]/[pageSlug]/edit/edit-lock-notice.tsx`，既有 `acquireLockAction` 不變 |
+| Slash／空行插入／Table／Code | `slash-menu/*`、`insert-menu.tsx`、`table-menu.tsx`、`code-block-view.tsx`；Archive 只加 marker class 與 scoped style |
+| 圖片、附件、callout、Tabs／摺疊／Stepper、Mermaid、Embed、Mention／Page link | `src/components/editor/*` 既有 extension／NodeView；同一 TipTap schema 與 command wiring 保留 |
+| AI 選取文字、SSE、停止、錯誤、取代／插入／捨棄 | `src/components/editor/ai-assist/ai-assist-menu.tsx`、`use-ai-assist.ts`；需明確確認才寫入 editor |
+| 單檔 Markdown／Word、ZIP 批次 import、ZIP export | `src/components/tree/page-tree.tsx`、`src/app/(app)/s/[spaceSlug]/settings/import-section.tsx`、`export-section.tsx`；原 action／API polling／job 結果不變 |
+
+原矩陣曾把通用 inline toolbar、所有 block 的複製／轉換／上下移動、衝突一鍵複製、任意格數 table picker、圖片 resize，以及 AI 續寫／摘要誤列為 `main` 已有功能；2026-07-17 依實際元件盤點修正，#257 不以 UI 重構名義新增這些產品能力。需要時應另開功能 issue。
 
 ## 搜尋、Cmd+K 與 AI
 
