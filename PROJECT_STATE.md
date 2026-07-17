@@ -112,13 +112,13 @@ Next.js（App Router、TS strict）全端 + PostgreSQL 16/pgvector/pgroonga + Do
 - [x] 本機品質閘門：lint ✅ typecheck ✅ 單元 532/532 ✅ 整合 304/304（含 N-04）✅ N-02 Playwright 2/2（Archive rollout）✅ production build ✅ production bundle browser smoke ✅
 - [x] PR #260 的 Validate（含 N-04，3m51s）與 N-02（3m04s）全綠並已 squash merge
 
-### UI Design v2 第六批（2026-07-17，#261，進行中）
+### UI Design v2 第六批（2026-07-17，#261／PR #262，CI 驗證中）
 
 - [x] Archive 管理後台：使用者／CSV、群組／成員批次匯入、已刪除 Space、AI、稽核與系統 presentation；既有 action、authz、schema、REST／MCP／SSE 與資料規則不變
 - [x] 全站 responsive／keyboard／focus／IME／reduced-motion／深淺色與 Legacy 回退收尾；手動開啟的管理 Modal 改由 Radix Trigger 記錄並復原焦點，320px 寬表補可聚焦、具名稱的方向鍵捲動區域
 - [x] 功能覆蓋矩陣與 Browser QA：6 路由 × 320／768／1024／1440 × light／dark 共 48 組零文件溢位、零 page console warning／error；drawer／Modal focus、CSV preview、群組 CRUD／匯入、audit query、Archive ⇄ Legacy、reduced-motion 皆通過；production bundle 320／1440 light／dark smoke 通過
 - [x] 本機品質閘門：lint ✅ typecheck ✅ 單元 532/532 ✅ 整合 304/304（含 N-04）✅ N-02 Playwright 2/2（Archive rollout）✅ production build ✅
-- [ ] PR／CI 全綠後 squash merge
+- [ ] PR #262 的 Validate／N-02 CI 全綠後 squash merge
 
 ### 尚未完成（v1 之後）
 - **UI Design v2**：#251／PR #252、#253／PR #254、#255／PR #256、#257／PR #258、#259／PR #260 已完成；#261 第六批本機驗收完成，待 PR／CI
@@ -129,9 +129,9 @@ Next.js（App Router、TS strict）全端 + PostgreSQL 16/pgvector/pgroonga + Do
 ## GitHub 執行狀態
 
 - Repo：https://github.com/SheldonChangL/JetBook（private）
-- Issues：開放 #93（M4 backlog 彙總）與 #261（Archive admin console）；#251／PR #252、#253／PR #254、#255／PR #256、#257／PR #258、#259／PR #260 已完成
+- Issues：開放 #93（M4 backlog 彙總）與 #261（Archive admin console，PR #262 驗證中）；#251／PR #252、#253／PR #254、#255／PR #256、#257／PR #258、#259／PR #260 已完成
 - Milestones：M0 10/10 ✅／M1 42/42 ✅／M2 16/16 ✅／M3 23/23 ✅／M4 已交付 15 功能＋多項修復（backlog 追蹤 #93）
-- 工作流：branch `feature/issue-<n>-<slug>` → PR（Fixes #n）→ squash merge（使用者已授權 self-merge）；目前分支 `feature/issue-261-archive-admin-console`，active issue #261，最新已合併 PR #260
+- 工作流：branch `feature/issue-<n>-<slug>` → PR（Fixes #n）→ squash merge（使用者已授權 self-merge）；目前分支 `feature/issue-261-archive-admin-console`，active issue #261／PR #262，最新已合併 PR #260
 
 ## 已完成
 
@@ -187,7 +187,7 @@ Space 封存/軟刪、跨 Space 移動複製、死鏈標示、附件 GC、Tabs/�
 
 ## 下一步
 
-1. #261 開 PR，Validate／N-02 CI 全綠後 squash merge
+1. 等待 PR #262 Validate／N-02 CI 全綠後 squash merge
 2. 部署到公司內部伺服器：`.env` 填正式值（含 SMTP_*；要開 Office 預覽加 `PREVIEW_CONVERTER_URL=http://gotenberg:3000`）、`docker compose up -d --build`、跑 `db:migrate`（0020）
 3. 串接真實 AI 端點（ANTHROPIC_API_KEY + local BGE-M3）；MCP 依 docs/guides/mcp-server.md 讓 Claude 接上知識庫（每人自建 API token；寫入需勾選 write scope）
 4. 其餘 backlog 候選見 #93（變更請求、行內評論、webhooks、PDF 匯出、KaTeX 等，依回饋再拆）
