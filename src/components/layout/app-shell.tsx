@@ -8,8 +8,10 @@ import { cn } from "@/lib/utils";
 import { IconButton } from "@/components/ui/icon-button";
 import { Kbd } from "@/components/ui/kbd";
 import { AiChatDrawer } from "@/components/ai/ai-chat-drawer";
+import type { BuildInfo } from "@/lib/build-info";
 import type { NotificationView } from "@/lib/notifications";
 import type { UiVersion } from "@/lib/ui-version";
+import { BuildBadge } from "./build-badge";
 import { CommandPalette } from "./command-palette";
 import { NotificationBell } from "./notification-bell";
 import { OfflineBanner } from "./offline-banner";
@@ -32,6 +34,8 @@ export interface AppShellProps {
   unreadNotifications?: number;
   uiVersion?: UiVersion;
   uiVersionSwitchEnabled?: boolean;
+  /** 當前部署的 build 資訊（#267）：常駐 badge 與 UserMenu 底部顯示。 */
+  buildInfo: BuildInfo;
 }
 
 /**
@@ -49,6 +53,7 @@ export function AppShell({
   unreadNotifications = 0,
   uiVersion = "legacy",
   uiVersionSwitchEnabled = false,
+  buildInfo,
 }: AppShellProps) {
   const t = useTranslations("shell");
   const [collapsed, setCollapsed] = useState(false);
@@ -135,12 +140,14 @@ export function AppShell({
           ) : null}
           <NotificationBell initialItems={notifications} initialUnread={unreadNotifications} />
           <ThemeToggle />
+          <BuildBadge info={buildInfo} className="mx-1 hidden sm:inline-block" />
           <UserMenu
             name={user.name}
             email={user.email}
             isAdmin={user.isAdmin}
             uiVersion={uiVersion}
             uiVersionSwitchEnabled={uiVersionSwitchEnabled}
+            buildInfo={buildInfo}
           />
         </div>
       </header>

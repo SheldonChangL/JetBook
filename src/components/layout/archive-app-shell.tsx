@@ -26,6 +26,7 @@ export function ArchiveAppShell({
   unreadNotifications = 0,
   uiVersion = "archive",
   uiVersionSwitchEnabled = false,
+  buildInfo,
 }: AppShellProps) {
   const t = useTranslations("shell");
   const tc = useTranslations("common");
@@ -122,6 +123,7 @@ export function ArchiveAppShell({
             dockCollapsed={!showGlobalDock}
             uiVersion={uiVersion}
             uiVersionSwitchEnabled={uiVersionSwitchEnabled}
+            buildInfo={buildInfo}
             mobileDockTriggerRef={mobileDockTriggerRef}
             onOpenMobileDock={() => setMobileOpen(true)}
             onExpandDock={expandDock}

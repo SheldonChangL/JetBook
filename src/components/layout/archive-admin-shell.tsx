@@ -19,8 +19,10 @@ import { ArchiveMark } from "@/components/brand/archive-mark";
 import { Drawer, DrawerContent } from "@/components/ui/drawer";
 import { IconButton } from "@/components/ui/icon-button";
 import { Tooltip } from "@/components/ui/tooltip";
+import type { BuildInfo } from "@/lib/build-info";
 import type { UiVersion } from "@/lib/ui-version";
 import { cn } from "@/lib/utils";
+import { BuildBadge } from "./build-badge";
 import { ThemeToggle } from "./theme-toggle";
 import { UserMenu } from "./user-menu";
 
@@ -30,11 +32,13 @@ export function ArchiveAdminShell({
   user,
   uiVersion,
   uiVersionSwitchEnabled,
+  buildInfo,
   children,
 }: {
   user: { name: string; email: string };
   uiVersion: UiVersion;
   uiVersionSwitchEnabled: boolean;
+  buildInfo: BuildInfo;
   children: ReactNode;
 }) {
   const t = useTranslations("admin");
@@ -101,12 +105,14 @@ export function ArchiveAdminShell({
           </div>
           <div className="ml-auto flex items-center gap-1">
             <ThemeToggle />
+            <BuildBadge info={buildInfo} className="mx-1 hidden sm:inline-block" />
             <UserMenu
               name={user.name}
               email={user.email}
               isAdmin
               uiVersion={uiVersion}
               uiVersionSwitchEnabled={uiVersionSwitchEnabled}
+              buildInfo={buildInfo}
             />
           </div>
         </header>

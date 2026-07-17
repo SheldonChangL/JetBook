@@ -106,6 +106,17 @@ const envSchema = z.object({
    * 必須 ≥ 向量路 over-fetch（40）；依基準測試調校（NFR-PERF-03），預設 100。
    */
   RAG_HNSW_EF_SEARCH: z.coerce.number().int().positive().default(100),
+
+  // ── Build metadata（#267；build 階段由 Docker ARG 注入，runtime 唯讀，顯示於 GUI／healthz） ──
+  /**
+   * 應用版本（package.json version）。未注入時 build-info 模組 fallback 至 package.json
+   * （見 src/lib/build-info.ts），故此處為 optional。
+   */
+  APP_VERSION: z.string().optional(),
+  /** 建置 commit（完整 git SHA，CI 帶入 github.sha）；未注入＝本機開發，顯示為 dev。 */
+  GIT_COMMIT: z.string().optional(),
+  /** 建置時間（ISO-8601 UTC，如 2026-07-17T08:00:00Z）；未注入＝本機開發，留空。 */
+  BUILD_TIME: z.string().optional(),
 });
 
 export type Env = z.infer<typeof envSchema>;

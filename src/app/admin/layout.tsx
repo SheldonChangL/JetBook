@@ -14,7 +14,9 @@ import {
 import { requireSession } from "@/lib/auth/current";
 import { isOrgAdmin } from "@/lib/authz/permission";
 import { getUiVersion, isUiVersionSwitcherEnabled } from "@/lib/ui-version-server";
+import { getBuildInfo } from "@/lib/build-info-server";
 import { ArchiveAdminShell } from "@/components/layout/archive-admin-shell";
+import { BuildBadge } from "@/components/layout/build-badge";
 
 /**
  * 管理後台獨立版面（§3.11）：左側固定管理選單（220px）＋內容區。
@@ -25,6 +27,7 @@ export default async function AdminLayout({ children }: { children: ReactNode })
   if (!isOrgAdmin(user)) notFound();
   const t = await getTranslations("admin");
   const uiVersion = await getUiVersion();
+  const buildInfo = getBuildInfo();
 
   if (uiVersion === "archive") {
     return (
@@ -32,6 +35,7 @@ export default async function AdminLayout({ children }: { children: ReactNode })
         user={{ name: user.name, email: user.email }}
         uiVersion={uiVersion}
         uiVersionSwitchEnabled={isUiVersionSwitcherEnabled()}
+        buildInfo={buildInfo}
       >
         {children}
       </ArchiveAdminShell>
@@ -45,6 +49,7 @@ export default async function AdminLayout({ children }: { children: ReactNode })
           JetBook
         </Link>
         <span className="text-body-ui text-fg-secondary">{t("title")}</span>
+        <BuildBadge info={buildInfo} className="ml-auto" />
       </header>
       <div className="flex min-h-0 flex-1">
         <aside className="flex w-[220px] shrink-0 flex-col border-r border-edge bg-sidebar p-2">

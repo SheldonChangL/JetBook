@@ -13,7 +13,15 @@ services:
         condition: service_healthy
 
   web:
-    build: .
+    build:
+      context: .
+      # Build metadata（#267）：由 shell 環境帶入，供 GUI／healthz 顯示部署版本。
+      # 部署前可 `export GIT_COMMIT=$(git rev-parse HEAD) BUILD_TIME=$(date -u +%FT%TZ)`；
+      # 未設定時為空，image 走 fallback（commit=dev）。
+      args:
+        APP_VERSION: ${APP_VERSION:-}
+        GIT_COMMIT: ${GIT_COMMIT:-}
+        BUILD_TIME: ${BUILD_TIME:-}
     restart: always
     env_file:
       - path: .env
@@ -39,7 +47,13 @@ services:
       - uploads:/data/uploads
 
   worker:
-    build: .
+    build:
+      context: .
+      # 與 web 同 image；build metadata 一併帶入（#267）。
+      args:
+        APP_VERSION: ${APP_VERSION:-}
+        GIT_COMMIT: ${GIT_COMMIT:-}
+        BUILD_TIME: ${BUILD_TIME:-}
     restart: always
     command: ["node", "dist/worker.js"]
     env_file:
