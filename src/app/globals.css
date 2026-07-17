@@ -1653,3 +1653,93 @@ html[data-ui-version="archive"] .offline-banner {
   font-family: var(--font-mono);
   letter-spacing: 0.02em;
 }
+
+/* UI v2 slice 2 — Dashboard：用索引列與紙張分隔取代 Legacy 卡片拼貼。 */
+html[data-ui-version="archive"] .archive-dashboard {
+  display: grid;
+  width: 100%;
+  max-width: 1120px;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1.12fr);
+  align-content: start;
+  gap: 34px;
+  padding: 44px;
+}
+
+html[data-ui-version="archive"] .archive-dashboard-header {
+  grid-column: 1 / -1;
+  padding-bottom: 2px;
+}
+
+html[data-ui-version="archive"] .archive-dashboard-kicker {
+  margin-bottom: 4px;
+  color: var(--primary);
+  font-family: var(--font-mono);
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.14em;
+}
+
+html[data-ui-version="archive"] .archive-dashboard-section {
+  min-width: 0;
+}
+
+html[data-ui-version="archive"] .archive-dashboard-section > h2 {
+  margin-bottom: 0;
+  padding-bottom: 10px;
+  border-bottom: 1px solid var(--border-default);
+  font-size: var(--text-h4);
+}
+
+html[data-ui-version="archive"] .archive-dashboard-reading,
+html[data-ui-version="archive"] .archive-dashboard-spaces {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+}
+
+html[data-ui-version="archive"] .archive-dashboard-reading-row,
+html[data-ui-version="archive"] .archive-dashboard-space-row {
+  min-height: 62px;
+  justify-content: center;
+  padding: 10px 0;
+  border-width: 0 0 1px;
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+}
+
+html[data-ui-version="archive"] .archive-dashboard-reading-row:hover,
+html[data-ui-version="archive"] .archive-dashboard-space-row:hover {
+  padding-inline: 10px;
+  border-color: var(--border-strong);
+  background: var(--bg-hover);
+}
+
+html[data-ui-version="archive"] .archive-dashboard-updates {
+  overflow: visible;
+  border-width: 0;
+  border-radius: 0;
+  background: transparent;
+}
+
+html[data-ui-version="archive"] .archive-dashboard-updates > li {
+  min-height: 47px;
+  padding-inline: 0;
+}
+
+@media (max-width: 767px) {
+  html[data-ui-version="archive"] .archive-dashboard {
+    display: flex;
+    gap: 32px;
+    padding: 28px 20px 40px;
+  }
+
+  html[data-ui-version="archive"] .archive-dashboard-updates > li {
+    align-items: flex-start;
+    flex-wrap: wrap;
+  }
+
+  html[data-ui-version="archive"] .archive-dashboard-updates > li > :last-child {
+    margin-left: 0;
+  }
+}

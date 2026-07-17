@@ -38,23 +38,27 @@ export default async function HomePage() {
   };
 
   return (
-    <div className="mx-auto flex max-w-4xl flex-col gap-8 px-6 py-8">
-      <header>
+    <div className="archive-dashboard mx-auto flex max-w-4xl flex-col gap-8 px-6 py-8">
+      <header className="archive-dashboard-header">
+        <p className="archive-dashboard-kicker ui-archive-only">{t("archiveKicker")}</p>
         <h1 className="text-h1 text-fg">{t("greeting", { name: user.name })}</h1>
-        <p className="mt-1 text-body-ui text-fg-secondary">{t("subtitle")}</p>
+        <p className="ui-legacy-only mt-1 text-body-ui text-fg-secondary">{t("subtitle")}</p>
+        <p className="ui-archive-only mt-1 text-body-ui text-fg-secondary">
+          {t("archiveSubtitle")}
+        </p>
       </header>
 
-      <section aria-label={t("continueReading")}>
+      <section className="archive-dashboard-section" aria-label={t("continueReading")}>
         <h2 className="mb-3 text-h3 text-fg">{t("continueReading")}</h2>
         {visits.length === 0 ? (
           <p className="text-body-ui text-fg-tertiary">{t("noVisits")}</p>
         ) : (
-          <ul className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+          <ul className="archive-dashboard-reading grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
             {visits.map((v) => (
               <li key={v.pageId}>
                 <Link
                   href={`/s/${v.spaceSlug}/${v.slug}`}
-                  className="flex flex-col gap-1 rounded-md border border-edge bg-raised p-4 transition-colors hover:border-edge-strong hover:bg-hover"
+                  className="archive-dashboard-reading-row flex flex-col gap-1 rounded-md border border-edge bg-raised p-4 transition-colors hover:border-edge-strong hover:bg-hover"
                 >
                   <span className="truncate text-body-ui font-medium text-fg">
                     {v.icon ? `${v.icon} ` : ""}
@@ -69,12 +73,12 @@ export default async function HomePage() {
         )}
       </section>
 
-      <section aria-label={t("recentUpdates")}>
+      <section className="archive-dashboard-section" aria-label={t("recentUpdates")}>
         <h2 className="mb-3 text-h3 text-fg">{t("recentUpdates")}</h2>
         {updates.length === 0 ? (
           <p className="text-body-ui text-fg-tertiary">{t("noRecentUpdates")}</p>
         ) : (
-          <ul className="flex flex-col divide-y divide-edge rounded-md border border-edge bg-raised">
+          <ul className="archive-dashboard-updates flex flex-col divide-y divide-edge rounded-md border border-edge bg-raised">
             {updates.map((u) => (
               <li key={u.pageId} className="flex min-w-0 items-center gap-2 px-4 py-3">
                 {u.updatedByName ? (
@@ -101,17 +105,17 @@ export default async function HomePage() {
         )}
       </section>
 
-      <section aria-label={t("mySpaces")}>
+      <section className="archive-dashboard-section" aria-label={t("mySpaces")}>
         <h2 className="mb-3 text-h3 text-fg">{t("mySpaces")}</h2>
         {spaces.length === 0 ? (
           <p className="text-body-ui text-fg-tertiary">{t("noSpaces")}</p>
         ) : (
-          <ul className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+          <ul className="archive-dashboard-spaces grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
             {spaces.slice(0, 6).map((s) => (
               <li key={s.id}>
                 <Link
                   href={`/s/${s.slug}`}
-                  className="flex flex-col gap-1 rounded-md border border-edge bg-raised p-4 transition-shadow hover:shadow-sm"
+                  className="archive-dashboard-space-row flex flex-col gap-1 rounded-md border border-edge bg-raised p-4 transition-shadow hover:shadow-sm"
                 >
                   <span className="text-h4 text-fg">
                     {s.icon ? `${s.icon} ` : ""}

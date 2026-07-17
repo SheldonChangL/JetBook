@@ -17,6 +17,8 @@
   "home": {
     "title": "JetBook",
     "subtitle": "Jet Opto 內部知識管理系統 — 建置中（M0）。",
+    "archiveKicker": "知識工作檯 / 今日索引",
+    "archiveSubtitle": "從上次離開的地方繼續，或查看最新知識更新。",
     "stageBadge": "M0 建置中",
     "greeting": "{name}，歡迎回來",
     "mySpaces": "我的空間",
