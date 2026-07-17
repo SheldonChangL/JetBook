@@ -150,10 +150,10 @@ export default async function PageHistoryPage({
     );
 
   return (
-    <div className="flex h-full min-h-0">
+    <div className="archive-history flex h-full min-h-0">
       {/* 左欄：版本列表（獨立捲動，§3.8）＋勾選比較 */}
-      <aside className="flex w-72 shrink-0 flex-col border-r border-edge">
-        <div className="border-b border-edge px-4 py-3">
+      <aside className="archive-history-sidebar flex w-72 shrink-0 flex-col border-r border-edge">
+        <div className="archive-history-sidebar-head border-b border-edge px-4 py-3">
           <Link
             href={readingHref}
             className="mb-2 inline-flex items-center gap-1 text-caption text-fg-tertiary transition-colors hover:text-fg"
@@ -178,14 +178,14 @@ export default async function PageHistoryPage({
       </aside>
 
       {/* 右欄：快照 / 差異 兩 tab */}
-      <section className="min-w-0 flex-1 overflow-y-auto">
+      <section className="archive-history-main min-w-0 flex-1 overflow-y-auto">
         {versions.length === 0 ? (
           <div className="flex h-full items-center justify-center">
             <p className="text-body text-fg-tertiary">{t("empty")}</p>
           </div>
         ) : (
-          <div className="mx-auto max-w-3xl px-6 py-8">
-            <div className="mb-4 flex items-center gap-4 border-b border-edge">
+          <div className="archive-history-canvas mx-auto max-w-3xl px-6 py-8">
+            <div className="archive-history-tabs mb-4 flex items-center gap-4 border-b border-edge">
               <Link href={snapshotTabHref} className={tabClass(activeTab === "snapshot")}>
                 {t("tabSnapshot")}
               </Link>
@@ -196,7 +196,7 @@ export default async function PageHistoryPage({
 
             {activeTab === "snapshot" ? (
               selected && selectedFull ? (
-                <article>
+                <article className="archive-history-snapshot">
                   <div className="mb-2 flex items-center justify-between gap-4">
                     <p className="text-caption text-fg-tertiary">
                       {t("snapshotMeta", {

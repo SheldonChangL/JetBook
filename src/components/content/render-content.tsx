@@ -422,5 +422,9 @@ export async function RenderContent({
       restore: t("deadLink.restore"),
     },
   };
-  return <div className="prose-editor max-w-none">{renderChildren(doc.content, ctx)}</div>;
+  return (
+    <div className="prose-editor archive-content-renderer max-w-none">
+      {renderChildren(doc.content, ctx)}
+    </div>
+  );
 }
