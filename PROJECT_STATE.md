@@ -142,7 +142,7 @@ Next.js（App Router、TS strict）全端 + PostgreSQL 16/pgvector/pgroonga + Do
 - [x] build 階段注入（ADR-013）：`env.ts` 加 `APP_VERSION`/`GIT_COMMIT`/`BUILD_TIME`（optional）；Dockerfile runner `ARG`→`ENV`；docker-compose web/worker `build.args`；CI `build-push-action` `build-args` 帶 `github.sha`＋`date -u`＋package.json version。runtime 無 git 依賴
 - [x] `src/lib/build-info.ts`（純解析，client/測試共用）＋ `build-info-server.ts`（server-only，`getBuildInfo()`，package.json fallback、commit=dev）；顯示於共用 `BuildBadge`（Legacy／Archive 兩套 shell＋admin topbar，不隨側欄收合）、`UserMenu` 底部、admin 系統頁版本卡、`/api/healthz` JSON
 - [x] 驗證：lint ✅ typecheck ✅ 單元 539/539（新增 build-info 7 條，含注入端到端 mock env→getBuildInfo）✅ next build ✅ worker build ✅；dev runtime `curl /api/healthz` 回 `{status,version,commit}`（fallback 值）✅、對照組舊 image 僅回 `{status:"ok"}`；登入頁 dev server 零 console error。**GUI badge 登入後畫面因安全規則不代輸密碼登入，交使用者/部署確認**
-- [x] branch `feature/issue-267-build-version-badge`
+- [x] branch `feature/issue-267-build-version-badge` — PR #268（Fixes #267）
 
 ### 尚未完成（v1 之後）
 - **UI Design v2 已完成**：#251／PR #252、#253／PR #254、#255／PR #256、#257／PR #258、#259／PR #260、#261／PR #262 六批與 #263／PR #264 編輯體驗迭代皆完成實作及本機驗證；Legacy fallback 依漸進 rollout 決策暫時保留
