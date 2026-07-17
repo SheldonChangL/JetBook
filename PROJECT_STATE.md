@@ -128,6 +128,14 @@ Next.js（App Router、TS strict）全端 + PostgreSQL 16/pgvector/pgroonga + Do
 - [x] QA 抓出並修正 320px 頁面樹占用寫作空間、格式按鈕 `aria-pressed` 未即時同步，以及重複 autosave live region 造成 Playwright strict locator 失敗
 - [x] 本機品質閘門：lint ✅ typecheck ✅ 單元 532/532 ✅ 整合 304/304（含 N-04）✅ N-02 Playwright 2/2（Archive rollout）✅ production build ✅
 
+### UI Design v2 編輯器回歸修正（2026-07-17，#265／PR #266）
+
+- [x] 修正 #264 後 Archive 編輯頂列同時顯示 Legacy secondary 與 Archive primary 兩個「完成編輯」按鈕；根因為共用 button selector 的 `display` specificity 蓋過 `.ui-legacy-only` 隱藏規則
+- [x] `PageEditor` 改為只渲染一個完成動作，Legacy 沿用 secondary variant，Archive 以 scoped semantic token 覆寫成 primary presentation；點擊與返回閱讀流程不變
+- [x] N-02 明確以 Archive rollout 啟動，並斷言 Archive 編輯頁與 accessibility tree 只有一個精確命名的完成按鈕；回歸測試先穩定得到 2、修正後完整旅程轉綠
+- [x] Production browser QA：Archive light／dark × 320／768／1440 與 Legacy light／dark 共 8 組均只有一個完成按鈕、零水平溢位、零 console warning／error；兩套 presentation 各自外觀保持正確
+- [x] 本機品質閘門：lint ✅ typecheck ✅ 單元 532/532 ✅ 整合 304/304（含 N-04）✅ N-02 Playwright 2/2（Archive rollout）✅ production build ✅
+
 ### 尚未完成（v1 之後）
 - **UI Design v2 已完成**：#251／PR #252、#253／PR #254、#255／PR #256、#257／PR #258、#259／PR #260、#261／PR #262 六批與 #263／PR #264 編輯體驗迭代皆完成實作及本機驗證；Legacy fallback 依漸進 rollout 決策暫時保留
 - **#93 M4 backlog**：變更請求、行內評論、webhooks（暫停）、PDF 匯出、KaTeX、多欄、snippets、內容分析等——其餘候選項依回饋再拆
@@ -137,9 +145,9 @@ Next.js（App Router、TS strict）全端 + PostgreSQL 16/pgvector/pgroonga + Do
 ## GitHub 執行狀態
 
 - Repo：https://github.com/SheldonChangL/JetBook（private）
-- Issues：#93 追蹤 M4 backlog；Archive Studio UI v2 由 #251／PR #252、#253／PR #254、#255／PR #256、#257／PR #258、#259／PR #260、#261／PR #262 六批交付，#263／PR #264 交付編輯體驗迭代
+- Issues：#93 追蹤 M4 backlog；Archive Studio UI v2 由 #251／PR #252、#253／PR #254、#255／PR #256、#257／PR #258、#259／PR #260、#261／PR #262 六批交付，#263／PR #264 交付編輯體驗迭代；#265／PR #266 修正重複完成按鈕回歸
 - Milestones：M0 10/10 ✅／M1 42/42 ✅／M2 16/16 ✅／M3 23/23 ✅／M4 已交付 15 功能＋多項修復（backlog 追蹤 #93）
-- 工作流：branch `feature/issue-<n>-<slug>` → PR（Fixes #n）→ squash merge（使用者已授權 self-merge）；目前分支 `feature/issue-263-editor-writing-workspace`
+- 工作流：branch `feature/issue-<n>-<slug>` → PR（Fixes #n）→ squash merge（使用者已授權 self-merge）；目前分支 `feature/issue-265-single-editor-done-action`
 
 ## 已完成
 
