@@ -81,12 +81,13 @@ Next.js（App Router、TS strict）全端 + PostgreSQL 16/pgvector/pgroonga + Do
 
 ### UI Design v2 第二批（2026-07-17，#253，進行中）
 
-- [ ] Archive Dashboard、Spaces／Collections、Space overview／page tree、回收桶與 Space settings presentation
-- [ ] Legacy DOM／功能與 #251 rollout 回退路徑保持可用；URL、action、REST、MCP、SSE、schema、authz 不變
-- [ ] light／dark、320／768／1024／1440、鍵盤／Dialog／Drawer、reduced-motion 與 browser console/network 驗證
+- [x] Archive Dashboard、Spaces／Collections、Space overview／page tree、回收桶與 Space settings presentation
+- [x] Legacy DOM／功能與 #251 rollout 回退路徑保持可用；URL、action、REST、MCP、SSE、schema、authz 不變
+- [x] Production browser QA：Archive light／dark、320／768／1024／1440 五個代表路由零水平溢位；單一 task Dock、`Cmd/Ctrl+\\` 臨時展開、設定行動橫向索引、建立 Modal Esc＋focus restore、Legacy 回切均通過；console warning/error 為零
+- [ ] 完整 lint／typecheck／unit／integration（N-04）／N-02／build 與 PR／CI
 
 ### 尚未完成（v1 之後）
-- **UI Design v2**：#251／PR #252 第一批已完成；#253 第二批進行中，後續 slice 3–6 依功能覆蓋矩陣逐批遷移
+- **UI Design v2**：#251／PR #252 第一批已完成；#253 第二批程式碼與 browser QA 已完成，待完整品質閘門與 PR；後續 slice 3–6 依功能覆蓋矩陣逐批遷移
 - **#93 M4 backlog**：變更請求、行內評論、webhooks（暫停）、PDF 匯出、KaTeX、多欄、snippets、內容分析等——其餘候選項依回饋再拆
 - 真實 LLM/Embedding 端點串接為部署設定（本機開發以 mock 驗證介面）；上線時以 /admin/ai 測試連線驗證
 
@@ -152,8 +153,8 @@ Space 封存/軟刪、跨 Space 移動複製、死鏈標示、附件 GC、Tabs/�
 
 ## 下一步
 
-1. 完成 #253 Archive Dashboard、Spaces／Collections、頁面樹、回收桶與 Space 設定，維持相同 rollout 與 Legacy 回退
-2. #253 全品質閘門與 browser QA 全綠後開 PR（Fixes #253），CI N-02／N-04 通過再合併
+1. 執行 #253 完整 lint／typecheck／unit／integration（N-04）／N-02／build
+2. #253 品質閘門全綠後開 PR（Fixes #253），CI N-02／N-04 通過再合併
 3. 部署到公司內部伺服器：`.env` 填正式值（含 SMTP_*；要開 Office 預覽加 `PREVIEW_CONVERTER_URL=http://gotenberg:3000`）、`docker compose up -d --build`、跑 `db:migrate`（0020）
 4. 串接真實 AI 端點（ANTHROPIC_API_KEY + local BGE-M3）；MCP 依 docs/guides/mcp-server.md 讓 Claude 接上知識庫（每人自建 API token；寫入需勾選 write scope）
 5. 其餘 backlog 候選見 #93（變更請求、行內評論、webhooks、PDF 匯出、KaTeX 等，依回饋再拆）

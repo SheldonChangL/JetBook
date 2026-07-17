@@ -2,7 +2,15 @@
 
 > 本矩陣以 2026-07-16 `main` 的路由、元件、`messages/zh-TW.json` 與 `PROJECT_STATE.md` 為來源。Mock 圖是代表畫面，不等於只改四頁；表內所有現有 UI 都必須在選案後的實作 issue 中得到對應設計。
 
-正式規格見 `docs/design/ui-design-v2.md`。Archive Studio 第一批 #251 已建立可逆 rollout、語意 token、App／Admin Shell、Auth Frame 與 403／404／error／offline presentation；後續頁面仍依本矩陣的 slice 2–6 逐批遷移，未完成前保留 Legacy。
+正式規格見 `docs/design/ui-design-v2.md`。Archive Studio 第一批 #251／PR #252 已建立可逆 rollout、語意 token、App／Admin Shell、Auth Frame 與 403／404／error／offline presentation；第二批 #253 已覆蓋 Dashboard、Spaces／Collections、Space overview／page tree、回收桶與 Space settings。後續頁面仍依本矩陣的 slice 3–6 逐批遷移，未完成前保留 Legacy。
+
+## 正式實作對應（#253）
+
+- Dashboard：`src/app/(app)/page.tsx` 的 `archive-dashboard*` presentation；最近瀏覽、最近更新、我的 Space 與三種空狀態均重用原查詢及權限結果。
+- Spaces／Collections：`src/app/(app)/spaces/page.tsx` 的 `archive-space-index*`；建立 Space／Collection、改名／刪除 Collection、空分組與 Space 指派仍使用原 action／Modal／Select。
+- Space overview／page tree：`src/app/(app)/s/[spaceSlug]/` 與 `src/components/tree/page-tree.tsx`；page／group／external-link、根節點建立、匯入、DnD、同／跨 Space 搬移／複製、改名與軟刪入口均保留。Space route 預設只顯示情境 page-tree Dock，全域 Space Dock 可由頂列或 `Cmd/Ctrl+\\` 臨時展開。
+- 回收桶：`src/app/(app)/trash/page.tsx` 與 `src/components/trash/trash-list.tsx`；全域／單 Space、子樹數、還原根層、剩餘天數與空狀態均保留。永久清除仍只由既有 30 天 worker 排程執行，未新增手動硬刪功能。
+- Space settings：`src/app/(app)/s/[spaceSlug]/settings/`；一般資訊、可見性、成員、群組、匯入、匯出、封存、刪除八區均可由 Archive task index 到達，所有表單、確認與權限規則重用原元件。
 
 ## 覆蓋標記
 
