@@ -1820,6 +1820,81 @@ html[data-ui-version="archive"] .archive-space-tree > :last-child a {
   }
 }
 
+/* UI v2 slice 2 — Space overview：頂層頁面使用目錄列，節點型別仍保持原語意。 */
+html[data-ui-version="archive"] .archive-space-home {
+  width: 100%;
+  max-width: 920px;
+  gap: 42px;
+  padding: 44px;
+}
+
+html[data-ui-version="archive"] .archive-space-home-header {
+  gap: 8px;
+  padding-bottom: 24px;
+  border-bottom: 1px solid var(--border-strong);
+}
+
+html[data-ui-version="archive"] .archive-space-home-header h1 {
+  letter-spacing: -0.025em;
+}
+
+html[data-ui-version="archive"] .archive-space-directory {
+  gap: 0;
+}
+
+html[data-ui-version="archive"] .archive-space-directory > h2 {
+  padding-bottom: 10px;
+  border-bottom: 1px solid var(--border-default);
+  font-family: var(--font-mono);
+  font-size: 11px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+html[data-ui-version="archive"] .archive-space-directory-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+}
+
+html[data-ui-version="archive"] .archive-space-directory-row {
+  min-height: 64px;
+  justify-content: center;
+  padding: 12px 0;
+  border-width: 0 0 1px;
+  border-radius: 0;
+  background: transparent;
+}
+
+html[data-ui-version="archive"] a.archive-space-directory-row:hover {
+  padding-inline: 12px;
+  border-color: var(--border-strong);
+  background: var(--bg-hover);
+}
+
+html[data-ui-version="archive"] .archive-space-directory-group {
+  padding-inline: 12px;
+  border-style: dashed;
+  background: color-mix(in srgb, var(--bg-sidebar) 70%, transparent);
+}
+
+html[data-ui-version="archive"] .archive-space-directory-external {
+  border-left: 3px solid var(--ai);
+  padding-left: 12px;
+}
+
+@media (max-width: 767px) {
+  html[data-ui-version="archive"] .archive-space-home {
+    gap: 32px;
+    padding: 28px 20px 40px;
+  }
+
+  html[data-ui-version="archive"] .archive-space-home-header > div:first-child {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+}
+
 /* UI v2 slice 2 — Spaces／Collections：以檔案索引呈現分組與管理動作。 */
 html[data-ui-version="archive"] .archive-spaces-page {
   width: 100%;

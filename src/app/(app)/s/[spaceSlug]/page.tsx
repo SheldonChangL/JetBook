@@ -38,8 +38,8 @@ export default async function SpaceHomePage({
   }
 
   return (
-    <main className="mx-auto flex max-w-3xl flex-col gap-8 px-6 py-8">
-      <header className="flex flex-col gap-2">
+    <main className="archive-space-home mx-auto flex max-w-3xl flex-col gap-8 px-6 py-8">
+      <header className="archive-space-home-header flex flex-col gap-2">
         <div className="flex items-start justify-between gap-4">
           <h1 className="text-h1 text-fg">
             {space.icon ? `${space.icon} ` : ""}
@@ -59,12 +59,15 @@ export default async function SpaceHomePage({
         ) : null}
       </header>
 
-      <section aria-label={t("pagesHeading")} className="flex flex-col gap-3">
+      <section
+        aria-label={t("pagesHeading")}
+        className="archive-space-directory flex flex-col gap-3"
+      >
         <h2 className="text-h4 text-fg">{t("pagesHeading")}</h2>
         {topLevel.length === 0 ? (
           <p className="text-body-ui text-fg-tertiary">{t("noPages")}</p>
         ) : (
-          <div className="grid gap-3 sm:grid-cols-2">
+          <div className="archive-space-directory-list grid gap-3 sm:grid-cols-2">
             {topLevel.map((n) => {
               // 外部連結卡片：新分頁開啟目標 URL（C-11）。
               if (n.kind === "external_link") {
@@ -74,7 +77,7 @@ export default async function SpaceHomePage({
                     href={n.externalUrl ?? "#"}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="flex flex-col gap-1 rounded-md border border-edge bg-raised p-4 transition-colors hover:border-edge-strong hover:bg-hover"
+                    className="archive-space-directory-row archive-space-directory-external flex flex-col gap-1 rounded-md border border-edge bg-raised p-4 transition-colors hover:border-edge-strong hover:bg-hover"
                   >
                     <span className="flex min-w-0 items-center gap-1.5 text-body-ui font-medium text-fg">
                       <span className="truncate">
@@ -92,7 +95,7 @@ export default async function SpaceHomePage({
                 return (
                   <div
                     key={n.id}
-                    className="flex flex-col gap-1 rounded-md border border-dashed border-edge bg-base p-4"
+                    className="archive-space-directory-row archive-space-directory-group flex flex-col gap-1 rounded-md border border-dashed border-edge bg-base p-4"
                   >
                     <span className="truncate text-body-ui font-semibold text-fg-secondary">
                       {n.icon ? `${n.icon} ` : ""}
@@ -108,7 +111,7 @@ export default async function SpaceHomePage({
                 <Link
                   key={n.id}
                   href={`/s/${space.slug}/${n.slug}`}
-                  className="flex flex-col gap-1 rounded-md border border-edge bg-raised p-4 transition-colors hover:border-edge-strong hover:bg-hover"
+                  className="archive-space-directory-row flex flex-col gap-1 rounded-md border border-edge bg-raised p-4 transition-colors hover:border-edge-strong hover:bg-hover"
                 >
                   <span className="truncate text-body-ui font-medium text-fg">
                     {n.icon ? `${n.icon} ` : ""}
