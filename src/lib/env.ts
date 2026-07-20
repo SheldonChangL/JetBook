@@ -15,13 +15,6 @@ const envSchema = z.object({
   /** PostgreSQL 連線字串 */
   DATABASE_URL: z.string().startsWith("postgresql://"),
 
-  // ── UI Design v2 rollout（#251） ──
-  /**
-   * Archive Studio 漸進上線：off 強制 Legacy；opt-in 預設 Legacy 並開放使用者切換；
-   * on 預設 Archive，但仍接受使用者切回 Legacy。未設定採最保守的 off。
-   */
-  UI_V2_ROLLOUT: z.enum(["off", "opt-in", "on"]).default("off"),
-
   // ── 維運指標（N-05，NFR-OBS-03/04） ──
   /**
    * `/api/metrics`（Prometheus）的 optional bearer token。端點限內網、無 session：
