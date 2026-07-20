@@ -293,7 +293,7 @@ export function CommandPalette({
       overlayClassName="archive-command-overlay fixed inset-0 z-50 bg-black/40"
       contentClassName="archive-command-layer fixed left-1/2 top-[15vh] z-50 flex max-h-[70vh] w-[calc(100vw-32px)] max-w-[640px] -translate-x-1/2 flex-col overflow-hidden rounded-xl border border-edge bg-raised shadow-lg"
     >
-      <div className="archive-command-context ui-archive-only">
+      <div className="archive-command-context">
         <span><CommandIcon aria-hidden />{t("archiveLayer")}</span>
         <span>{t(embeddingConfigured ? "archiveScopeSemantic" : "archiveScopeFullText")}</span>
         {llmConfigured ? <span>{t("archiveScopeAi")}</span> : null}

@@ -78,7 +78,6 @@ test("MVP 冒煙：登入→建空間→建頁→編輯→閱讀→搜尋→私�
   await expect(page.getByText("已自動儲存")).toBeVisible();
 
   // ── 5) 回閱讀頁驗證中文內容（slug 未變，直接導向）──
-  await expect(page.locator("html")).toHaveAttribute("data-ui-version", "archive");
   await expect(page.locator("button").filter({ hasText: "完成編輯" })).toHaveCount(1);
   const doneButton = page.getByRole("button", { name: "完成編輯", exact: true });
   await expect(doneButton).toHaveCount(1);

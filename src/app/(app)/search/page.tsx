@@ -52,9 +52,9 @@ export default async function SearchPage({
   return (
     <div className="archive-search-page mx-auto max-w-3xl px-6 py-8">
       <header className="archive-search-header">
-        <p className="archive-search-kicker ui-archive-only">{t("archiveKicker")}</p>
+        <p className="archive-search-kicker">{t("archiveKicker")}</p>
         <h1 className="mb-4 text-h1 text-fg">{t("title")}</h1>
-        <p className="archive-search-subtitle ui-archive-only">{t("archiveSubtitle")}</p>
+        <p className="archive-search-subtitle">{t("archiveSubtitle")}</p>
       </header>
       <SearchResults
         initialQuery={q}
@@ -86,7 +86,7 @@ export default async function SearchPage({
       {attachmentHits.length > 0 && (
         <section className="archive-search-attachments mt-8 flex flex-col gap-2">
           <div className="archive-search-section-heading">
-            <span className="ui-archive-only"><SearchIcon aria-hidden />{t("archiveAttachmentIndex")}</span>
+            <span><SearchIcon aria-hidden />{t("archiveAttachmentIndex")}</span>
             <h2 className="text-caption font-medium text-fg-tertiary">
               {t("attachmentsHeading", { count: attachmentHits.length })}
             </h2>

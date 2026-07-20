@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, type ReactNode } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useTranslations } from "next-intl";
@@ -10,13 +10,30 @@ import { ArchiveMark } from "@/components/brand/archive-mark";
 import { getArchiveSidebarPresentation } from "@/lib/archive-navigation";
 import { Drawer, DrawerContent } from "@/components/ui/drawer";
 import { IconButton } from "@/components/ui/icon-button";
-import type { AppShellProps } from "./app-shell";
+import type { BuildInfo } from "@/lib/build-info";
+import type { NotificationView } from "@/lib/notifications";
 import { ArchiveCommandRail } from "./archive-command-rail";
 import { ArchiveTopbar } from "./archive-topbar";
 import { CommandPalette } from "./command-palette";
 import { OfflineBanner } from "./offline-banner";
 
 const SIDEBAR_KEY = "jetbook-sidebar-collapsed";
+
+interface ArchiveAppShellProps {
+  user: { name: string; email: string; isAdmin?: boolean };
+  sidebar: ReactNode;
+  children: ReactNode;
+  /** AI 生成已設定（isLlmConfigured）：Cmd+K「問 AI」列與 ✦／⌘J AI 抽屜入口據此啟用（NFR-AVAIL-02）。 */
+  llmConfigured?: boolean;
+  /** 語意索引已設定（isEmbeddingConfigured）：Cmd+K 語意區據此渲染。 */
+  embeddingConfigured?: boolean;
+  /** 站內通知（K-02）：由 RSC layout 查詢後注入鈴鐺初始資料。 */
+  notifications?: NotificationView[];
+  /** 未讀通知數（鈴鐺徽章初值）。 */
+  unreadNotifications?: number;
+  /** 當前部署的 build 資訊（#267）：常駐 badge 與 UserMenu 底部顯示。 */
+  buildInfo: BuildInfo;
+}
 
 export function ArchiveAppShell({
   user,
@@ -26,10 +43,8 @@ export function ArchiveAppShell({
   embeddingConfigured = false,
   notifications = [],
   unreadNotifications = 0,
-  uiVersion = "archive",
-  uiVersionSwitchEnabled = false,
   buildInfo,
-}: AppShellProps) {
+}: ArchiveAppShellProps) {
   const t = useTranslations("shell");
   const tc = useTranslations("common");
   const pathname = usePathname();
@@ -168,8 +183,6 @@ export function ArchiveAppShell({
             llmConfigured={llmConfigured}
             aiOpen={aiOpen}
             dockCollapsed={!showGlobalDock}
-            uiVersion={uiVersion}
-            uiVersionSwitchEnabled={uiVersionSwitchEnabled}
             buildInfo={buildInfo}
             mobileDockTriggerRef={mobileDockTriggerRef}
             onOpenMobileDock={() => setMobileOpen(true)}

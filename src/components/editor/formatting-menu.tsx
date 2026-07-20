@@ -46,7 +46,7 @@ export function FormattingMenu({ editor }: { editor: Editor | null }) {
         current.isEditable && from < to && !current.isActive("codeBlock")
       }
       options={{ placement: "top", offset: 8 }}
-      className="archive-formatting-menu ui-archive-only flex items-center gap-0.5 border border-edge bg-raised p-1 shadow-md"
+      className="archive-formatting-menu flex items-center gap-0.5 border border-edge bg-raised p-1 shadow-md"
     >
       {FORMATTING_ACTIONS.map((action) => {
         const Icon = action.icon;

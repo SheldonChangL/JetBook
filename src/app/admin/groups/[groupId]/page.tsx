@@ -59,7 +59,7 @@ export default async function AdminGroupDetailPage({
           <ChevronLeft aria-hidden className="size-3.5" />
           {t("backToGroups")}
         </Link>
-        <p className="archive-admin-kicker ui-archive-only">{t("archiveDetailKicker")}</p>
+        <p className="archive-admin-kicker">{t("archiveDetailKicker")}</p>
         <h1 className="text-h1 text-fg">{group.name}</h1>
         {group.description ? (
           <p className="text-body-ui text-fg-secondary">{group.description}</p>

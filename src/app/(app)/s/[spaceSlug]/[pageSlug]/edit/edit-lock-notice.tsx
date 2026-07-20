@@ -29,10 +29,10 @@ export function EditLockNotice({
 
   return (
     <div className="archive-lock-notice mx-auto max-w-2xl px-6 py-12 text-center">
-      <div className="archive-lock-notice-icon ui-archive-only">
+      <div className="archive-lock-notice-icon">
         <LockKeyhole aria-hidden />
       </div>
-      <p className="archive-lock-notice-kicker ui-archive-only">{t("archiveProtection")}</p>
+      <p className="archive-lock-notice-kicker">{t("archiveProtection")}</p>
       <h1 className="text-h2 text-fg">{t("lockedTitle")}</h1>
       <p className="archive-lock-notice-copy mt-2 text-body-ui text-fg-secondary">
         {lockedByName ? t("lockedByHint", { name: lockedByName }) : t("lockedHint")}

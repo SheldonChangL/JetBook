@@ -10,7 +10,6 @@ import { IconButton } from "@/components/ui/icon-button";
 import { Kbd } from "@/components/ui/kbd";
 import type { BuildInfo } from "@/lib/build-info";
 import type { NotificationView } from "@/lib/notifications";
-import type { UiVersion } from "@/lib/ui-version";
 import { cn } from "@/lib/utils";
 import { BuildBadge } from "./build-badge";
 import { NotificationBell } from "./notification-bell";
@@ -24,8 +23,6 @@ export function ArchiveTopbar({
   llmConfigured,
   aiOpen,
   dockCollapsed,
-  uiVersion,
-  uiVersionSwitchEnabled,
   buildInfo,
   mobileDockTriggerRef,
   onOpenMobileDock,
@@ -39,8 +36,6 @@ export function ArchiveTopbar({
   llmConfigured: boolean;
   aiOpen: boolean;
   dockCollapsed: boolean;
-  uiVersion: UiVersion;
-  uiVersionSwitchEnabled: boolean;
   buildInfo: BuildInfo;
   mobileDockTriggerRef: Ref<HTMLButtonElement>;
   onOpenMobileDock: () => void;
@@ -120,8 +115,6 @@ export function ArchiveTopbar({
           name={user.name}
           email={user.email}
           isAdmin={user.isAdmin}
-          uiVersion={uiVersion}
-          uiVersionSwitchEnabled={uiVersionSwitchEnabled}
           buildInfo={buildInfo}
         />
       </div>

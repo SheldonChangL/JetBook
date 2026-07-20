@@ -6,7 +6,6 @@ import { Inter, JetBrains_Mono, Noto_Sans_TC } from "next/font/google";
 import { getCurrentSession } from "@/lib/auth/current";
 import { isPreviewConverterConfigured } from "@/lib/storage/office-preview";
 import { normalizeTheme, type Theme } from "@/lib/theme";
-import { getUiVersion } from "@/lib/ui-version-server";
 import { ToastProvider } from "@/components/ui/toast";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import "./globals.css";
@@ -46,7 +45,6 @@ export async function generateMetadata(): Promise<Metadata> {
 export default async function RootLayout({ children }: { children: ReactNode }) {
   const locale = await getLocale();
   const t = await getTranslations("common");
-  const uiVersion = await getUiVersion();
 
   // 已登入者：以 DB 偏好決定 SSR 掛載的主題 class，讓首個 HTML 位元組即帶正確主題
   // （跨裝置同步：新裝置無 localStorage 時直接吃 DB 偏好，不閃白）。主題僅為外觀，
@@ -66,7 +64,6 @@ export default async function RootLayout({ children }: { children: ReactNode }) 
         serverTheme === "dark" ? " dark" : ""
       }`}
       data-server-theme={serverTheme}
-      data-ui-version={uiVersion}
       suppressHydrationWarning
     >
       <head>

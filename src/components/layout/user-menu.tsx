@@ -1,45 +1,27 @@
 "use client";
 
-import { useTransition } from "react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
 import { useTranslations } from "next-intl";
-import { LogOut, RefreshCcw, Settings, ShieldCheck } from "lucide-react";
+import { LogOut, Settings, ShieldCheck } from "lucide-react";
 import { logout } from "@/actions/auth";
-import { setUiVersionAction } from "@/actions/ui-version";
 import { Avatar } from "@/components/ui/avatar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import type { BuildInfo } from "@/lib/build-info";
-import type { UiVersion } from "@/lib/ui-version";
 
 export function UserMenu({
   name,
   email,
   isAdmin = false,
-  uiVersion = "legacy",
-  uiVersionSwitchEnabled = false,
   buildInfo,
 }: {
   name: string;
   email: string;
   /** org admin 顯示「管理後台」入口（§3.11） */
   isAdmin?: boolean;
-  uiVersion?: UiVersion;
-  uiVersionSwitchEnabled?: boolean;
   /** 當前部署的 build 資訊（#267），顯示於選單底部供辨識版本。 */
   buildInfo: BuildInfo;
 }) {
   const t = useTranslations("shell");
-  const router = useRouter();
-  const [switching, startTransition] = useTransition();
-  const nextUiVersion: UiVersion = uiVersion === "archive" ? "legacy" : "archive";
-
-  function switchUiVersion() {
-    startTransition(async () => {
-      await setUiVersionAction(nextUiVersion);
-      router.refresh();
-    });
-  }
 
   return (
     <Popover>
@@ -69,21 +51,6 @@ export function UserMenu({
             <ShieldCheck aria-hidden className="size-4" />
             {t("adminConsole")}
           </Link>
-        ) : null}
-        {uiVersionSwitchEnabled ? (
-          <button
-            type="button"
-            disabled={switching}
-            onClick={switchUiVersion}
-            className="flex w-full items-center gap-2 border-b border-edge px-3 py-2 text-body-ui text-fg transition-colors hover:bg-hover disabled:text-fg-disabled"
-          >
-            <RefreshCcw aria-hidden className="size-4" />
-            {switching
-              ? t("uiSwitching")
-              : uiVersion === "archive"
-                ? t("switchToLegacy")
-                : t("switchToArchive")}
-          </button>
         ) : null}
         <form action={logout} className="border-b border-edge">
           <button

@@ -152,8 +152,20 @@ Next.js（App Router、TS strict）全端 + PostgreSQL 16/pgvector/pgroonga + Do
 - [x] 驗證：lint ✅ typecheck ✅ 單元 541/541 ✅ 整合 304/304（含 N-04）✅ production N-02 smoke ✅ production build ✅ worker build ✅
 - [x] 文件同步：`docs/design/ui-design-v2.md` 與 `docs/design/mockups-v2/feature-coverage.md` 改為展開單一 sidebar／收合 compact rail 模型
 
+### 移除 Legacy UI，Archive 成為唯一 UI（2026-07-20，#271）
+
+- [x] Phase A（前置 commit）：layouts/pages/auth 恆渲染 Archive、刪 Legacy 分支與 `app-shell.tsx`、解除 uiVersion prop/型別穿線、移除 UI 切換按鈕與孤兒 i18n 鍵
+- [x] Phase B（前置 commit）：刪 rollout 機制（`ui-version*`、`setUiVersionAction`）與 `UI_V2_ROLLOUT` env、`.env.example`／playwright 對應設定
+- [x] Phase C：25 個 page/component 移除 `ui-archive-only` marker，元素恆顯示
+- [x] Phase D：`globals.css` unscope — Archive token 併入 `:root`／`html.dark`（`--code-*` 保留原值）、562 選擇器去 `html[data-ui-version="archive"]` 前綴、刪 toggle 規則、compound selector 改寫；`layout.tsx` 移除 `data-ui-version` 屬性；`smoke.spec` 移除對應斷言；`page-editor` 收斂雙 UI 殘留的相同儲存狀態分支
+- [x] 視覺不變性：移除前後 production dev server 對 11 路由 × light/dark 全頁截圖逐像素比對；read/search/settings/spaces/trash/notfound 零差異，login/dashboard/admin/edit 的差異經與「同版本重截」對照組確認全為動態內容/游標噪音，非樣式回歸
+- [x] 殘留 grep（`ui-version`／`data-ui-version`／`ui-archive-only`／`ui-legacy-only`／`UI_V2_ROLLOUT`）於 `src`／`tests`／`scripts`／`.env.example` 皆為空
+- [x] 品質閘門：lint ✅ typecheck ✅ 單元 534/534 ✅ 整合 304/304（含 N-04）✅ N-02 Playwright 2/2 ✅ next build ✅ worker build ✅
+- [x] 文件同步：`docs/design/ui-design-v2.md` §3 改記 rollout 已完成並移除、§4 token 改為全站直接定義；`feature-coverage.md` 更新；新增 ADR-014
+- [x] 取捨：放棄 env-based 即時回退舊 UI 的 kill switch（已確認接受），緊急回退改為部署上一版 image
+
 ### 尚未完成（v1 之後）
-- **UI Design v2 已完成**：#251／PR #252、#253／PR #254、#255／PR #256、#257／PR #258、#259／PR #260、#261／PR #262 六批與 #263／PR #264 編輯體驗迭代皆完成實作及本機驗證；Legacy fallback 依漸進 rollout 決策暫時保留
+- **UI Design v2 已完成**：#251／PR #252、#253／PR #254、#255／PR #256、#257／PR #258、#259／PR #260、#261／PR #262 六批與 #263／PR #264 編輯體驗迭代皆完成；#271 移除 Legacy fallback 後 Archive 為唯一 UI
 - **#93 M4 backlog**：變更請求、行內評論、webhooks（暫停）、PDF 匯出、KaTeX、多欄、snippets、內容分析等——其餘候選項依回饋再拆
 - 真實 LLM/Embedding 端點串接為部署設定（本機開發以 mock 驗證介面）；上線時以 /admin/ai 測試連線驗證
 
@@ -163,7 +175,7 @@ Next.js（App Router、TS strict）全端 + PostgreSQL 16/pgvector/pgroonga + Do
 - Repo：https://github.com/SheldonChangL/JetBook（private）
 - Issues：#93 追蹤 M4 backlog；Archive Studio UI v2 由 #251／PR #252、#253／PR #254、#255／PR #256、#257／PR #258、#259／PR #260、#261／PR #262 六批交付，#263／PR #264 交付編輯體驗迭代；#265／PR #266 修正重複完成按鈕回歸；#269 修正 App Shell 雙側欄視覺
 - Milestones：M0 10/10 ✅／M1 42/42 ✅／M2 16/16 ✅／M3 23/23 ✅／M4 已交付 15 功能＋多項修復（backlog 追蹤 #93）
-- 工作流：branch `feature/issue-<n>-<slug>` → PR（Fixes #n）→ squash merge（使用者已授權 self-merge）；目前分支 `feature/issue-269-archive-sidebar-merge`（#269 Archive App Shell 側欄整併）
+- 工作流：branch `feature/issue-<n>-<slug>` → PR（Fixes #n）→ squash merge（使用者已授權 self-merge）；目前分支 `feature/issue-271-remove-legacy-ui`（#271 移除 Legacy UI）
 
 ## 已完成
 

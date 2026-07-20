@@ -92,7 +92,7 @@ export default async function AdminAuditPage({
     <div className="archive-admin-page archive-admin-audit mx-auto flex max-w-6xl flex-col gap-5 px-6 py-8">
       <header className="archive-admin-page-header flex flex-wrap items-center justify-between gap-3">
         <div className="flex flex-col gap-1">
-          <p className="archive-admin-kicker ui-archive-only">{t("archiveAuditKicker")}</p>
+          <p className="archive-admin-kicker">{t("archiveAuditKicker")}</p>
           <h1 className="text-h1 text-fg">{t("auditTitle")}</h1>
           <p className="text-body-ui text-fg-secondary">{t("auditDesc")}</p>
         </div>

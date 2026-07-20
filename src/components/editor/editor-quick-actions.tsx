@@ -51,7 +51,7 @@ export function EditorQuickActions({
   if (variant === "mobile") {
     return (
       <div
-        className="archive-editor-mobile-dock ui-archive-only"
+        className="archive-editor-mobile-dock"
         role="toolbar"
         aria-label={t("mobileTools")}
       >
@@ -79,7 +79,7 @@ export function EditorQuickActions({
 
   return (
     <div
-      className="archive-editor-commandbar ui-archive-only"
+      className="archive-editor-commandbar"
       role="toolbar"
       aria-label={t("quickInsert")}
     >

@@ -38,7 +38,7 @@ export default async function SpacesPage() {
       <header className="archive-spaces-header flex items-center justify-between gap-2">
         <div>
           <h1 className="text-h1 text-fg">{t("title")}</h1>
-          <p className="ui-archive-only mt-1 text-body-ui text-fg-secondary">
+          <p className="mt-1 text-body-ui text-fg-secondary">
             {t("archiveSubtitle")}
           </p>
         </div>

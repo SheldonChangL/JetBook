@@ -33,7 +33,7 @@ export default async function AdminSpacesPage() {
   return (
     <div className="archive-admin-page archive-admin-spaces mx-auto flex max-w-4xl flex-col gap-6 px-6 py-8">
       <header className="archive-admin-page-header flex flex-col gap-1">
-        <p className="archive-admin-kicker ui-archive-only">{t("archiveSpacesKicker")}</p>
+        <p className="archive-admin-kicker">{t("archiveSpacesKicker")}</p>
         <h1 className="text-h1 text-fg">{t("spacesTitle")}</h1>
         <p className="text-body-ui text-fg-secondary">{t("spacesDesc")}</p>
       </header>

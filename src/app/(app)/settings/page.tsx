@@ -40,13 +40,13 @@ export default async function SettingsPage() {
           <ChevronLeft aria-hidden className="size-3.5" />
           {t("backToApp")}
         </Link>
-        <p className="archive-personal-kicker ui-archive-only">{t("archiveKicker")}</p>
+        <p className="archive-personal-kicker">{t("archiveKicker")}</p>
         <h1 className="text-h1 text-fg">{t("title")}</h1>
         <p className="text-body-ui text-fg-secondary">{t("subtitle")}</p>
       </header>
 
       <div className="archive-personal-layout">
-        <nav className="archive-personal-nav ui-archive-only" aria-label={t("archiveNavLabel")}>
+        <nav className="archive-personal-nav" aria-label={t("archiveNavLabel")}>
           <ul>
             <li><a href="#profile">{t("profileHeading")}</a></li>
             <li><a href="#password">{t("passwordHeading")}</a></li>
