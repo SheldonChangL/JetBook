@@ -16,7 +16,6 @@
   },
   "home": {
     "title": "JetBook",
-    "subtitle": "Jet Opto 內部知識管理系統 — 建置中（M0）。",
     "archiveKicker": "知識工作檯 / 今日索引",
     "archiveSubtitle": "從上次離開的地方繼續，或查看最新知識更新。",
     "stageBadge": "M0 建置中",
@@ -241,9 +240,6 @@
     "userMenu": "使用者選單",
     "personalSettings": "個人設定",
     "adminConsole": "管理後台",
-    "switchToArchive": "切換到知識工坊介面",
-    "switchToLegacy": "切回舊版介面",
-    "uiSwitching": "切換介面中…",
     "archiveRail": "知識工坊命令列",
     "archivePrimaryNav": "主要導覽",
     "archiveKicker": "KNOWLEDGE ARCHIVE",

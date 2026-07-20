@@ -7,10 +7,8 @@ import { spaces } from "@/lib/db/schema";
 import { requireSession, isSafeReturnTo } from "@/lib/auth/current";
 import { getSpaceRole } from "@/lib/authz/permission";
 import { listSpaceAdmins } from "@/lib/spaces/queries";
-import { getUiVersion } from "@/lib/ui-version-server";
 import { ArchiveSystemState } from "@/components/layout/archive-system-state";
 import { Button } from "@/components/ui/button";
-import { EmptyState } from "@/components/ui/empty-state";
 
 /**
  * 403 頁（G-04，設計規範 §3.12）：沿用 App Shell，使用者不會「掉出」系統。
@@ -26,7 +24,6 @@ export default async function ForbiddenPage({
   const { user } = await requireSession("/");
   const { from } = await searchParams;
   const t = await getTranslations("errors.forbidden");
-  const uiVersion = await getUiVersion();
 
   const spaceSlug = from && isSafeReturnTo(from) ? /^\/s\/([^/?#]+)/.exec(from)?.[1] : undefined;
 
@@ -60,54 +57,18 @@ export default async function ForbiddenPage({
       </div>
     ) : null;
 
-  if (uiVersion === "archive") {
-    return (
-      <ArchiveSystemState
-        code={t("code")}
-        icon={<ShieldAlert />}
-        title={t("title")}
-        description={t("description")}
-        details={adminDetails}
-        action={
-          <Button asChild variant="primary">
-            <Link href="/">{t("backHome")}</Link>
-          </Button>
-        }
-      />
-    );
-  }
-
   return (
-    <div className="flex min-h-full items-center justify-center py-12">
-      <div className="flex flex-col items-center">
-        <EmptyState
-          icon={<ShieldAlert />}
-          title={t("title")}
-          description={t("description")}
-          action={
-            <Button asChild variant="primary">
-              <Link href="/">{t("backHome")}</Link>
-            </Button>
-          }
-        />
-        {spaceInfo && spaceInfo.admins.length > 0 ? (
-          <div className="mt-2 w-full max-w-sm rounded-md border border-edge bg-sidebar px-4 py-3">
-            <p className="mb-1 text-caption font-medium text-fg-secondary">
-              {t("spaceAdmins", { space: spaceInfo.name })}
-            </p>
-            <ul className="flex flex-col gap-0.5">
-              {spaceInfo.admins.map((a) => (
-                <li key={a.email} className="text-caption text-fg-tertiary">
-                  {a.name}
-                  {" ("}
-                  {a.email}
-                  {")"}
-                </li>
-              ))}
-            </ul>
-          </div>
-        ) : null}
-      </div>
-    </div>
+    <ArchiveSystemState
+      code={t("code")}
+      icon={<ShieldAlert />}
+      title={t("title")}
+      description={t("description")}
+      details={adminDetails}
+      action={
+        <Button asChild variant="primary">
+          <Link href="/">{t("backHome")}</Link>
+        </Button>
+      }
+    />
   );
 }

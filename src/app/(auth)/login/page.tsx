@@ -2,7 +2,6 @@ import type { Metadata } from "next";
 import { Suspense } from "react";
 import { getTranslations } from "next-intl/server";
 import { isOidcEnabled } from "@/lib/auth/oidc";
-import { getUiVersion } from "@/lib/ui-version-server";
 import { AuthFrame } from "@/components/layout/auth-frame";
 import { LoginForm } from "./login-form";
 
@@ -14,10 +13,9 @@ export async function generateMetadata(): Promise<Metadata> {
 /** 登入頁（設計規範 §3.1）：全螢幕置中 400px 卡片，無 App Shell。 */
 export default async function LoginPage() {
   const tAuth = await getTranslations("auth");
-  const uiVersion = await getUiVersion();
 
   return (
-    <AuthFrame uiVersion={uiVersion} title={tAuth("loginTitle")} legacySubtitle={tAuth("tagline")}>
+    <AuthFrame title={tAuth("loginTitle")}>
       <Suspense>
         <LoginForm oidcEnabled={isOidcEnabled()} />
       </Suspense>

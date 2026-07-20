@@ -42,7 +42,6 @@ export default async function HomePage() {
       <header className="archive-dashboard-header">
         <p className="archive-dashboard-kicker ui-archive-only">{t("archiveKicker")}</p>
         <h1 className="text-h1 text-fg">{t("greeting", { name: user.name })}</h1>
-        <p className="ui-legacy-only mt-1 text-body-ui text-fg-secondary">{t("subtitle")}</p>
         <p className="ui-archive-only mt-1 text-body-ui text-fg-secondary">
           {t("archiveSubtitle")}
         </p>

@@ -2,7 +2,6 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { getTranslations } from "next-intl/server";
 import { validatePasswordResetToken } from "@/lib/auth/password-reset";
-import { getUiVersion } from "@/lib/ui-version-server";
 import { AuthFrame } from "@/components/layout/auth-frame";
 import { ResetPasswordForm } from "./reset-password-form";
 
@@ -23,10 +22,9 @@ export default async function ResetPasswordPage({
   const tAuth = await getTranslations("auth");
   const { token } = await searchParams;
   const valid = token ? await validatePasswordResetToken(token) : null;
-  const uiVersion = await getUiVersion();
 
   return (
-    <AuthFrame uiVersion={uiVersion} title={tAuth("resetTitle")}>
+    <AuthFrame title={tAuth("resetTitle")}>
       {valid && token ? (
         <ResetPasswordForm token={token} />
       ) : (

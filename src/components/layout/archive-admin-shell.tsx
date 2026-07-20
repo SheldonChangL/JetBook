@@ -20,7 +20,6 @@ import { Drawer, DrawerContent } from "@/components/ui/drawer";
 import { IconButton } from "@/components/ui/icon-button";
 import { Tooltip } from "@/components/ui/tooltip";
 import type { BuildInfo } from "@/lib/build-info";
-import type { UiVersion } from "@/lib/ui-version";
 import { cn } from "@/lib/utils";
 import { BuildBadge } from "./build-badge";
 import { ThemeToggle } from "./theme-toggle";
@@ -30,14 +29,10 @@ type AdminIcon = ComponentType<SVGProps<SVGSVGElement>>;
 
 export function ArchiveAdminShell({
   user,
-  uiVersion,
-  uiVersionSwitchEnabled,
   buildInfo,
   children,
 }: {
   user: { name: string; email: string };
-  uiVersion: UiVersion;
-  uiVersionSwitchEnabled: boolean;
   buildInfo: BuildInfo;
   children: ReactNode;
 }) {
@@ -110,8 +105,6 @@ export function ArchiveAdminShell({
               name={user.name}
               email={user.email}
               isAdmin
-              uiVersion={uiVersion}
-              uiVersionSwitchEnabled={uiVersionSwitchEnabled}
               buildInfo={buildInfo}
             />
           </div>

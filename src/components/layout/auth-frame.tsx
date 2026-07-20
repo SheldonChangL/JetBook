@@ -1,36 +1,16 @@
 import type { ReactNode } from "react";
 import { getTranslations } from "next-intl/server";
 import { ArchiveMark } from "@/components/brand/archive-mark";
-import type { UiVersion } from "@/lib/ui-version";
 
 export async function AuthFrame({
-  uiVersion,
   title,
-  legacySubtitle = title,
   children,
 }: {
-  uiVersion: UiVersion;
   title: string;
-  legacySubtitle?: string;
   children: ReactNode;
 }) {
   const tc = await getTranslations("common");
   const ta = await getTranslations("auth");
-
-  if (uiVersion === "legacy") {
-    return (
-      <main className="flex min-h-dvh flex-col items-center justify-center bg-sidebar px-4">
-        <div className="w-full max-w-[400px] rounded-lg border border-edge bg-raised p-8 shadow-lg">
-          <div className="mb-6 flex flex-col items-center gap-1">
-            <h1 className="text-h2 text-fg">{tc("appName")}</h1>
-            <p className="text-caption text-fg-tertiary">{legacySubtitle}</p>
-          </div>
-          {children}
-        </div>
-        <p className="mt-6 text-caption text-fg-tertiary">{ta("copyright")}</p>
-      </main>
-    );
-  }
 
   return (
     <main className="grid min-h-dvh bg-base lg:grid-cols-[minmax(320px,0.82fr)_minmax(480px,1.18fr)]">
