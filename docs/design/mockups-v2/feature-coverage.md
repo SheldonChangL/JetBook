@@ -2,7 +2,7 @@
 
 > 本矩陣以 2026-07-16 `main` 的路由、元件、`messages/zh-TW.json` 與 `PROJECT_STATE.md` 為來源。Mock 圖是代表畫面，不等於只改四頁；表內所有現有 UI 都必須在選案後的實作 issue 中得到對應設計。
 
-正式規格見 `docs/design/ui-design-v2.md`。Archive Studio 第一批 #251／PR #252 已建立可逆 rollout、語意 token、App／Admin Shell、Auth Frame 與 403／404／error／offline presentation；第二批 #253／PR #254 已覆蓋 Dashboard、Spaces／Collections、Space overview／page tree、回收桶與 Space settings；第三批 #255／PR #256 已完成閱讀、內容區塊、留言、版本、附件與預覽；第四批 #257／PR #258 已完成編輯器、衝突防護、AI 寫作與 import/export job presentation；第五批 #259／PR #260 已遷移搜尋、Cmd+K、AI、通知、個人設定、API Token 與 API Docs；第六批 #261 完成管理後台與全站 responsive／accessibility 收尾。矩陣內既有 UI 均已有 Archive presentation；過渡期仍刻意保留 Legacy 雙向切換與全域 kill switch。
+正式規格見 `docs/design/ui-design-v2.md`。Archive Studio 第一批 #251／PR #252 已建立可逆 rollout、語意 token、App／Admin Shell、Auth Frame 與 403／404／error／offline presentation；第二批 #253／PR #254 已覆蓋 Dashboard、Spaces／Collections、Space overview／page tree、回收桶與 Space settings；第三批 #255／PR #256 已完成閱讀、內容區塊、留言、版本、附件與預覽；第四批 #257／PR #258 已完成編輯器、衝突防護、AI 寫作與 import/export job presentation；第五批 #259／PR #260 已遷移搜尋、Cmd+K、AI、通知、個人設定、API Token 與 API Docs；第六批 #261 完成管理後台與全站 responsive／accessibility 收尾。矩陣內既有 UI 均已有 Archive presentation；#271 已移除 Legacy presentation layer 與 rollout 切換機制，Archive 為唯一 UI。
 
 ## 正式實作對應（#253）
 

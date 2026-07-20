@@ -382,3 +382,24 @@ MCP `create_page`/`update_page` 傳入的外部圖片 Markdown（如 Redmine 附
 - **得**：符合「設定唯一入口 env.ts」與 12-factor；runtime 唯讀、無 git 依賴；本機開發未注入時優雅 fallback（`commit=dev`、version 取 package.json）。
 - **得**：`healthz` 附版本使部署自動化可斷言上線版本，不需登入 GUI。
 - **失／限制**：本機 `next build` 不自動抓 git（維持單純）；git sha 的正確性依賴 CI／compose 正確帶入 build-arg（屬部署設定，非執行期邏輯）。build metadata 為 build-arg 而非 runtime `.env` 設定，故不列入 `.env.example`（避免誤導為可在 `.env` 覆寫）。
+
+## ADR-014：移除 Legacy presentation layer 與 UI rollout 機制，Archive 為唯一 UI
+
+- **狀態**：已接受
+- **日期**：2026-07-20
+- **對應審查編號**：—（issue #271）
+
+### 背景
+
+UI Design v2（#251–#262）以 Strangler pattern 讓 Legacy 與 Archive 兩套 presentation 並存，由 `UI_V2_ROLLOUT` env 與 HttpOnly cookie 決定 SSR 寫入的 `html[data-ui-version]`。六批遷移完成後，雙 UI 成為技術債：archive-scoped 選擇器集中於單一大型 globals.css、功能雙份實作、曾引爆重複「完成編輯」按鈕回歸（#265），且生產預設 `off` 出的是 Legacy，造成 N-02 E2E 只覆蓋 Archive、預設 UI 反而零 E2E 覆蓋。
+
+### 決策
+
+1. **徹底移除 Legacy 與 rollout**：刪除 Legacy 元件與分支、`ui-version*` 模組與 `setUiVersionAction`、`UI_V2_ROLLOUT` env、`data-ui-version` 屬性與 `ui-archive-only`／`ui-legacy-only` DOM markers；layouts／pages／auth 恆渲染 Archive。
+2. **CSS unscope**：Archive token 併入 `:root`／`html.dark`（`--code-*` 語法高亮沿用原值），562 個選擇器移除 `html[data-ui-version="archive"]` 前綴，刪除 toggle 規則；以移除前後 production 路由截圖逐像素比對確認外觀不變。
+3. **經勘查確認 Archive 為功能超集**，移除不損任何功能；既有 URL、Server Action、REST、MCP、SSE、schema、authz 不變。
+
+### 取捨與後果
+
+- **得**：單一 presentation、單份 CSS 與元件；N-02 E2E 覆蓋的就是唯一生產 UI；消除雙 UI 邊界類回歸（#265 類）。
+- **失／限制**：放棄 env-based 即時回退舊 UI 的 kill switch（已確認接受）；緊急回退手段為部署上一版 image。

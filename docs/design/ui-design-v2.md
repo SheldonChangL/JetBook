@@ -1,6 +1,6 @@
 # JetBook UI Design v2 — Archive Studio／知識工坊
 
-> 狀態：已選定；六個順序 issue／PR（#251–#262）均已完成。#263 依實際使用回饋再改善編輯工作區的人因與工具可發現性；#269 將 App Shell 由雙側欄改為展開單一 sidebar／收合 compact rail。原始兩案與 16 張 mock 見 `docs/design/mockups-v2/`。
+> 狀態：已選定；六個順序 issue／PR（#251–#262）均已完成。#263 依實際使用回饋再改善編輯工作區的人因與工具可發現性；#269 將 App Shell 由雙側欄改為展開單一 sidebar／收合 compact rail；#271 移除 Legacy presentation layer 與 rollout 機制，Archive 成為唯一 UI。原始兩案與 16 張 mock 見 `docs/design/mockups-v2/`。
 
 ## 1. 設計方向
 
@@ -33,26 +33,15 @@ UI v2 只替換 presentation layer。以下合約在六批遷移期間均不得�
 - `light | dark | system` 主題格式與 `jetbook-theme` 偏好。
 - 現有功能、失敗狀態、繁中 i18n 與鍵盤路徑。
 
-## 3. 可逆 rollout
+## 3. rollout（已完成並移除）
 
-Archive Studio 以 Strangler pattern 與 Legacy 同時存在，選擇結果由伺服器在 SSR 階段寫入 `html[data-ui-version]`，避免 hydration 差異與畫面閃動。
+遷移期間 Archive Studio 曾以 Strangler pattern 與 Legacy 並存：`UI_V2_ROLLOUT=off|opt-in|on` 為全域開關、HttpOnly cookie `jetbook-ui-version` 記錄使用者偏好、SSR 寫入 `html[data-ui-version]` 決定 presentation。
 
-| `UI_V2_ROLLOUT` | 無偏好預設 | 使用者切換 | 用途 |
-| --- | --- | --- | --- |
-| `off` | Legacy | 隱藏；任何 cookie 都被忽略 | 全域 kill switch／緊急回退 |
-| `opt-in` | Legacy | Legacy ⇄ Archive | 小規模試用與功能覆蓋驗證 |
-| `on` | Archive | Archive ⇄ Legacy | Archive 預設上線、仍可個別回退 |
-
-- 偏好 cookie：`jetbook-ui-version=legacy|archive`，HttpOnly、SameSite=Lax、全站路徑、180 天。
-- `BASE_URL` 為 HTTPS 時 cookie 啟用 Secure。
-- rollout 設定只從 `src/lib/env.ts` 取得；預設 `off`。
-- `off` 的優先權高於使用者偏好，部署不需重新 build 即可回退。
-
-Legacy presentation layer 僅在六批功能矩陣完成、N-02／N-04、深淺視覺回歸、鍵盤與響應式驗證全綠，且搜尋確認零 active usage 後移除。
+六批功能矩陣完成且 Archive 確認為功能超集後，**#271 已徹底移除 Legacy 與整套 rollout 機制**：`UI_V2_ROLLOUT` env、`jetbook-ui-version` cookie、`data-ui-version` 屬性、`ui-archive-only`／`ui-legacy-only` DOM markers 與 Legacy 元件皆不存在，Archive 為唯一且不可切換的 UI。此舉同時放棄 env-based 即時回退舊 UI 的 kill switch（取捨已於 issue 確認接受；回退手段為部署上一版 image）。
 
 ## 4. 語意 token
 
-Archive token 只在 `html[data-ui-version="archive"]` 覆寫現有語意別名；Legacy token 保留原值。既有元件可繼續使用 `bg-base`、`text-fg`、`border-edge` 等 utility，不需要複製整套元件。
+Archive token 即全站 token：直接定義於 `:root`（light）與 `html.dark`（dark），程式碼語法高亮 `--code-*` 沿用既有 GitHub light/dark 配色。元件一律使用 `bg-base`、`text-fg`、`border-edge` 等語意 utility，不得直接寫色值。
 
 ### 核心色彩
 
