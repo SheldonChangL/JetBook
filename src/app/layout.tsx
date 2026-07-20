@@ -64,7 +64,6 @@ export default async function RootLayout({ children }: { children: ReactNode }) 
         serverTheme === "dark" ? " dark" : ""
       }`}
       data-server-theme={serverTheme}
-      data-ui-version="archive"
       suppressHydrationWarning
     >
       <head>
