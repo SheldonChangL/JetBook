@@ -18,7 +18,7 @@ export function EditorStatusPopover({ lockLost, versionNo, aiEnabled }: EditorSt
   return (
     <Popover>
       <PopoverTrigger asChild>
-        <button type="button" className="archive-editor-status-trigger ui-archive-only">
+        <button type="button" className="archive-editor-status-trigger">
           <FileCheck2 aria-hidden className="archive-editor-status-icon" />
           <span>{t("archiveDocumentStatus")}</span>
           <ChevronDown aria-hidden className="archive-editor-status-chevron" />

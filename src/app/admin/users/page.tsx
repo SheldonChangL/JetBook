@@ -59,9 +59,9 @@ export default async function AdminUsersPage({
     <div className="archive-admin-page archive-admin-users mx-auto flex max-w-5xl flex-col gap-6 px-6 py-8">
       <header className="archive-admin-page-header flex items-center justify-between">
         <div>
-          <p className="archive-admin-kicker ui-archive-only">{t("archiveUsersKicker")}</p>
+          <p className="archive-admin-kicker">{t("archiveUsersKicker")}</p>
           <h1 className="text-h1 text-fg">{t("usersTitle")}</h1>
-          <p className="archive-admin-subtitle ui-archive-only">{t("archiveUsersDesc")}</p>
+          <p className="archive-admin-subtitle">{t("archiveUsersDesc")}</p>
         </div>
         <div className="archive-admin-header-actions flex items-center gap-2">
           <ImportUsersButton />

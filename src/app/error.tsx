@@ -22,7 +22,7 @@ export default function ErrorPage({
 
   return (
     <>
-      <main className="ui-archive-only">
+      <main>
         <ArchiveSystemState
           code={t("code")}
           icon={<AlertTriangle />}

@@ -105,7 +105,7 @@ export default async function PageReadPage({
           </nav>
 
           <header className="archive-reading-header">
-            <p className="archive-reading-kicker ui-archive-only">
+            <p className="archive-reading-kicker">
               {t("archiveKicker", { version: page.currentVersionNo })}
             </p>
             <div className="archive-reading-title-row mb-1 flex items-start justify-between gap-4">
@@ -138,7 +138,7 @@ export default async function PageReadPage({
             </p>
           </header>
 
-          <div className="archive-reading-mobile-toc ui-archive-only">
+          <div className="archive-reading-mobile-toc">
             <ReadingToc items={tocItems} compact />
           </div>
 
@@ -153,11 +153,11 @@ export default async function PageReadPage({
         </div>
 
         <aside className="archive-reading-inspector" aria-label={t("archiveContext")}>
-          <div className="archive-reading-inspector-head ui-archive-only">
+          <div className="archive-reading-inspector-head">
             <strong>{t("archiveContext")}</strong>
             <Badge variant="neutral">{t("archiveVersion", { version: page.currentVersionNo })}</Badge>
           </div>
-          <section className="archive-reading-toc-section ui-archive-only" aria-labelledby="toc-heading">
+          <section className="archive-reading-toc-section" aria-labelledby="toc-heading">
             <h2 id="toc-heading">{t("archiveToc")}</h2>
             <ReadingToc items={tocItems} />
           </section>

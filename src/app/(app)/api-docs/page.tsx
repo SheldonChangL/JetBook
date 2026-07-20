@@ -32,7 +32,7 @@ export default async function ApiDocsPage() {
           <ChevronLeft aria-hidden className="size-3.5" />
           {t("backToSettings")}
         </Link>
-        <p className="archive-api-docs-kicker ui-archive-only">{t("archiveKicker")}</p>
+        <p className="archive-api-docs-kicker">{t("archiveKicker")}</p>
         <h1 className="text-h1 text-fg">{openApiSpec.info.title}</h1>
         <p className="text-body-ui text-fg-secondary">{openApiSpec.info.description}</p>
         <a

@@ -81,7 +81,7 @@ export default async function SpaceSettingsPage({
       </header>
 
       <div className="archive-settings-layout flex flex-col gap-8">
-        <nav className="archive-settings-nav ui-archive-only" aria-label={t("archiveNavLabel")}>
+        <nav className="archive-settings-nav" aria-label={t("archiveNavLabel")}>
           <ul>
             <li><a href="#general-heading">{t("generalTitle")}</a></li>
             <li><a href="#visibility-heading">{t("visibilityHeading")}</a></li>

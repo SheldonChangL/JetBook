@@ -45,7 +45,7 @@ export default async function AdminAiPage() {
   return (
     <div className="archive-admin-page archive-admin-ai mx-auto flex max-w-5xl flex-col gap-6 px-6 py-8">
       <header className="archive-admin-page-header flex flex-col gap-1">
-        <p className="archive-admin-kicker ui-archive-only">{t("archiveAiKicker")}</p>
+        <p className="archive-admin-kicker">{t("archiveAiKicker")}</p>
         <h1 className="text-h1 text-fg">{t("aiTitle")}</h1>
         <p className="text-body-ui text-fg-secondary">{t("aiDesc")}</p>
       </header>

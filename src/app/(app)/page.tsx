@@ -40,9 +40,9 @@ export default async function HomePage() {
   return (
     <div className="archive-dashboard mx-auto flex max-w-4xl flex-col gap-8 px-6 py-8">
       <header className="archive-dashboard-header">
-        <p className="archive-dashboard-kicker ui-archive-only">{t("archiveKicker")}</p>
+        <p className="archive-dashboard-kicker">{t("archiveKicker")}</p>
         <h1 className="text-h1 text-fg">{t("greeting", { name: user.name })}</h1>
-        <p className="ui-archive-only mt-1 text-body-ui text-fg-secondary">
+        <p className="mt-1 text-body-ui text-fg-secondary">
           {t("archiveSubtitle")}
         </p>
       </header>

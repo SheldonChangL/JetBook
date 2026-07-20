@@ -40,7 +40,7 @@ export default async function AdminSystemPage() {
   return (
     <div className="archive-admin-page archive-admin-system mx-auto flex max-w-5xl flex-col gap-6 px-6 py-8">
       <header className="archive-admin-page-header flex flex-col gap-1">
-        <p className="archive-admin-kicker ui-archive-only">{t("archiveSystemKicker")}</p>
+        <p className="archive-admin-kicker">{t("archiveSystemKicker")}</p>
         <h1 className="text-h1 text-fg">{t("systemTitle")}</h1>
         <p className="text-body-ui text-fg-secondary">{t("systemDesc")}</p>
       </header>

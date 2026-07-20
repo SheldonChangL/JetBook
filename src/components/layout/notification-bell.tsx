@@ -69,7 +69,7 @@ export function NotificationBell({
       <PopoverContent align="end" className="archive-notification-popover w-80 p-0">
         <div className="archive-notification-head flex items-center justify-between border-b border-edge px-3 py-2">
           <div>
-            <span className="ui-archive-only">{t("archiveKicker")}</span>
+            <span>{t("archiveKicker")}</span>
             <p className="text-body-ui font-medium text-fg">{t("heading")}</p>
           </div>
           {unread > 0 ? (

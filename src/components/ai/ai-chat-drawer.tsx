@@ -146,7 +146,7 @@ export function AiChatDrawer({ open, onOpenChange }: AiChatDrawerProps) {
         className="archive-ai-drawer"
       >
         <div className="archive-ai-workspace flex h-full min-h-0 flex-col">
-          <div className="archive-ai-context ui-archive-only">
+          <div className="archive-ai-context">
             <span><BookLock aria-hidden />{t("archiveContext")}</span>
             <span>{t("archiveConnected")}</span>
           </div>

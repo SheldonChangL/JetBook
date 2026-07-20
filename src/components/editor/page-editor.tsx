@@ -365,7 +365,7 @@ export function PageEditor({
             </span>
           ) : (
             <span
-              className="archive-editor-save-state ui-archive-only text-caption text-fg-tertiary"
+              className="archive-editor-save-state text-caption text-fg-tertiary"
               data-state={saveState}
               aria-live="polite"
             >
@@ -373,7 +373,7 @@ export function PageEditor({
             </span>
           )}
           <span
-            className="archive-editor-lock-state ui-archive-only"
+            className="archive-editor-lock-state"
             data-state={lockLost ? "lost" : "held"}
           >
             <LockKeyhole aria-hidden />
@@ -394,7 +394,7 @@ export function PageEditor({
       <div className="archive-editor-layout">
         <main className="archive-editor-document">
           <div className="archive-editor-sheet flex flex-col gap-4">
-            <p className="archive-editor-kicker ui-archive-only">{t("archiveKicker")}</p>
+            <p className="archive-editor-kicker">{t("archiveKicker")}</p>
             <div className="archive-editor-title flex items-center gap-2">
               <EmojiPickerButton
                 value={icon}

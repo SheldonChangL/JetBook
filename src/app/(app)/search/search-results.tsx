@@ -97,7 +97,7 @@ export function SearchResults({
   return (
     <div className="archive-search-workspace flex flex-col gap-4">
       <div className="archive-search-query">
-        <Search aria-hidden className="ui-archive-only" />
+        <Search aria-hidden />
         <Input
           autoFocus
           value={query}
@@ -105,10 +105,10 @@ export function SearchResults({
           placeholder={labels.searchPlaceholder}
           className="archive-search-input"
         />
-        <span className="archive-search-count ui-archive-only">{labels.resultCount}</span>
+        <span className="archive-search-count">{labels.resultCount}</span>
       </div>
 
-      <div className="archive-search-filter-heading ui-archive-only">
+      <div className="archive-search-filter-heading">
         <SlidersHorizontal aria-hidden />
         <span>{labels.filterHeading}</span>
       </div>
@@ -177,7 +177,7 @@ export function SearchResults({
       ) : (
         <>
           {initialQuery.trim() && initialHits.length > 0 ? (
-            <div className="archive-search-section-heading ui-archive-only">
+            <div className="archive-search-section-heading">
               <span><FileText aria-hidden />{labels.resultsHeading}</span>
               <strong>{labels.resultCount}</strong>
             </div>
@@ -189,7 +189,7 @@ export function SearchResults({
                   href={`/s/${hit.spaceSlug}/${hit.slug}`}
                   className="archive-search-result-row block rounded-md border border-edge bg-raised p-3 transition-shadow hover:shadow-sm"
                 >
-                  <span className="archive-search-result-icon ui-archive-only" aria-hidden>
+                  <span className="archive-search-result-icon" aria-hidden>
                     {hit.icon ?? <FileText />}
                   </span>
                   <span className="archive-search-result-copy">
