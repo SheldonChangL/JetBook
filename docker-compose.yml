@@ -13,6 +13,8 @@ services:
         condition: service_healthy
 
   web:
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
     build:
       context: .
       # Build metadata（#267）：由 shell 環境帶入，供 GUI／healthz 顯示部署版本。
@@ -47,6 +49,8 @@ services:
       - uploads:/data/uploads
 
   worker:
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
     build:
       context: .
       # 與 web 同 image；build metadata 一併帶入（#267）。
