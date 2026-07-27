@@ -18,6 +18,7 @@ import {
   type ParsedUserRow,
 } from "@/lib/admin/user-import";
 import { createPasswordResetToken } from "@/lib/auth/password-reset";
+import { deleteSessionCookie } from "@/lib/auth/session";
 import { sendEmail } from "@/lib/email";
 import { ipFromHeaders, writeAudit } from "@/lib/audit";
 import { headers } from "next/headers";
@@ -137,6 +138,9 @@ export async function resetUserPasswordAction(
   try {
     const password = await resetUserPassword(data.userId);
     logger.info({ adminId: admin.id, userId: data.userId }, "admin: user password reset");
+    // 重設對象是自己時，本人全部 session 已於 lib 內撤銷（含當前這台）→ 一併清當前 cookie，
+    // 不留無效 cookie（與 resetPassword 同一處理原則）。回傳的一次性密碼仍會顯示給操作者。
+    if (data.userId === admin.id) await deleteSessionCookie();
     revalidatePath("/admin/users");
     return { ok: true, password };
   } catch (err) {
