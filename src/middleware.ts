@@ -44,13 +44,10 @@ export function middleware(request: NextRequest) {
     return response;
   }
 
-  // 已登入者訪問 /login → 回首頁
-  if (pathname === "/login" && hasSessionCookie) {
-    const response = NextResponse.redirect(new URL("/", request.url));
-    response.headers.set("x-request-id", requestId);
-    return response;
-  }
-
+  // 「已登入者訪問 /login → 回首頁」刻意不在此處做（issue #273）：middleware 在 edge 無 DB，
+  // 只能判斷 cookie 是否存在。cookie 殘留但 session 已失效時（admin 重設他人密碼、撤銷 session、
+  // 資料庫重建），會與 requireSession 的 redirect("/login") 互推成無限重導向，且使用者無法自救
+  // （伺服器端清不掉他裝置上的 cookie）。該判斷改由 /login 的 RSC 以真實 session 決定。
   const response = NextResponse.next({ request: { headers: requestHeaders } });
   response.headers.set("x-request-id", requestId);
   return response;
