@@ -164,6 +164,15 @@ Next.js（App Router、TS strict）全端 + PostgreSQL 16/pgvector/pgroonga + Do
 - [x] 文件同步：`docs/design/ui-design-v2.md` §3 改記 rollout 已完成並移除、§4 token 改為全站直接定義；`feature-coverage.md` 更新；新增 ADR-014
 - [x] 取捨：放棄 env-based 即時回退舊 UI 的 kill switch（已確認接受），緊急回退改為部署上一版 image
 
+### 內部環境首次上線＋登入重導向迴圈修復（2026-07-27，#273／PR #274）
+
+- [x] 首次部署至公司內部 Ubuntu VM（Compose 六服務：proxy／web／worker／db／gotenberg／backup 全起，web healthy）。主機 80／5432 已被既有服務佔用，故以 `.env` 的 `HTTP_PORT`／`POSTGRES_PORT` 改綁非特權埠避開，不需 sudo、不影響既有服務；migration 與 `seed-admin` 以一次性 `node:22-alpine` 容器執行（VM 主機 node 版本低於 `engines: >=22`），以 uid 1000 執行避免產生 root-owned 檔案
+- [x] 部署實測：21 個 migration 全數套用、`/api/healthz` 版本戳記與 commit 相符、`/api/readyz` ready、worker started、backup sidecar 首次備份成功（daily dump＋uploads 鏡像）、靜態資源經 proxy 200、i18n 繁中正常；六服務閒置實測共約 265 MB
+- [x] #273 密碼變更後 `/login` 無限重導向（`ERR_TOO_MANY_REDIRECTS`）：根因＝密碼變更撤銷該使用者全部 session（正確的安全行為），但 `middleware` 在 edge 無 DB、只能判斷 cookie 是否存在就把 `/login` 轉回 `/`，與 `requireSession` 的 `redirect("/login")` 互推成迴圈。`resetPassword` 早已用 `deleteSessionCookie()` 迴避，但清 cookie 只能清操作者當下那台裝置——admin 重設**他人**密碼時對方瀏覽器必然殘留無效 cookie，伺服器端無從清除，故只補清 cookie 治不了根
+- [x] 修正＝`middleware` 移除對 `/login` 的 cookie 快篩；「已登入者導回首頁」改由 `/login` 的 RSC 以 `getCurrentSession()` 真實驗證；`resetUserPasswordAction` 重設自己密碼時一併清當前 cookie
+- [x] 驗證：lint ✅ typecheck ✅ 單元 544/544（新增 `src/middleware.test.ts` 10 條）✅ next build ✅；部署環境前後對照實測——修復前轉址鏈 `/` ⇄ `/login` 追到第 8 跳放棄，修復後 1 次轉址停在 `/login` 200 且登入表單可見，未帶 cookie 的內頁快篩（`307 → /login?returnTo=…`）不受影響
+- [ ] 未驗證項：有效 session 訪問 `/login` 仍導回 `/`（需真實登入 cookie，未代為登入驗證）；`npm run test:integration` 未跑（本機 Docker 未啟動，本次 diff 未觸及 `src/lib` 層）
+
 ### 尚未完成（v1 之後）
 - **UI Design v2 已完成**：#251／PR #252、#253／PR #254、#255／PR #256、#257／PR #258、#259／PR #260、#261／PR #262 六批與 #263／PR #264 編輯體驗迭代皆完成；#271 移除 Legacy fallback 後 Archive 為唯一 UI
 - **#93 M4 backlog**：變更請求、行內評論、webhooks（暫停）、PDF 匯出、KaTeX、多欄、snippets、內容分析等——其餘候選項依回饋再拆
@@ -175,7 +184,7 @@ Next.js（App Router、TS strict）全端 + PostgreSQL 16/pgvector/pgroonga + Do
 - Repo：https://github.com/SheldonChangL/JetBook（private）
 - Issues：#93 追蹤 M4 backlog；Archive Studio UI v2 由 #251／PR #252、#253／PR #254、#255／PR #256、#257／PR #258、#259／PR #260、#261／PR #262 六批交付，#263／PR #264 交付編輯體驗迭代；#265／PR #266 修正重複完成按鈕回歸；#269 修正 App Shell 雙側欄視覺
 - Milestones：M0 10/10 ✅／M1 42/42 ✅／M2 16/16 ✅／M3 23/23 ✅／M4 已交付 15 功能＋多項修復（backlog 追蹤 #93）
-- 工作流：branch `feature/issue-<n>-<slug>` → PR（Fixes #n）→ squash merge（使用者已授權 self-merge）；目前分支 `feature/issue-271-remove-legacy-ui`（#271 移除 Legacy UI）
+- 工作流：branch `feature/issue-<n>-<slug>` → PR（Fixes #n）→ squash merge（使用者已授權 self-merge）；目前分支 `feature/issue-273-login-redirect-loop`（#273 登入重導向迴圈修復，PR #274 待 merge）
 
 ## 已完成
 
@@ -231,7 +240,7 @@ Space 封存/軟刪、跨 Space 移動複製、死鏈標示、附件 GC、Tabs/�
 
 ## 下一步
 
-1. 部署到公司內部伺服器：`.env` 填正式值（含 SMTP_*；要開 Office 預覽加 `PREVIEW_CONVERTER_URL=http://gotenberg:3000`）、`docker compose up -d --build`、跑 `db:migrate`（0020）
+1. 內部伺服器首次部署已完成（2026-07-27，見上）。剩餘部署強化，按阻斷性排序：**TLS**（`proxy/Caddyfile` 掛內部網域＋內部 CA；目前全程 HTTP，NFR-SEC-10 未滿足，且為 OIDC/SSO 前置條件）、**SMTP**（未設＝忘記密碼不寄信、只寫 log，使用者無法自助重設）、**備份異機保存**（NFR-DATA-03；目前 `backups` volume 與資料同機）、Ubuntu 18.04 已 EOL 的作業系統升級計畫
 2. 串接真實 AI 端點（ANTHROPIC_API_KEY + local BGE-M3）；MCP 依 docs/guides/mcp-server.md 讓 Claude 接上知識庫（每人自建 API token；寫入需勾選 write scope）
 3. 其餘 backlog 候選見 #93（變更請求、行內評論、webhooks、PDF 匯出、KaTeX 等，依回饋再拆）
 4. 未拆 issue 的殘餘觀察（#232 review 記錄）：跨空間子樹搬移與同空間 reparent 交錯可能產生「parent 在他空間」的懸掛連結（非環、屬 #225 家族），需要時再開 issue
