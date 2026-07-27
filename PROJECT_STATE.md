@@ -173,7 +173,16 @@ Next.js（App Router、TS strict）全端 + PostgreSQL 16/pgvector/pgroonga + Do
 - [x] 併同修復「admin 重設自己密碼後拿不到一次性密碼」（既有問題，修復迴圈前表現為迴圈、之後表現為按下按鈕沒反應）：`resetUserPassword` 撤銷本人全部 session 後，同一請求內的 `revalidatePath("/admin/users")` 要重新渲染需 org admin session 的頁面，無有效 session 即被導向登入，action 回傳的一次性密碼送不到 UI。修正＝重設對象是自己時為當前裝置重建 session 並換新 cookie（同 `changePasswordAction` 的處理原則），操作者維持登入、其他裝置維持失效
 - [x] 驗證：lint ✅ typecheck ✅ 單元 544/544（新增 `src/middleware.test.ts` 10 條）✅ next build ✅；部署環境前後對照實測——修復前轉址鏈 `/` ⇄ `/login` 追到第 8 跳放棄，修復後 1 次轉址停在 `/login` 200 且登入表單可見，未帶 cookie 的內頁快篩（`307 → /login?returnTo=…`）不受影響
 - [ ] 未驗證項（皆需真實登入 session，未代為登入驗證）：有效 session 訪問 `/login` 仍導回 `/`；admin 重設自己密碼後一次性密碼顯示且維持登入。`npm run test:integration` 未跑（本機 Docker 未啟動，本次 diff 未觸及 `src/lib` 層）
-- [ ] **測試缺口 #275**：`src/actions/` 層零測試覆蓋（無單元、整合測試只測 `src/lib`、e2e 未觸及 `/admin/users` 重設密碼流程），本 issue 兩輪 action 層回歸皆靠人工操作發現。補 e2e 需新增專用 org admin 測試帳號（改密碼會打斷同批其他 spec 登入），屬測試基建改動故另開 issue
+- [x] **測試缺口 #275**：`src/actions/` 層零測試覆蓋（無單元、整合測試只測 `src/lib`、e2e 未觸及 `/admin/users` 重設密碼流程），本 issue 兩輪 action 層回歸皆靠人工操作發現 → 已於 #275 補上 e2e（見下節），並回頭實測補齊上一項「未驗證項」中 admin 重設自己密碼的兩條斷言
+
+### admin 重設密碼 e2e 覆蓋（2026-07-27，#275）
+
+- [x] 新增 `tests/e2e/admin-reset-password.spec.ts` 2 條，咬住 #273 修的兩個結構性行為：**重設自己密碼**（一次性密碼確實顯示、操作者維持登入含硬重載、舊密碼失效、新密碼可登入）、**重設他人密碼**（對方 session 立即失效、帶殘留 cookie 訪問內頁單次轉址停在 `/login` 且轉址跳數 ≤2、對方可用一次性密碼自行登入）
+- [x] 測試基建：`tests/e2e/accounts.ts` 新增專用帳號 `E2E_RESET_ADMIN`（org admin，自我重設用）與 `E2E_RESET_TARGET`（member，被重設對象）——兩者密碼都會被打斷，共用 `E2E_ADMIN`／`E2E_MEMBER` 會讓同批其他 spec 登入失敗；種子邏輯抽至 `tests/e2e/seed.ts`（`seedAccounts`／`seedAccount`），global-setup 與 spec 共用，spec 於每條測試開頭重置密碼與 `login_throttle`，對執行順序與 CI retry 免疫
+- [x] 踩到並解掉的環境限制：登入 rate limit 是 **IP 層 5 次/分**（`src/lib/rate-limit.ts`），本 spec 需多次登入，共用同一 IP 桶會偽陽性失敗（POST /login 12ms 直接回 rateLimited）→ 每個角色一個 context 並帶各自 `x-forwarded-for`（dev server 前無 proxy；正式部署由 proxy 覆寫該 header，production 行為不變）
+- [x] 反向驗證（issue 驗收要求）：拿掉 `resetUserPasswordAction` 的 session 重建 → 第 1 條紅在「新密碼已產生」永不出現（＝#273 原始症狀「按了沒反應」），第 2 條維持綠；把 `middleware` 對 `/login` 的 cookie 快篩加回去 → 第 2 條紅在 `net::ERR_TOO_MANY_REDIRECTS`（＝部署現場症狀），兩條測試各自咬住對應回歸
+- [x] 品質閘門：lint ✅ typecheck ✅ 單元 544/544 ✅ next build ✅ Playwright 4/4（含 N-02 冒煙、Unicode slug）✅
+- [x] 本次僅新增／調整 `tests/e2e/`，未動 `src/`（產品行為零變更）
 
 ### 尚未完成（v1 之後）
 - **UI Design v2 已完成**：#251／PR #252、#253／PR #254、#255／PR #256、#257／PR #258、#259／PR #260、#261／PR #262 六批與 #263／PR #264 編輯體驗迭代皆完成；#271 移除 Legacy fallback 後 Archive 為唯一 UI
@@ -186,7 +195,7 @@ Next.js（App Router、TS strict）全端 + PostgreSQL 16/pgvector/pgroonga + Do
 - Repo：https://github.com/SheldonChangL/JetBook（private）
 - Issues：#93 追蹤 M4 backlog；Archive Studio UI v2 由 #251／PR #252、#253／PR #254、#255／PR #256、#257／PR #258、#259／PR #260、#261／PR #262 六批交付，#263／PR #264 交付編輯體驗迭代；#265／PR #266 修正重複完成按鈕回歸；#269 修正 App Shell 雙側欄視覺
 - Milestones：M0 10/10 ✅／M1 42/42 ✅／M2 16/16 ✅／M3 23/23 ✅／M4 已交付 15 功能＋多項修復（backlog 追蹤 #93）
-- 工作流：branch `feature/issue-<n>-<slug>` → PR（Fixes #n）→ squash merge（使用者已授權 self-merge）；目前分支 `feature/issue-273-login-redirect-loop`（#273 登入重導向迴圈修復，PR #274 待 merge）
+- 工作流：branch `feature/issue-<n>-<slug>` → PR（Fixes #n）→ squash merge（使用者已授權 self-merge）；目前分支 `feature/issue-275-e2e-admin-reset-password`（#275 admin 重設密碼 e2e 覆蓋）；另有 `feature/issue-276-settings-scroll-clipboard`（#276 設定頁空白捲動區＋純 HTTP 複製 Token 修復，PR #277）待 merge，兩者互不相依（僅 `PROJECT_STATE.md` 可能需人工併行段落）
 
 ## 已完成
 

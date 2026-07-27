@@ -22,3 +22,24 @@ export const E2E_MEMBER: E2EAccount = {
   password: "E2E-Member-Passw0rd",
   name: "E2E 冒煙成員",
 };
+
+/**
+ * 專用 org admin（#275）：只給「admin 重設自己密碼」測試使用。
+ * 該測試會把這個帳號的密碼換成一次性隨機密碼，沿用 E2E_ADMIN 會讓同批其他 spec
+ * 登入失敗，故必須是獨立帳號。
+ */
+export const E2E_RESET_ADMIN: E2EAccount = {
+  email: "e2e-reset-admin@jetbook.test",
+  password: "E2E-Reset-Admin-Passw0rd",
+  name: "E2E 重設密碼管理員",
+};
+
+/**
+ * 專用一般成員（#275）：被 admin 重設密碼的對象。
+ * 密碼與既有 session 都會被打斷，故不共用 E2E_MEMBER（冒煙旅程仍需其登入）。
+ */
+export const E2E_RESET_TARGET: E2EAccount = {
+  email: "e2e-reset-target@jetbook.test",
+  password: "E2E-Reset-Target-Passw0rd",
+  name: "E2E 重設密碼對象",
+};
