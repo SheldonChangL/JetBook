@@ -18,7 +18,7 @@ import {
   type ParsedUserRow,
 } from "@/lib/admin/user-import";
 import { createPasswordResetToken } from "@/lib/auth/password-reset";
-import { deleteSessionCookie } from "@/lib/auth/session";
+import { createSession, setSessionCookie } from "@/lib/auth/session";
 import { sendEmail } from "@/lib/email";
 import { ipFromHeaders, writeAudit } from "@/lib/audit";
 import { headers } from "next/headers";
@@ -138,9 +138,18 @@ export async function resetUserPasswordAction(
   try {
     const password = await resetUserPassword(data.userId);
     logger.info({ adminId: admin.id, userId: data.userId }, "admin: user password reset");
-    // 重設對象是自己時，本人全部 session 已於 lib 內撤銷（含當前這台）→ 一併清當前 cookie，
-    // 不留無效 cookie（與 resetPassword 同一處理原則）。回傳的一次性密碼仍會顯示給操作者。
-    if (data.userId === admin.id) await deleteSessionCookie();
+    // 重設對象是自己時，本人全部 session 已於 lib 內撤銷（含當前這台）→ 為當前裝置重建 session
+    // 並換上新 cookie，讓操作者維持登入；其他裝置維持失效。同 changePasswordAction 的處理原則。
+    // 不可只清 cookie（或什麼都不做）：接下來的 revalidatePath 要在同一個請求內重新渲染
+    // /admin/users（需 org admin session），無有效 session 會被導向登入，一次性密碼就送不到 UI。
+    if (data.userId === admin.id) {
+      const requestHeaders = await headers();
+      const { token, session } = await createSession(admin.id, {
+        ip: ipFromHeaders(requestHeaders),
+        userAgent: requestHeaders.get("user-agent"),
+      });
+      await setSessionCookie(token, session.expiresAt);
+    }
     revalidatePath("/admin/users");
     return { ok: true, password };
   } catch (err) {
