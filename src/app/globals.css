@@ -1538,6 +1538,10 @@ html.dark {
 }
 
 .archive-canvas {
+  /* 捲動容器必須是絕對定位子孫的 containing block：否則頁面內容裡任何
+     position: absolute 元素（如 Tailwind sr-only）會以初始 containing block
+     定位，逃過本容器的 overflow 裁切，把 document 撐出多餘捲動區（一片空白）。 */
+  position: relative;
   background-image: linear-gradient(to bottom, transparent 31px, var(--archive-canvas-rule) 32px);
   background-size: 100% 32px;
 }
