@@ -184,6 +184,15 @@ Next.js（App Router、TS strict）全端 + PostgreSQL 16/pgvector/pgroonga + Do
 - [x] 品質閘門：lint ✅ typecheck ✅ 單元 544/544 ✅ next build ✅ Playwright 4/4（含 N-02 冒煙、Unicode slug）✅
 - [x] 本次僅新增／調整 `tests/e2e/`，未動 `src/`（產品行為零變更）
 
+### 個人設定頁：空白捲動區＋純 HTTP 複製 Token 無效（2026-07-27，#276）
+
+- [x] 症狀 1「往下滑一片空白」根因＝`.archive-canvas`（唯一捲動容器）不是 positioned element，頁面內容裡 Tailwind `sr-only`（`position: absolute` 無 `top`）以**初始 containing block** 定位、逃過 overflow 裁切，把 `<html>` 的 scrollHeight 撐大成 document 層捲動。修正＝`.archive-canvas` 補 `position: relative`（單點修全站，`/settings` 1176→900、`/s/<slug>/settings` 1696→900）
+- [x] 症狀 2「複製 Token 無效卻顯示成功」根因＝非安全內容（HTTP）無 `navigator.clipboard`，`copyText` 的 `execCommand` 後備把 textarea 掛在 `document.body`＝Radix Dialog focus trap 外，`focus()` 立刻被搶回，選取失效但 `execCommand` 照樣回傳 `true`。修正＝後備 textarea 掛進 focus trap 容器（`[role="dialog"]`／`[role="alertdialog"]`／`[role="menu"]`，否則退回 body）、複製後把焦點還給原元素，並改為「焦點確實落在 textarea」才算成功，否則回報失敗讓 UI 提示手動複製
+- [x] 驗證（本機 dev server + 真 Chromium，經 LAN IP 走非安全內容以複現 HTTP 環境）：修復前 `execCommand` 時 `activeElement=BUTTON`、系統剪貼簿維持哨兵值；修復後 `activeElement=TEXTAREA`、從另一安全來源頁面讀回剪貼簿＝token 明文。11 路由逐一比對 `documentElement.scrollHeight` 與 canvas 內絕對定位元素座標，除兩個設定頁修好外其餘零位移
+- [x] 回歸測試：新增 `tests/e2e/settings-layout-clipboard.spec.ts` 2 條（document 層無多餘捲動；移除 `navigator.clipboard` 模擬非安全內容後，從同 context 另一頁面讀回系統剪貼簿驗證真的寫入）。已驗證「還原修復即 2 條全紅、套回即全綠」
+- [x] 品質閘門：lint ✅ typecheck ✅ 單元 544/544 ✅ next build ✅ Playwright 4/4（含 N-02 冒煙）✅
+- [ ] 待辦（同類缺陷，未在本 issue 範圍）：`page-actions-menu.tsx`（複製 Markdown）、`code-block-reader.tsx`（複製程式碼）、`admin/users/user-row-actions.tsx` 仍直接呼叫 `navigator.clipboard.writeText`，在純 HTTP 環境同樣失效（前者靜默失敗），應改走 `copyText`
+
 ### 尚未完成（v1 之後）
 - **UI Design v2 已完成**：#251／PR #252、#253／PR #254、#255／PR #256、#257／PR #258、#259／PR #260、#261／PR #262 六批與 #263／PR #264 編輯體驗迭代皆完成；#271 移除 Legacy fallback 後 Archive 為唯一 UI
 - **#93 M4 backlog**：變更請求、行內評論、webhooks（暫停）、PDF 匯出、KaTeX、多欄、snippets、內容分析等——其餘候選項依回饋再拆
@@ -195,7 +204,7 @@ Next.js（App Router、TS strict）全端 + PostgreSQL 16/pgvector/pgroonga + Do
 - Repo：https://github.com/SheldonChangL/JetBook（private）
 - Issues：#93 追蹤 M4 backlog；Archive Studio UI v2 由 #251／PR #252、#253／PR #254、#255／PR #256、#257／PR #258、#259／PR #260、#261／PR #262 六批交付，#263／PR #264 交付編輯體驗迭代；#265／PR #266 修正重複完成按鈕回歸；#269 修正 App Shell 雙側欄視覺
 - Milestones：M0 10/10 ✅／M1 42/42 ✅／M2 16/16 ✅／M3 23/23 ✅／M4 已交付 15 功能＋多項修復（backlog 追蹤 #93）
-- 工作流：branch `feature/issue-<n>-<slug>` → PR（Fixes #n）→ squash merge（使用者已授權 self-merge）；目前分支 `feature/issue-275-e2e-admin-reset-password`（#275 admin 重設密碼 e2e 覆蓋）；另有 `feature/issue-276-settings-scroll-clipboard`（#276 設定頁空白捲動區＋純 HTTP 複製 Token 修復，PR #277）待 merge，兩者互不相依（僅 `PROJECT_STATE.md` 可能需人工併行段落）
+- 工作流：branch `feature/issue-<n>-<slug>` → PR（Fixes #n）→ squash merge（使用者已授權 self-merge）；#276 設定頁修復已由 PR #277 合併進 main，目前分支 `feature/issue-275-e2e-admin-reset-password`（#275 admin 重設密碼 e2e 覆蓋，PR #278 待 merge）
 
 ## 已完成
 
