@@ -1,7 +1,16 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { getTranslations } from "next-intl/server";
-import { ChevronLeft, KeyRound, Search, Share2, Trash2, PenLine, BookOpen } from "lucide-react";
+import {
+  ChevronLeft,
+  KeyRound,
+  Search,
+  Share2,
+  Trash2,
+  PenLine,
+  BookOpen,
+  Wrench,
+} from "lucide-react";
 import { requireSession } from "@/lib/auth/current";
 import { env } from "@/lib/env";
 import { McpSetup } from "@/components/mcp/mcp-setup";
@@ -25,6 +34,17 @@ export default async function GuidePage() {
     { key: "write", Icon: PenLine },
     { key: "share", Icon: Share2 },
     { key: "trash", Icon: Trash2 },
+  ] as const;
+
+  // 依「先確認伺服器起得來（分平台）→ 再排權限」排序，對應 docs/guides/mcp-server.md 的疑難排解
+  const troubleshooting = [
+    "troubleshootWindows",
+    "troubleshootMac",
+    "troubleshootLinux",
+    "troubleshootHttp",
+    "troubleshootAuth",
+    "troubleshootLogs",
+    "troubleshootManual",
   ] as const;
 
   return (
@@ -107,6 +127,21 @@ export default async function GuidePage() {
             <p className="text-body-ui font-medium text-fg">{t("mcp.toolsWriteTitle")}</p>
             <p className="text-body-ui text-fg-secondary">{t("mcp.toolsWrite")}</p>
           </div>
+        </div>
+
+        <div className="flex flex-col gap-3 rounded-md border border-edge p-4">
+          <div className="flex flex-col gap-1">
+            <h3 className="text-h3 text-fg">{t("mcp.troubleshootHeading")}</h3>
+            <p className="text-body-ui text-fg-secondary">{t("mcp.troubleshootIntro")}</p>
+          </div>
+          <ul className="flex flex-col gap-2 text-body-ui text-fg-secondary">
+            {troubleshooting.map((key) => (
+              <li key={key} className="flex gap-2">
+                <Wrench aria-hidden className="mt-0.5 size-4 shrink-0 text-fg-tertiary" />
+                <span>{t(`mcp.${key}`)}</span>
+              </li>
+            ))}
+          </ul>
         </div>
 
         <div className="flex flex-col gap-1 rounded-md bg-warning-tint px-4 py-3">

@@ -148,7 +148,7 @@ npm run dev                      # http://localhost:3000
 兩者共用**個人 API Token**（「個人設定 → API Token」建立，`jbk_` 開頭，HTTP Bearer 認證）。工具與端點的可見範圍完全等於 token 擁有者在 JetBook 的權限；token 於個人設定撤銷後立即失效。
 
 - **REST API v1**：唯讀端點（空間清單、頁面樹、頁面內容、搜尋）；互動式 OpenAPI 文件見 `/api-docs`。
-- **MCP Server**：`https://<網域>/api/mcp`（streamable HTTP），讓 Claude 等 AI 助理直接搜尋、閱讀與撰寫知識庫——唯讀工具 `list_spaces`／`search_pages`／`read_page`，寫入工具（token 需勾「允許寫入」）`create_page`／`update_page`／`move_page`／`delete_page`／`create_space`／`update_space`／`set_space_member`／`import_attachment_from_url`。使用者接入走站內「使用說明」頁（`/guide#mcp`，設定片段自動填入本站網域；建立 token 完成畫面直接給出含 token 的設定）；完整參考（工具速查、SSRF 白名單、疑難排解）見 [`docs/guides/mcp-server.md`](docs/guides/mcp-server.md)。
+- **MCP Server**：`https://<網域>/api/mcp`（streamable HTTP），讓 Claude 等 AI 助理直接搜尋、閱讀與撰寫知識庫——唯讀工具 `list_spaces`／`search_pages`／`read_page`，寫入工具（token 需勾「允許寫入」）`create_page`／`update_page`／`move_page`／`delete_page`／`create_space`／`update_space`／`set_space_member`／`import_attachment_from_url`。使用者接入走站內「使用說明」頁（`/guide#mcp`，設定片段自動填入本站網域、依部署自動補 `--allow-http`，並分別給出 macOS 與 Windows 兩份 Claude Desktop 設定；建立 token 完成畫面直接給出含 token 的設定）；完整參考（工具速查、SSRF 白名單、跨平台疑難排解）見 [`docs/guides/mcp-server.md`](docs/guides/mcp-server.md)。
 
 > **安全鐵律：每位使用者用自己的 token。** 共用 token（尤其 admin 的）等於把私有空間內容經 AI 助理外洩給無權者。
 
