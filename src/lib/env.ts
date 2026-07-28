@@ -8,7 +8,8 @@ import { parseImportHosts } from "./storage/ssrf";
  * 業務程式碼禁止直接讀 process.env——一律 `import { env } from "@/lib/env"`。
  * 缺漏或格式錯誤在首次載入時 fail-fast，並列出所有缺項。
  */
-const envSchema = z.object({
+/** 匯出僅供驗證測試直接餵入設定組合；業務程式碼一律用下方的 `env` 單例。 */
+export const envSchema = z.object({
   NODE_ENV: z.enum(["development", "test", "production"]).default("development"),
   /** 對外 base URL（含 protocol，反向代理後的位址） */
   BASE_URL: z.url(),
@@ -57,8 +58,25 @@ const envSchema = z.object({
     .optional()
     .transform((v) => parseEmbedDomains(v)),
 
-  // ── Email／SMTP（B-05；全部 optional，未設 SMTP_HOST 時不寄信，改由 logger 輸出信件內容，僅供開發） ──
-  /** SMTP 主機；未設定＝不寄信（開發／CI fallback） */
+  // ── Email provider（B-05／#280；全部 optional，皆未設定時不寄信，改由 logger 輸出信件內容） ──
+  /**
+   * 寄信管道。未指定時：設了 SMTP_HOST 走 smtp（維持既有部署行為），否則 GRAPH_* 齊備走 graph。
+   * 兩者皆設定卻未指定本項＝設定不明確，於下方 superRefine fail-fast。
+   */
+  MAIL_PROVIDER: z.enum(["smtp", "graph"]).optional(),
+
+  // ── Microsoft Graph sendMail（#280，ADR-015；部署環境封鎖 SMTP 埠，改走 HTTPS 443） ──
+  /** Entra 租戶 ID */
+  GRAPH_TENANT_ID: z.string().optional(),
+  /** App registration 的 Application (client) ID */
+  GRAPH_CLIENT_ID: z.string().optional(),
+  /** App registration 的 client secret 值 */
+  GRAPH_CLIENT_SECRET: z.string().optional(),
+  /** 寄件信箱 UPN；需具 Exchange Online 授權，且應以 Application Access Policy 限縮 */
+  GRAPH_SENDER: z.string().optional(),
+
+  // ── SMTP（B-05；保留供本機開發與可直連 SMTP 的環境） ──
+  /** SMTP 主機；未設定＝不走 SMTP */
   SMTP_HOST: z.string().optional(),
   SMTP_PORT: z.coerce.number().int().positive().default(587),
   /** 直連 TLS（465）為 true；587 STARTTLS 為 false。字串明確比對，避免 coerce 把 "false" 判為 true */
@@ -110,6 +128,36 @@ const envSchema = z.object({
   GIT_COMMIT: z.string().optional(),
   /** 建置時間（ISO-8601 UTC，如 2026-07-17T08:00:00Z）；未注入＝本機開發，留空。 */
   BUILD_TIME: z.string().optional(),
+}).superRefine((cfg, ctx) => {
+  const graphComplete = Boolean(
+    cfg.GRAPH_TENANT_ID && cfg.GRAPH_CLIENT_ID && cfg.GRAPH_CLIENT_SECRET && cfg.GRAPH_SENDER,
+  );
+
+  if (cfg.MAIL_PROVIDER === "graph" && !graphComplete) {
+    ctx.addIssue({
+      code: "custom",
+      path: ["MAIL_PROVIDER"],
+      message:
+        "MAIL_PROVIDER=graph 需同時設定 GRAPH_TENANT_ID／GRAPH_CLIENT_ID／GRAPH_CLIENT_SECRET／GRAPH_SENDER",
+    });
+  }
+
+  if (cfg.MAIL_PROVIDER === "smtp" && !cfg.SMTP_HOST) {
+    ctx.addIssue({
+      code: "custom",
+      path: ["MAIL_PROVIDER"],
+      message: "MAIL_PROVIDER=smtp 需設定 SMTP_HOST",
+    });
+  }
+
+  // 兩套都設定卻未指明用哪套：不以隱含優先序猜測，直接要求明確指定
+  if (!cfg.MAIL_PROVIDER && cfg.SMTP_HOST && graphComplete) {
+    ctx.addIssue({
+      code: "custom",
+      path: ["MAIL_PROVIDER"],
+      message: "同時設定了 SMTP 與 Graph：請以 MAIL_PROVIDER=smtp|graph 明確指定寄信管道",
+    });
+  }
 });
 
 export type Env = z.infer<typeof envSchema>;

@@ -15,5 +15,8 @@ playwright-report/
 tsconfig.tsbuildinfo
 .claude/worktrees/
 .env
+# 任何 .env 變體（如 .env.graph）一律不入 repo，只放行佔位範本
+.env.*
+!.env.example
 # AI 代理在本機產生的工作筆記，因人／因 session 而異，不入 repo
 AGENTS.md

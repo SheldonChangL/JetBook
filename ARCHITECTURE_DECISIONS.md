@@ -403,3 +403,37 @@ UI Design v2（#251–#262）以 Strangler pattern 讓 Legacy 與 Archive 兩套
 
 - **得**：單一 presentation、單份 CSS 與元件；N-02 E2E 覆蓋的就是唯一生產 UI；消除雙 UI 邊界類回歸（#265 類）。
 - **失／限制**：放棄 env-based 即時回退舊 UI 的 kill switch（已確認接受）；緊急回退手段為部署上一版 image。
+
+## ADR-015：Email 改由 Microsoft Graph `sendMail` 寄送（HTTPS 443），SMTP 降為開發用途
+
+- **狀態**：已接受
+- **日期**：2026-07-28
+- **對應審查編號**：—（issue #280）
+
+### 背景
+
+B-05 起寄信一律走 `nodemailer` + SMTP（`SMTP_*`）。內部環境首次上線後實測發現：部署主機的對外防火牆**封鎖全部 SMTP 埠**（25／465／587），且為 port 層級的全域封鎖——連非微軟的 SMTP 主機（如 `smtp.gmail.com:587`）同樣不通，而 HTTPS 443 完全暢通。連線在 TCP 階段即逾時，逐個目標 IP 各卡 20 秒，`nodemailer` 的 `connectionTimeout` 之外還會逐一重試，實測整體阻塞逾 60 秒。
+
+後果是所有信件功能（忘記密碼重設信、CSV 匯入歡迎信、通知信）在部署環境**實質失效**：`sendEmail()` 不是靜默降級，而是長時間阻塞後拋錯。
+
+評估過的替代方案：
+
+- **請網管開通出口 587**：需為單一主機開 SMTP 出口，且開通後仍要面對 M365 SMTP AUTH（Client Submission）預設停用、Basic Auth 正被淘汰的第二道關卡——連線不通時這關根本測不到。風險未解且不在本專案可控範圍。
+- **Exchange direct send**（`<tenant>.mail.protection.outlook.com:25`，免帳密、僅限租戶內收件人）：同樣走 port 25，一併被封鎖。
+
+### 決策
+
+1. **新增 Graph provider**：`src/lib/email/graph.ts` 以 client credentials（application 權限 `Mail.Send`）取 token，POST `https://graph.microsoft.com/v1.0/users/{sender}/sendMail`，全程走 HTTPS 443。
+2. **`src/lib/email` 由單檔改為目錄**：`index.ts`（provider 決定與統一入口）／`graph.ts`／`smtp.ts`／`types.ts`。對外仍是 `@/lib/email` 的 `sendEmail()`，三處呼叫端（`actions/password-reset.ts`、`actions/admin.ts`、`worker.ts`）零修改。
+3. **provider 決定順序**：`MAIL_PROVIDER` 明確指定優先；未指定時設了 `SMTP_HOST` 走 smtp（既有部署行為不變），否則 `GRAPH_*` 齊備走 graph；皆未設定維持 logger fallback。**兩套都設定卻未指定 `MAIL_PROVIDER` 於 `env.ts` 載入期 fail-fast**，不以隱含優先序猜測，避免部署誤用了預期外的管道。
+4. **token 於行程內快取**（有效期扣 60 秒安全邊界），併發寄送以 in-flight promise 去重；401 強制換新後只重試一次，不無限重試。
+5. **SMTP 分支保留**，供本機開發與能直連 SMTP 的環境使用；不移除。
+6. **純邏輯與 env 分離**（比照 `lib/auth/oidc`）：`createGraphMailer(config, { fetchImpl })` 接受明確設定與可注入的 fetch，單元測試不需真租戶與網路。
+
+### 取捨與後果
+
+- **得**：繞開 SMTP 出口封鎖與 M365 Basic Auth 淘汰兩個問題；認證改用 Entra app registration，與已定案的 Entra ID SSO 方向一致，憑證體系統一；無 App Password 這類正被淘汰的機制。
+- **得**：token 快取避免逐封重取；錯誤帶 HTTP 狀態碼與 Graph `request-id`，診斷可回溯到租戶端記錄。
+- **失／限制**：改依賴 Graph API 與 Entra 應用程式生命週期（client secret 需輪替，屬部署維運）；寄件者固定為設定的信箱，不再能以任意 `From` 寄出。
+- **安全前提（部署作業，非程式碼可強制）**：`Mail.Send` 為 application 權限，**預設可冒充租戶內任何信箱寄信**。必須使用僅授予 `Mail.Send` 的**專用** app registration，且以 Exchange Online 的 Application Access Policy 限縮至單一寄件信箱；不得沿用帶有 `Mail.Read`／`Files.Read.All`／`Sites.Read.All` 等廣泛權限的既有應用程式——否則 JetBook 主機一旦失守，爆炸半徑從「被冒名寄信」擴大為「全租戶信件與檔案外流」。
+- **設定保護**：`.gitignore` 改為忽略所有 `.env.*` 變體（僅放行 `.env.example`），避免 `.env.graph` 這類憑證檔誤入版控。
