@@ -31,7 +31,19 @@
     "noVisits": "還沒有瀏覽紀錄，開啟任一頁面後會出現在這裡。",
     "recentUpdates": "最近更新",
     "noRecentUpdates": "還沒有任何頁面更新。",
-    "updatedBy": "{name} 更新了"
+    "updatedBy": "{name} 更新了",
+    "onboarding": {
+      "heading": "第一次使用 JetBook？",
+      "body": "JetBook 是公司的知識庫：資料放在「空間」裡，每個空間是一棵頁面樹。三件事就能上手。",
+      "step1Title": "找資料",
+      "step1Body": "按 ⌘K（Windows 為 Ctrl+K）搜尋全站，或用 AI 問答直接問問題。",
+      "step2Title": "寫東西",
+      "step2Body": "在空間裡建頁面，編輯即自動儲存並留版本快照，改壞了可以還原。",
+      "step3Title": "接上 AI 助理",
+      "step3Body": "建一把 API Token，讓 Claude 直接搜尋、閱讀甚至撰寫你有權限的頁面。",
+      "guideCta": "看使用說明",
+      "mcpCta": "設定 AI 助理"
+    }
   },
   "designSystem": {
     "title": "JetBook 設計系統",
@@ -162,6 +174,64 @@
     "paramOptional": "{name}（{location}，選填）",
     "paramSeparator": "、"
   },
+  "guide": {
+    "title": "使用說明",
+    "archiveKicker": "GETTING STARTED / 使用說明",
+    "backHome": "回首頁",
+    "intro": "JetBook 是公司的內部知識庫。資料放在「空間」裡，每個空間是一棵可以展開的頁面樹；你看得到的內容取決於你在各空間的角色。",
+    "basics": {
+      "heading": "三分鐘上手",
+      "searchTitle": "找資料",
+      "searchBody": "按 ⌘K（Windows 為 Ctrl+K）開啟搜尋，可搜標題、內文與附件檔名，支援中文。也可以直接問 AI（⌘J），它只會引用你有權限的頁面。",
+      "readTitle": "閱讀",
+      "readBody": "左側是空間清單，點進空間後可展開頁面樹。頁面右側有目錄，底部可留言討論。",
+      "writeTitle": "撰寫",
+      "writeBody": "在空間或頁面上按「建立」新增頁面。編輯時自動儲存並留版本快照，隨時可從版本紀錄還原；同一頁同時只有一人能編輯（他人編輯中會顯示鎖定）。",
+      "shareTitle": "分享與權限",
+      "shareBody": "空間管理員在「空間設定 → 成員」指派角色：管理、編輯、評論、唯讀。私人空間只有成員看得到，也不會出現在搜尋與 AI 回答裡。",
+      "trashTitle": "刪錯了怎麼辦",
+      "trashBody": "刪除的頁面會進垃圾桶保留 30 天，空間編輯者可以還原。"
+    },
+    "mcp": {
+      "heading": "把 JetBook 接給 AI 助理（MCP）",
+      "intro": "接上之後，Claude 可以直接搜尋、閱讀，甚至幫你撰寫 JetBook 頁面——不用再複製貼上。看得到的範圍完全等於你本人在 JetBook 的權限。",
+      "examplesHeading": "接好之後可以這樣問",
+      "example1": "「查一下 JetBook 有沒有寫過這台機器的校正流程。」",
+      "example2": "「把這次的會議結論整理成一頁，建到『設備維護』空間。」",
+      "example3": "「這頁第 3 節已經過期，依我剛給的資料改寫。」",
+      "step1Title": "步驟 1 — 建立你自己的 API Token",
+      "step1Body": "到「個人設定 → API Token」按「建立 Token」。想讓 AI 幫你寫頁面才勾「允許寫入」，只查資料就不用勾。Token 只顯示一次，建立後請立刻複製。",
+      "step1Cta": "前往建立 Token",
+      "step2Title": "步驟 2 — 把設定貼進你的 AI 客戶端",
+      "step2Body": "建立 Token 完成的畫面就會直接給你填好網域與 token 的設定，複製即可用。以下是格式範例（把 token 換成你自己的）。",
+      "step3Title": "步驟 3 — 驗證接上了",
+      "step3Body": "在 Claude 裡輸入「用 JetBook 列出我可以存取的空間」。看到空間清單就成功了；如果回 401，多半是 token 打錯、過期或已撤銷，重建一把即可。",
+      "toolsHeading": "AI 能做哪些事",
+      "toolsReadTitle": "唯讀（任何 token）",
+      "toolsRead": "列出空間、全文搜尋、讀取頁面完整內容。",
+      "toolsWriteTitle": "寫入（token 需勾「允許寫入」）",
+      "toolsWrite": "建立與更新頁面、搬移頁面、刪除頁面（進垃圾桶可還原）、建立與設定空間、調整空間成員、把外部圖片匯入為附件。寫入一律走和網頁編輯相同的管線：留版本快照、更新搜尋與 AI 索引、他人編輯中會被拒絕、全部進稽核日誌。",
+      "securityTitle": "一人一把 token",
+      "securityBody": "AI 看到的內容完全等於 token 擁有者的權限。整組人共用一把（尤其管理者那把）等於把私有空間內容外洩給無權者。換電腦、離職或懷疑外流時，到個人設定按「撤銷」即刻失效。"
+    },
+    "more": {
+      "heading": "更多",
+      "apiDocs": "REST API 文件（自動化與整合用）",
+      "settings": "個人設定（通知、API Token）"
+    }
+  },
+  "mcpSetup": {
+    "endpointLabel": "MCP 端點",
+    "clientCodeTitle": "Claude Code（終端機執行）",
+    "clientDesktopTitle": "Claude Desktop（貼進 claude_desktop_config.json）",
+    "desktopHint": "存檔後重新啟動 Claude Desktop。",
+    "placeholderNote": "把 jbk_xxxxxxxxxxxx 換成你自己的 token（在「個人設定 → API Token」建立，只會顯示一次）。",
+    "httpNote": "本站目前為內網純 HTTP，設定已自動加上 --allow-http。此模式下 token 為明文傳輸，僅限受信任內網使用。",
+    "copy": "複製",
+    "copied": "已複製到剪貼簿",
+    "copyFailed": "複製失敗，請點一下內容全選後手動複製",
+    "clickToSelect": "點一下全選，再按 ⌘C / Ctrl+C 複製"
+  },
   "emojiPicker": {
     "search": "搜尋 emoji（英文）",
     "searchNoResults1": "喔不！",
@@ -239,6 +309,7 @@
     "collapseSidebar": "收合側欄",
     "userMenu": "使用者選單",
     "personalSettings": "個人設定",
+    "helpGuide": "使用說明",
     "adminConsole": "管理後台",
     "archiveRail": "知識工坊命令列",
     "archivePrimaryNav": "主要導覽",
@@ -1264,6 +1335,11 @@
       "heading": "API Token",
       "desc": "供 REST API 與 MCP 使用的個人存取權杖；權限與你的帳號一致。",
       "docsLink": "查看 API 文件",
+      "guideLink": "如何接給 AI 助理",
+      "mcpHeading": "接上 AI 助理",
+      "mcpHint": "以下設定已填好本站網域與這把 token，複製即可用。關閉後 token 不再顯示，設定也無法重建。",
+      "mcpVerify": "設定完成後，在 Claude 輸入「用 JetBook 列出我可以存取的空間」即可驗證。",
+      "mcpReadOnlyNote": "這把 token 為唯讀：AI 可以搜尋與閱讀，但不能建立或修改頁面。",
       "create": "建立 Token",
       "createTitle": "建立 API Token",
       "nameLabel": "名稱（用途）",

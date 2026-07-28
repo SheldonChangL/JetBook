@@ -7,6 +7,7 @@ import { useTranslations } from "next-intl";
 import { Copy } from "lucide-react";
 import { createApiTokenAction, revokeApiTokenAction } from "@/actions/api-tokens";
 import { copyText } from "@/components/content/copy-link";
+import { McpSetup } from "@/components/mcp/mcp-setup";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
@@ -33,14 +34,25 @@ export interface ApiTokenRow {
 }
 
 /** API Token 管理（M4-06，F-API-02）：建立（明文一次顯示）、列表、撤銷。 */
-export function ApiTokensSection({ tokens }: { tokens: ApiTokenRow[] }) {
+export function ApiTokensSection({
+  tokens,
+  baseUrl,
+}: {
+  tokens: ApiTokenRow[];
+  /** 本站對外網址（env.BASE_URL）：用於產生可直接複製的 MCP 客戶端設定 */
+  baseUrl: string;
+}) {
   const t = useTranslations("settings.apiTokens");
   const router = useRouter();
   const toast = useToast();
   const [open, setOpen] = useState(false);
   const [expiryDays, setExpiryDays] = useState<(typeof EXPIRY_OPTIONS)[number]>("90");
   const [allowWrite, setAllowWrite] = useState(false);
-  const [created, setCreated] = useState<{ token: string; name: string } | null>(null);
+  const [created, setCreated] = useState<{
+    token: string;
+    name: string;
+    canWrite: boolean;
+  } | null>(null);
   const [pending, startTransition] = useTransition();
 
   const dateFormat = new Intl.DateTimeFormat("zh-TW", { dateStyle: "medium" });
@@ -59,7 +71,7 @@ export function ApiTokensSection({ tokens }: { tokens: ApiTokenRow[] }) {
           toast({ variant: "error", title: t("actionError") });
           return;
         }
-        setCreated({ token: result.token, name });
+        setCreated({ token: result.token, name, canWrite: allowWrite });
         router.refresh();
       } catch {
         toast({ variant: "error", title: t("actionError") });
@@ -107,9 +119,12 @@ export function ApiTokensSection({ tokens }: { tokens: ApiTokenRow[] }) {
       <div className="flex items-start justify-between gap-4">
         <div>
           <h2 className="text-h3 text-fg">{t("heading")}</h2>
-          <p className="text-body-ui text-fg-secondary">
-            {t("desc")}
-            <Link href="/api-docs" className="ml-1 text-primary hover:underline">
+          <p className="text-body-ui text-fg-secondary">{t("desc")}</p>
+          <p className="mt-1 flex flex-wrap items-center gap-4 text-body-ui">
+            <Link href="/guide#mcp" className="text-primary hover:underline">
+              {t("guideLink")}
+            </Link>
+            <Link href="/api-docs" className="text-primary hover:underline">
               {t("docsLink")}
             </Link>
           </p>
@@ -119,7 +134,7 @@ export function ApiTokensSection({ tokens }: { tokens: ApiTokenRow[] }) {
             <Button variant="secondary">{t("create")}</Button>
           </ModalTrigger>
           <ModalContent
-            size="sm"
+            size={created === null ? "sm" : "lg"}
             title={t("createTitle")}
             closeLabel={t("close")}
             className="archive-api-token-modal"
@@ -168,7 +183,7 @@ export function ApiTokensSection({ tokens }: { tokens: ApiTokenRow[] }) {
                 <p className="text-body-ui text-fg">{t("createdFor", { name: created.name })}</p>
                 <div className="flex items-start gap-2">
                   <code
-                    className="min-w-0 flex-1 cursor-pointer select-all break-all rounded-md bg-sidebar px-3 py-2 font-mono text-body-ui text-fg"
+                    className="archive-api-token-plaintext min-w-0 flex-1 cursor-pointer select-all break-all rounded-md bg-sidebar px-3 py-2 font-mono text-body-ui text-fg"
                     title={t("clickToSelect")}
                     // 純 HTTP 內網 execCommand 後備可能失效的保底：點一下整段選取，使用者可手動 Cmd+C
                     onClick={(e) => {
@@ -184,7 +199,7 @@ export function ApiTokensSection({ tokens }: { tokens: ApiTokenRow[] }) {
                   <Button
                     variant="secondary"
                     size="sm"
-                    className="shrink-0"
+                    className="archive-api-token-copy shrink-0"
                     onClick={() => onCopyToken(created.token)}
                   >
                     <Copy aria-hidden className="size-4" />
@@ -194,6 +209,20 @@ export function ApiTokensSection({ tokens }: { tokens: ApiTokenRow[] }) {
                 <p className="rounded-md bg-warning-tint px-3 py-2 text-body-ui text-warning">
                   {t("shownOnce")}
                 </p>
+
+                {/* token 明文只有此刻存在 → 這裡是唯一能給出「複製即可用」MCP 設定的時機 */}
+                <div className="flex flex-col gap-2 border-t border-edge pt-3">
+                  <div>
+                    <h3 className="text-h3 text-fg">{t("mcpHeading")}</h3>
+                    <p className="text-caption text-fg-tertiary">{t("mcpHint")}</p>
+                  </div>
+                  <McpSetup baseUrl={baseUrl} token={created.token} />
+                  {!created.canWrite && (
+                    <p className="text-caption text-fg-tertiary">{t("mcpReadOnlyNote")}</p>
+                  )}
+                  <p className="text-caption text-fg-tertiary">{t("mcpVerify")}</p>
+                </div>
+
                 <div className="flex justify-end">
                   <Button onClick={() => setOpen(false)}>{t("close")}</Button>
                 </div>

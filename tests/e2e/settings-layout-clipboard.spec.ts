@@ -53,10 +53,16 @@ test("個人設定頁：非安全內容下複製 Token 確實寫入剪貼簿", a
   await dialog.getByLabel("名稱（用途）").fill(tokenName);
   await dialog.getByRole("button", { name: "建立 Token" }).click();
 
-  const tokenCode = dialog.locator("code");
+  // 建立完成畫面同時含 MCP 設定片段（多個 code／複製鈕），故以專屬 class 鎖定 token 本體
+  const tokenCode = dialog.locator(".archive-api-token-plaintext");
   await expect(tokenCode).toBeVisible();
   const token = (await tokenCode.innerText()).trim();
   expect(token).toMatch(/^jbk_/);
+
+  // MCP 自助接入（#282）：設定片段必須帶入這把 token，使用者複製即可用
+  await expect(dialog.locator(".archive-mcp-snippet").first()).toContainText(
+    `Authorization: Bearer ${token}`,
+  );
 
   // 先把剪貼簿填入哨兵值，確保後續讀到的內容一定來自這次複製
   await page.evaluate(() => {
@@ -69,7 +75,7 @@ test("個人設定頁：非安全內容下複製 Token 確實寫入剪貼簿", a
     el.remove();
   });
 
-  await dialog.getByRole("button", { name: "複製" }).click();
+  await dialog.locator(".archive-api-token-copy").click();
   await expect(page.getByText("Token 已複製到剪貼簿").first()).toBeVisible();
 
   // 另開一個頁面（未移除 navigator.clipboard）讀回系統剪貼簿

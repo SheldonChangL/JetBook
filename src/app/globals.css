@@ -1580,6 +1580,11 @@ html.dark {
   letter-spacing: 0.14em;
 }
 
+/* 首次使用引導：橫跨兩欄，三步卡片才有足夠寬度。 */
+.archive-dashboard-onboarding {
+  grid-column: 1 / -1;
+}
+
 .archive-dashboard-section {
   min-width: 0;
 }
