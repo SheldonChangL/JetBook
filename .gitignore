@@ -15,3 +15,5 @@ playwright-report/
 tsconfig.tsbuildinfo
 .claude/worktrees/
 .env
+# AI 代理在本機產生的工作筆記，因人／因 session 而異，不入 repo
+AGENTS.md
