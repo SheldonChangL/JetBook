@@ -203,6 +203,17 @@ Next.js（App Router、TS strict）全端 + PostgreSQL 16/pgvector/pgroonga + Do
 - [x] 品質閘門：lint ✅ typecheck ✅ 單元 563/563 ✅ next build ✅ build:worker ✅
 - [ ] **部署前置（IT 作業，非本 issue 交付物）**：目前測試借用的是帶有 `Mail.Read`／`Files.Read.All`／`Sites.Read.All` 的既有 app registration，**不得用於生產**。須另建僅授予 `Mail.Send` 的專用 app，並以 Application Access Policy 限縮至單一寄件信箱
 
+### 站內使用說明與 MCP 自助接入（2026-07-28，#282／PR #283）
+
+- 動機：使用者反映「MCP 設定教學」不易理解，且新使用者不知道 JetBook 怎麼用——原本教學只存在 repo 內的 `docs/guides/mcp-server.md`，站內完全沒有入口
+- [x] 新增站內 `/guide`「使用說明」頁（RSC）：三分鐘上手（搜尋／閱讀／撰寫／權限／回收桶）＋ MCP 接入三步（建 token → 貼設定 → 驗證）＋工具能力與一人一把 token 安全說明
+- [x] `src/components/mcp/mcp-setup.tsx`（唯一設定產生器）：以 `env.BASE_URL` 組出 Claude Code 指令與 Claude Desktop JSON，純 HTTP 部署自動補 `--allow-http`；沿用 `copyText`＋點擊全選後備
+- [x] 建立 API Token 完成畫面直接嵌入該設定（明文 token 僅此刻存在＝唯一能給「複製即可用」設定的時機），並標示唯讀 token 的能力範圍
+- [x] 入口：Dashboard 首次使用（無瀏覽紀錄）顯示上手三步卡＋兩個 CTA、命令列與頭像選單新增「使用說明」、API Token 區塊新增「如何接給 AI 助理」
+- [x] 順帶修復 `ui/modal.tsx`：Modal 無 max-height，內容高於視窗時頂部與底部按鈕被裁掉無法操作（本次加長 token 建立 modal 後暴露）→ 改為 `max-h-[calc(100vh-32px)] overflow-y-auto`
+- [x] `docs/guides/mcp-server.md` 全面重寫為任務導向（原本 11 個工具擠在單一 bullet）；README MCP 段落同步（原稱「三工具」已與實作不符）
+- [x] 驗證：lint ✅ typecheck ✅ 單元 563/563 ✅ next build ✅；瀏覽器實測 `/guide`、Dashboard 引導卡、建立 token→設定片段（`--allow-http` 自動補上）、modal 內部捲動、深色模式＋375px 無橫向溢出、點擊全選後備（選取 118 字元）。剪貼簿 API 複製在內嵌瀏覽器無 user activation 無法驗證（機制沿用既有 `copyText`，#276 已處理純 HTTP 後備）
+
 ### 尚未完成（v1 之後）
 - **UI Design v2 已完成**：#251／PR #252、#253／PR #254、#255／PR #256、#257／PR #258、#259／PR #260、#261／PR #262 六批與 #263／PR #264 編輯體驗迭代皆完成；#271 移除 Legacy fallback 後 Archive 為唯一 UI
 - **#93 M4 backlog**：變更請求、行內評論、webhooks（暫停）、PDF 匯出、KaTeX、多欄、snippets、內容分析等——其餘候選項依回饋再拆
@@ -272,6 +283,6 @@ Space 封存/軟刪、跨 Space 移動複製、死鏈標示、附件 GC、Tabs/�
 ## 下一步
 
 1. 內部伺服器首次部署已完成（2026-07-27，見上）。剩餘部署強化，按阻斷性排序：**TLS**（`proxy/Caddyfile` 掛內部網域＋內部 CA；目前全程 HTTP，NFR-SEC-10 未滿足，且為 OIDC/SSO 前置條件）、**SMTP**（未設＝忘記密碼不寄信、只寫 log，使用者無法自助重設）、**備份異機保存**（NFR-DATA-03；目前 `backups` volume 與資料同機）、Ubuntu 18.04 已 EOL 的作業系統升級計畫
-2. 串接真實 AI 端點（ANTHROPIC_API_KEY + local BGE-M3）；MCP 依 docs/guides/mcp-server.md 讓 Claude 接上知識庫（每人自建 API token；寫入需勾選 write scope）
+2. 串接真實 AI 端點（ANTHROPIC_API_KEY + local BGE-M3）；MCP 讓使用者自助接上知識庫——站內 `/guide#mcp` 為主要路徑（設定片段自動填網域與 token），`docs/guides/mcp-server.md` 為完整參考（每人自建 API token；寫入需勾選 write scope）
 3. 其餘 backlog 候選見 #93（變更請求、行內評論、webhooks、PDF 匯出、KaTeX 等，依回饋再拆）
 4. 未拆 issue 的殘餘觀察（#232 review 記錄）：跨空間子樹搬移與同空間 reparent 交錯可能產生「parent 在他空間」的懸掛連結（非環、屬 #225 家族），需要時再開 issue

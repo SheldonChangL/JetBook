@@ -4,7 +4,15 @@ import { requireSession } from "@/lib/auth/current";
 import { listAccessibleSpaces } from "@/lib/spaces/queries";
 import { listRecentlyUpdated, listRecentVisits } from "@/lib/pages/recent";
 import { relativeTime } from "@/lib/relative-time";
+import { BookOpen, PenLine, Search, Sparkles } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
+
+/** 首次使用引導的三步（文案在 messages home.onboarding.*） */
+const ONBOARDING_STEPS = [
+  { key: "step1", Icon: Search },
+  { key: "step2", Icon: PenLine },
+  { key: "step3", Icon: Sparkles },
+] as const;
 
 /**
  * Dashboard（C-06，設計規範 §3.2）：繼續閱讀（page_visits 最近 6 筆）、
@@ -46,6 +54,46 @@ export default async function HomePage() {
           {t("archiveSubtitle")}
         </p>
       </header>
+
+      {/* 首次使用（尚無瀏覽紀錄）：先給上手三步與 AI 助理接入入口，而非空白清單 */}
+      {visits.length === 0 && (
+        <section
+          className="archive-dashboard-onboarding flex flex-col gap-4 rounded-md border border-edge bg-raised p-5"
+          aria-label={t("onboarding.heading")}
+        >
+          <div>
+            <h2 className="text-h3 text-fg">{t("onboarding.heading")}</h2>
+            <p className="mt-1 text-body-ui text-fg-secondary">{t("onboarding.body")}</p>
+          </div>
+          <ol className="grid gap-3 sm:grid-cols-3">
+            {ONBOARDING_STEPS.map(({ key, Icon }) => (
+              <li key={key} className="flex flex-col gap-1 rounded-md border border-edge p-4">
+                <p className="flex items-center gap-2 text-body-ui font-medium text-fg">
+                  <Icon aria-hidden className="size-4 text-fg-tertiary" />
+                  {t(`onboarding.${key}Title`)}
+                </p>
+                <p className="text-caption text-fg-secondary">{t(`onboarding.${key}Body`)}</p>
+              </li>
+            ))}
+          </ol>
+          <div className="flex flex-wrap gap-2">
+            <Link
+              href="/guide"
+              className="inline-flex items-center gap-1.5 rounded-md bg-primary px-3 py-1.5 text-body-ui text-on-primary transition-colors hover:bg-primary-hover"
+            >
+              <BookOpen aria-hidden className="size-4" />
+              {t("onboarding.guideCta")}
+            </Link>
+            <Link
+              href="/guide#mcp"
+              className="inline-flex items-center gap-1.5 rounded-md border border-edge px-3 py-1.5 text-body-ui text-fg transition-colors hover:bg-hover"
+            >
+              <Sparkles aria-hidden className="size-4" />
+              {t("onboarding.mcpCta")}
+            </Link>
+          </div>
+        </section>
+      )}
 
       <section className="archive-dashboard-section" aria-label={t("continueReading")}>
         <h2 className="mb-3 text-h3 text-fg">{t("continueReading")}</h2>

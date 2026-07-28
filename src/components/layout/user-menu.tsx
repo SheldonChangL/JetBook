@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useTranslations } from "next-intl";
-import { LogOut, Settings, ShieldCheck } from "lucide-react";
+import { BookOpen, LogOut, Settings, ShieldCheck } from "lucide-react";
 import { logout } from "@/actions/auth";
 import { Avatar } from "@/components/ui/avatar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
@@ -42,6 +42,13 @@ export function UserMenu({
         >
           <Settings aria-hidden className="size-4" />
           {t("personalSettings")}
+        </Link>
+        <Link
+          href="/guide"
+          className="flex w-full items-center gap-2 border-b border-edge px-3 py-2 text-body-ui text-fg transition-colors hover:bg-hover"
+        >
+          <BookOpen aria-hidden className="size-4" />
+          {t("helpGuide")}
         </Link>
         {isAdmin ? (
           <Link

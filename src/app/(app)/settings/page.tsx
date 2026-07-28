@@ -3,6 +3,7 @@ import Link from "next/link";
 import { getTranslations } from "next-intl/server";
 import { ChevronLeft } from "lucide-react";
 import { requireSession } from "@/lib/auth/current";
+import { env } from "@/lib/env";
 import type { Theme } from "@/lib/theme";
 import { ProfileSection } from "./profile-section";
 import { PasswordSection } from "./password-section";
@@ -74,6 +75,7 @@ export default async function SettingsPage() {
               lastUsedAt: token.lastUsedAt?.toISOString() ?? null,
               createdAt: token.createdAt.toISOString(),
             }))}
+            baseUrl={env.BASE_URL}
           />
         </div>
       </div>

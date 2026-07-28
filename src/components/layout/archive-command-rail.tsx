@@ -4,7 +4,7 @@ import type { ComponentType, SVGProps } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useTranslations } from "next-intl";
-import { Home, Library, Search, Settings, Sparkles } from "lucide-react";
+import { BookOpen, Home, Library, Search, Settings, Sparkles } from "lucide-react";
 import { ArchiveMark } from "@/components/brand/archive-mark";
 import { Tooltip } from "@/components/ui/tooltip";
 import { cn } from "@/lib/utils";
@@ -45,6 +45,12 @@ export function ArchiveCommandRail({
           />
         ) : null}
         <div className="mt-1 border-t border-edge pt-1">
+          <ExpandedRailLink
+            href="/guide"
+            label={t("helpGuide")}
+            icon={BookOpen}
+            active={pathname.startsWith("/guide")}
+          />
           <ExpandedRailLink
             href="/settings"
             label={t("personalSettings")}
@@ -90,7 +96,13 @@ export function ArchiveCommandRail({
         ) : null}
       </nav>
 
-      <div className="mt-auto">
+      <div className="mt-auto flex flex-col items-center gap-1">
+        <RailLink
+          href="/guide"
+          label={t("helpGuide")}
+          icon={BookOpen}
+          active={pathname.startsWith("/guide")}
+        />
         <RailLink
           href="/settings"
           label={t("personalSettings")}

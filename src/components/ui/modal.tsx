@@ -40,7 +40,8 @@ export function ModalContent({
       <DialogPrimitive.Overlay className="fixed inset-0 z-50 bg-black/40" />
       <DialogPrimitive.Content
         className={cn(
-          "fixed left-1/2 top-1/2 z-50 w-[calc(100vw-32px)] -translate-x-1/2 -translate-y-1/2 rounded-lg border border-edge bg-raised p-6 shadow-lg",
+          // 內容高於視窗時內部捲動（否則頂部與底部按鈕會被裁掉，無法操作）
+          "fixed left-1/2 top-1/2 z-50 max-h-[calc(100vh-32px)] w-[calc(100vw-32px)] -translate-x-1/2 -translate-y-1/2 overflow-y-auto rounded-lg border border-edge bg-raised p-6 shadow-lg",
           sizeClass[size],
           className,
         )}
