@@ -193,6 +193,16 @@ Next.js（App Router、TS strict）全端 + PostgreSQL 16/pgvector/pgroonga + Do
 - [x] 品質閘門：lint ✅ typecheck ✅ 單元 544/544 ✅ next build ✅ Playwright 4/4（含 N-02 冒煙）✅
 - [ ] 待辦（同類缺陷，未在本 issue 範圍）：`page-actions-menu.tsx`（複製 Markdown）、`code-block-reader.tsx`（複製程式碼）、`admin/users/user-row-actions.tsx` 仍直接呼叫 `navigator.clipboard.writeText`，在純 HTTP 環境同樣失效（前者靜默失敗），應改走 `copyText`
 
+### Email 改走 Microsoft Graph（2026-07-28，#280／ADR-015）
+
+- [x] 根因確認（部署主機實測）：對外防火牆**封鎖全部 SMTP 埠**（25／465／587），且為 port 層級全域封鎖——`smtp.gmail.com:587` 同樣不通，故非針對微軟；HTTPS 443 暢通，`graph.microsoft.com` 與 `login.microsoftonline.com` 皆回 200。原 SMTP 實作在部署環境永遠寄不出信，所有信件功能實質失效
+- [x] 一併否決的替代方案：開通出口 587（需網管放行，且 M365 SMTP AUTH 預設停用／Basic Auth 淘汰的第二關未解）、Exchange direct send（同走 port 25，一併被封）
+- [x] 實作：`src/lib/email` 單檔改目錄（`index.ts` provider 決定／`graph.ts`／`smtp.ts`／`types.ts`），Graph 走 client credentials + `POST /v1.0/users/{sender}/sendMail`；token 行程內快取（扣 60s 安全邊界）、併發 in-flight 去重、401 強制換新只重試一次。三處呼叫端（`actions/password-reset.ts`、`actions/admin.ts`、`worker.ts`）零修改
+- [x] 設定：新增 `MAIL_PROVIDER`＋`GRAPH_*`；未指定 provider 時設了 `SMTP_HOST` 走 smtp（既有行為不變），皆未設定維持 logger fallback；**兩套都設定卻未指定 `MAIL_PROVIDER` 於 env 載入期 fail-fast**。`.gitignore` 改為忽略所有 `.env.*`（僅放行 `.env.example`）
+- [x] 端到端實測（部署主機）：token 取得成功、JWT `roles` 含 `Mail.Send`、`sendMail` 回 HTTP 202，收件人確認實際收到信
+- [x] 品質閘門：lint ✅ typecheck ✅ 單元 563/563 ✅ next build ✅ build:worker ✅
+- [ ] **部署前置（IT 作業，非本 issue 交付物）**：目前測試借用的是帶有 `Mail.Read`／`Files.Read.All`／`Sites.Read.All` 的既有 app registration，**不得用於生產**。須另建僅授予 `Mail.Send` 的專用 app，並以 Application Access Policy 限縮至單一寄件信箱
+
 ### 尚未完成（v1 之後）
 - **UI Design v2 已完成**：#251／PR #252、#253／PR #254、#255／PR #256、#257／PR #258、#259／PR #260、#261／PR #262 六批與 #263／PR #264 編輯體驗迭代皆完成；#271 移除 Legacy fallback 後 Archive 為唯一 UI
 - **#93 M4 backlog**：變更請求、行內評論、webhooks（暫停）、PDF 匯出、KaTeX、多欄、snippets、內容分析等——其餘候選項依回饋再拆
@@ -204,7 +214,8 @@ Next.js（App Router、TS strict）全端 + PostgreSQL 16/pgvector/pgroonga + Do
 - Repo：https://github.com/SheldonChangL/JetBook（private）
 - Issues：#93 追蹤 M4 backlog；Archive Studio UI v2 由 #251／PR #252、#253／PR #254、#255／PR #256、#257／PR #258、#259／PR #260、#261／PR #262 六批交付，#263／PR #264 交付編輯體驗迭代；#265／PR #266 修正重複完成按鈕回歸；#269 修正 App Shell 雙側欄視覺
 - Milestones：M0 10/10 ✅／M1 42/42 ✅／M2 16/16 ✅／M3 23/23 ✅／M4 已交付 15 功能＋多項修復（backlog 追蹤 #93）
-- 工作流：branch `feature/issue-<n>-<slug>` → PR（Fixes #n）→ squash merge（使用者已授權 self-merge）；#276 設定頁修復已由 PR #277 合併進 main，目前分支 `feature/issue-275-e2e-admin-reset-password`（#275 admin 重設密碼 e2e 覆蓋，PR #278 待 merge）
+- 工作流：branch `feature/issue-<n>-<slug>` → PR（Fixes #n）→ squash merge（使用者已授權 self-merge）；#275 e2e 覆蓋已由 PR #278 合併進 main，目前分支 `feature/issue-280-graph-mail`（#280 Email 改走 Microsoft Graph）；另有 PR #279（chore：`AGENTS.md` 不入 repo）待 merge
+- 分支整理（2026-07-28）：本地累積 44 個分支，逐一以 PR 狀態核對後確認除 #280 外全部內容皆已在 main（PR #214 雖為 CLOSED 未合併，其成果已由 PR #217 重新落地）；殘留 worktree `agent-a7af93c204395bbc0` 已移除
 
 ## 已完成
 

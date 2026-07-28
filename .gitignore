@@ -15,3 +15,6 @@ playwright-report/
 tsconfig.tsbuildinfo
 .claude/worktrees/
 .env
+# 任何 .env 變體（如 .env.graph）一律不入 repo，只放行佔位範本
+.env.*
+!.env.example
