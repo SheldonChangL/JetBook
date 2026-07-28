@@ -183,7 +183,7 @@ export function ApiTokensSection({
                 <p className="text-body-ui text-fg">{t("createdFor", { name: created.name })}</p>
                 <div className="flex items-start gap-2">
                   <code
-                    className="min-w-0 flex-1 cursor-pointer select-all break-all rounded-md bg-sidebar px-3 py-2 font-mono text-body-ui text-fg"
+                    className="archive-api-token-plaintext min-w-0 flex-1 cursor-pointer select-all break-all rounded-md bg-sidebar px-3 py-2 font-mono text-body-ui text-fg"
                     title={t("clickToSelect")}
                     // 純 HTTP 內網 execCommand 後備可能失效的保底：點一下整段選取，使用者可手動 Cmd+C
                     onClick={(e) => {
@@ -199,7 +199,7 @@ export function ApiTokensSection({
                   <Button
                     variant="secondary"
                     size="sm"
-                    className="shrink-0"
+                    className="archive-api-token-copy shrink-0"
                     onClick={() => onCopyToken(created.token)}
                   >
                     <Copy aria-hidden className="size-4" />
