@@ -25,7 +25,8 @@ export interface SeedSpec {
   orgRole: "admin" | "member";
 }
 
-function resolveDatabaseUrl(): string {
+/** E2E 需要直接連 PG 的地方共用（帳號種子、版面 fixture）。 */
+export function resolveDatabaseUrl(): string {
   if (!process.env.DATABASE_URL) {
     try {
       process.loadEnvFile(".env");

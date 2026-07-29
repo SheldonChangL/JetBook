@@ -240,6 +240,18 @@ Next.js（App Router、TS strict）全端 + PostgreSQL 16/pgvector/pgroonga + Do
 - [x] 品質閘門：lint ✅ typecheck ✅ 單元 582/582 ✅ 整合 304/304（含 N-04）✅ next build ✅ Playwright 8/8（含 N-02 冒煙）✅
 - [x] 文件同步：`docs/design/ui-design.md` §4.4 Tree 與 §4.5 補「展開可發現性」六條規格
 
+### Cmd+K 命令面板結果無法捲動（2026-07-29，#288）
+
+- 回饋來源：使用者截圖「搜尋結果無法下滑」——結果多於一畫面時下方項目（含「顯示全部」與語意相關區）被裁掉，滾輪與捲軸無反應，底部鍵盤提示列也看不到
+- [x] 根因＝**cmdk 的 `Command.Dialog` 在 Dialog 內容與我們的子元素之間插入一層無樣式的 `[cmdk-root]`（`display:block`）**。它是 `.archive-command-layer`（`flex-direction:column; max-height:78vh; overflow:hidden`）唯一的 flex item，於是 context／input／list／footer 全變回 block 流，`Command.List` 的 `flex-1 min-h-0 overflow-y-auto` 完全失效：list 高度＝內容高度、`scrollHeight === clientHeight`＝永遠不是捲動容器，超出 max-height 的部分被 layer 裁掉且捲不到
+- [x] 量測（1440×704，10 項）：layer height 549（＝78vh，正確受限）／list height **594**、bottom **760**（超出 layer 619.5 與視窗 704）／list `scrollHeight===clientHeight===594`／footer top **760**（在 layer 外被裁掉）／滾輪 400px 後 `scrollTop` 仍為 **0**。1440×900 同樣重現
+- [x] 修正＝`.archive-command-layer > [cmdk-root]` 補 `display:flex; flex:1 1 auto; min-height:0; flex-direction:column`，把 flex 鏈接回去（單一 CSS 規則，不動元件邏輯）。修正後同條件：list clientHeight 414 / scrollHeight 594＝可捲動、滾輪 400px → scrollTop 179（到底）、footer bottom 618.5 在 layer 619.5 內
+- [x] `src/components/ui/combobox.tsx` 也用 cmdk，但其 list 直接是 `max-h-60 overflow-y-auto`（不依賴 flex 鏈），已確認不受影響、未改動
+- [x] 測試：e2e +1（`command-palette-scroll.spec.ts`）——短視窗（1440×560）＋ 8 筆種入結果，斷言列表是捲動容器、footer 不超出面板與視窗、滾輪真的捲動、↑↓ 走到最後一項時選取項在可視範圍、清空查詢後面板高度回縮不撐到上限。`tests/e2e/seed.ts` 的 `resolveDatabaseUrl` 改為 export 供版面 fixture 共用（版面測試以 SQL 直接種頁，不經內容管線）
+- [x] **反向驗證**：把該規則的 `display` 改回 `block` → 第一條斷言（`scrollHeight > clientHeight`）立刻轉紅，還原即綠
+- [x] 品質閘門：lint ✅ typecheck ✅ 單元 582/582 ✅ next build ✅ Playwright 9/9（含 N-02 冒煙）✅
+- [x] 瀏覽器實測：1440×704 修正前後對照截圖（修正前底部截斷無 footer、修正後列表可捲且 footer 在面板內）
+
 ### 尚未完成（v1 之後）
 - **UI Design v2 已完成**：#251／PR #252、#253／PR #254、#255／PR #256、#257／PR #258、#259／PR #260、#261／PR #262 六批與 #263／PR #264 編輯體驗迭代皆完成；#271 移除 Legacy fallback 後 Archive 為唯一 UI
 - **#93 M4 backlog**：變更請求、行內評論、webhooks（暫停）、PDF 匯出、KaTeX、多欄、snippets、內容分析等——其餘候選項依回饋再拆
@@ -251,7 +263,7 @@ Next.js（App Router、TS strict）全端 + PostgreSQL 16/pgvector/pgroonga + Do
 - Repo：https://github.com/SheldonChangL/JetBook（private）
 - Issues：#93 追蹤 M4 backlog；Archive Studio UI v2 由 #251／PR #252、#253／PR #254、#255／PR #256、#257／PR #258、#259／PR #260、#261／PR #262 六批交付，#263／PR #264 交付編輯體驗迭代；#265／PR #266 修正重複完成按鈕回歸；#269 修正 App Shell 雙側欄視覺
 - Milestones：M0 10/10 ✅／M1 42/42 ✅／M2 16/16 ✅／M3 23/23 ✅／M4 已交付 15 功能＋多項修復（backlog 追蹤 #93）
-- 工作流：branch `feature/issue-<n>-<slug>` → PR（Fixes #n）→ squash merge（使用者已授權 self-merge）；#280 Graph 寄信、#282 站內使用說明、#284 MCP 跨平台設定已合併進 main，目前分支 `feature/issue-286-tree-disclosure-affordance`（#286 頁面樹展開可發現性）
+- 工作流：branch `feature/issue-<n>-<slug>` → PR（Fixes #n）→ squash merge（使用者已授權 self-merge）；#280 Graph 寄信、#282 站內使用說明、#284 MCP 跨平台設定已合併進 main，#286 頁面樹展開可發現性已合併進 main（PR #287），目前分支 `feature/issue-288-command-palette-scroll`（#288 命令面板捲動）
 - 分支整理（2026-07-28）：本地累積 44 個分支，逐一以 PR 狀態核對後確認除 #280 外全部內容皆已在 main（PR #214 雖為 CLOSED 未合併，其成果已由 PR #217 重新落地）；殘留 worktree `agent-a7af93c204395bbc0` 已移除
 
 ## 已完成

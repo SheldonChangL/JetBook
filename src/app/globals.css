@@ -3637,6 +3637,20 @@ a.archive-space-directory-row:hover {
   box-shadow: var(--shadow-xl);
 }
 
+/*
+ * cmdk 的 Command.Dialog 會在 Dialog 內容與我們的子元素之間插入一層無樣式的 [cmdk-root]
+ * （display:block）。它是 layer 唯一的 flex item，會把 context／input／list／footer 變回普通
+ * block 流，使 list 的 flex-1／min-h-0 失效——list 高度＝內容高度，永遠不成為捲動容器，
+ * 超出 max-height 的部分被 layer 的 overflow:hidden 直接裁掉且捲不到（#288）。
+ * 讓 [cmdk-root] 自己也是受限的 column flex 容器，flex 鏈才接得回去。
+ */
+.archive-command-layer > [cmdk-root] {
+  display: flex;
+  flex: 1 1 auto;
+  min-height: 0;
+  flex-direction: column;
+}
+
 .archive-command-context {
   display: flex;
   min-height: 34px;
