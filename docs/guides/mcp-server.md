@@ -21,7 +21,8 @@
 |---|---|
 | JetBook 網域 | 例如 `https://jetbook.jet-opto.com.tw`（問管理者） |
 | 個人 API token | 下面步驟 1 自己建，`jbk_` 開頭 |
-| 客戶端 | Claude Code（CLI）或 Claude Desktop 任一 |
+| 客戶端 | Claude Code（CLI，三平台通用）或 Claude Desktop（**僅 macOS／Windows**，Linux 無官方版） |
+| Node 18+ | 只有走 Claude Desktop 設定檔（`mcp-remote` 橋接）才需要；Claude Code 與內建連接器都不需要 |
 
 技術規格（不需要記，排錯時才用）：端點 `<網域>/api/mcp`、傳輸 streamable HTTP、認證 HTTP Bearer。
 
@@ -41,20 +42,33 @@
 
 ### 步驟 2 — 把 JetBook 加進客戶端
 
-**Claude Code**
+先挑路徑。**能用哪一條取決於作業系統與 JetBook 是 HTTPS 還是純 HTTP**：
+
+| 你的環境 | 用哪條 |
+|---|---|
+| 任何平台，習慣終端機 | Claude Code（下方 A，最少變數） |
+| macOS／Windows + HTTPS 部署 | Claude Desktop 內建連接器（下方 B，免裝 Node） |
+| macOS／Windows + 純 HTTP 部署 | Claude Desktop 設定檔（下方 C／D，必須帶 `--allow-http`） |
+| Linux 桌面 | 只有 Claude Code——**沒有官方 Claude Desktop for Linux** |
+
+#### A. Claude Code（三平台通用）
 
 ```bash
 claude mcp add --transport http jetbook https://<網域>/api/mcp \
   --header "Authorization: Bearer jbk_xxxxxxxx"
 ```
 
-**Claude Desktop（推薦：內建連接器）**
+驗證：`claude mcp list` 應列出 `jetbook`。純 HTTP 部署把網址換成 `http://<內網位址>/api/mcp` 即可——Claude Code 自己連 HTTP 端點，不經 `mcp-remote`，所以**不需要** `--allow-http`。
+
+#### B. Claude Desktop 內建連接器（僅 HTTPS 可用，推薦）
 
 Settings → Connectors → **Add custom connector** → 填入 `https://<網域>/api/mcp`，並加一個 header：名稱 `Authorization`、值 `Bearer jbk_xxxxxxxx`。
 
-**Claude Desktop（替代：改設定檔）**
+不需要 Node、不經 `mcp-remote`，因此完全沒有下面那些路徑與引號問題。**自訂連接器要求 HTTPS**，純 HTTP 部署走不了這條。
 
-編輯 `claude_desktop_config.json`，用 `mcp-remote` 橋接後重啟 Claude Desktop：
+#### C. Claude Desktop 設定檔 — macOS
+
+設定檔：`~/Library/Application Support/Claude/claude_desktop_config.json`
 
 ```json
 {
@@ -70,19 +84,51 @@ Settings → Connectors → **Add custom connector** → 填入 `https://<網域
 }
 ```
 
-**如果 JetBook 是內網純 HTTP（網址開頭是 `http://`）**
+存檔後按 **⌘Q 完全結束** Claude Desktop 再開（關視窗不會重啟 MCP 伺服器）。
 
-`mcp-remote` 會直接拒絕非 localhost 的 `http://`（錯誤訊息：`Non-HTTPS URLs are only allowed for localhost`）。在 args 加上 `--allow-http`：
+> 從 Dock／Finder 啟動的 GUI app **不繼承終端機的 PATH**。node 是用 Homebrew 或 nvm 裝的話，`npx` 可能找不到（log 出現 `spawn npx ENOENT`）→ 把 `command` 換成絕對路徑，例如 `/opt/homebrew/bin/npx`（Apple Silicon Homebrew）或 `which npx` 印出的值。
+
+#### D. Claude Desktop 設定檔 — Windows
+
+設定檔：`%APPDATA%\Claude\claude_desktop_config.json`
+
+```json
+{
+  "mcpServers": {
+    "jetbook": {
+      "command": "cmd",
+      "args": [
+        "/c", "npx",
+        "-y", "mcp-remote", "https://<網域>/api/mcp",
+        "--header", "Authorization: Bearer jbk_xxxxxxxx"
+      ]
+    }
+  }
+}
+```
+
+**Windows 一定要寫成 `cmd` + `/c` + `npx`，不能直接 `"command": "npx"`。** Claude Desktop 會把 `command` 解析成絕對路徑後包進 `cmd.exe /c` 且不加引號；node 預設裝在 `C:\Program Files\nodejs`，cmd 只吃到 `C:\Program` 就當成指令名，伺服器啟動即失敗（見〈疑難排解〉的 Windows 段）。寫成 `cmd /c npx` 是讓 cmd 自己去 PATH 找 npx，`args` 陣列各元素獨立傳遞，不會被空白切斷。
+
+存檔後**從系統匣「結束」**Claude Desktop 再開（按右上 ✕ 只是關視窗）。
+
+#### 如果 JetBook 是內網純 HTTP（網址開頭 `http://`）
+
+`mcp-remote` 會直接拒絕非 localhost 的 `http://`（`Non-HTTPS URLs are only allowed for localhost`）。**C／D 都要在 args 加 `--allow-http`**，位置放在網址之後：
 
 ```json
 "args": [
+  "/c", "npx",
   "-y", "mcp-remote", "http://<內網位址>/api/mcp",
   "--allow-http",
   "--header", "Authorization: Bearer jbk_xxxxxxxx"
 ]
 ```
 
+（上例為 Windows；macOS 拿掉 `"/c", "npx"` 並把 `command` 改回 `npx`。）
+
 純 HTTP 下 token 是明文傳輸，僅限受信任內網使用。正式環境請依 README「部署與維運」掛內部 CA 憑證改走 HTTPS。
+
+> 站內 `<網域>/guide#mcp` 會直接產生**已填好本站網域、並依部署自動補上 `--allow-http`** 的 macOS 與 Windows 兩份設定，比照抄本檔更不容易出錯。
 
 ### 步驟 3 — 驗證接上了
 
@@ -170,16 +216,50 @@ JETBOOK_ATTACHMENT_IMPORT_HOSTS=redmine.example.com,10.0.0.10
 
 ## 六、疑難排解
 
+**先分辨是哪一層壞掉**——這決定你要看哪一節：
+
+- Claude 裡**完全看不到 JetBook 工具**、或連上就斷線 → MCP 伺服器沒啟動起來，看〈6.1 啟動失敗〉。
+- 工具**看得到、叫得動，但回錯誤**（401、找不到頁面、被拒寫入）→ 看〈6.2 連上了但被拒〉。
+
+### 6.1 啟動失敗（分平台）
+
+先看 log，症狀一目瞭然：
+
+| 平台 | log 位置 |
+|---|---|
+| macOS | `~/Library/Logs/Claude/mcp-server-jetbook.log`（另有 `mcp.log` 記啟動流程） |
+| Windows | `%APPDATA%\Claude\logs\mcp-server-jetbook.log` |
+| Claude Code（任何平台） | `claude mcp list` 看連線狀態；`/mcp` 於互動 session 內查看 |
+
+**通用第一步：在終端機手動跑一次橋接程式。** 跑不起來就是 Node 環境問題，與 JetBook 無關：
+
+```bash
+npx -y mcp-remote --version
+```
+
+Windows 請在 cmd 執行 `cmd /c npx -y mcp-remote --version`。`mcp-remote` 需要 Node 18 以上。
+
+| 症狀（log 內容） | 平台 | 原因與處置 |
+|---|---|---|
+| `'C:\Program' 不是內部或外部命令、可執行的程式或批次檔`（英文版：`'C:\Program' is not recognized...`），緊接 `Server transport closed unexpectedly` | Windows | `"command": "npx"` 被解析成 `C:\Program Files\nodejs\...` 後未加引號地包進 `cmd.exe /c` → 改用步驟 2-D 的 `cmd` + `/c` + `npx` 寫法。仍失敗則把 `command` 換成 8.3 短路徑 `C:\PROGRA~1\nodejs\npx.cmd` |
+| `spawn npx ENOENT` | macOS | GUI app 不繼承終端機 PATH，找不到 Homebrew／nvm 裝的 node → `command` 改成 `which npx` 印出的絕對路徑 |
+| `npx: command not found` | Linux | Node 未安裝或不在 PATH；Linux 建議直接用 Claude Code（步驟 2-A），不需要 Node |
+| `Non-HTTPS URLs are only allowed for localhost` | 全部 | `mcp-remote` 拒絕非 localhost 的 `http://` → args 加 `--allow-http`（步驟 2） |
+| 改了設定檔卻毫無變化 | macOS／Windows | 設定檔沒重讀。macOS 按 ⌘Q、Windows 從系統匣「結束」，關視窗不算。也確認改的是對的檔案（macOS `~/Library/Application Support/Claude/`、Windows `%APPDATA%\Claude\`） |
+| 設定檔存了但 app 完全不理 | 全部 | JSON 語法錯（多餘逗號、中文全角引號、路徑反斜線未轉義成 `\\`）→ 用 JSON 檢查工具驗過再存 |
+| Linux 找不到 Claude Desktop 設定檔 | Linux | 沒有官方 Claude Desktop for Linux → 用 Claude Code（步驟 2-A） |
+
+### 6.2 連上了但被拒
+
 | 症狀 | 原因與處置 |
 |---|---|
-| `401` | token 缺少、打錯（含少了 `Bearer ` 前綴）、已撤銷、已過期，或帳號被停用 → 重建 token |
+| `401` | token 缺少、打錯（含少了 `Bearer ` 前綴或那個空格）、已撤銷、已過期，或帳號被停用 → 重建 token |
 | 「找不到預期的頁面」 | token 擁有者對該空間沒有讀取權（權限＝UI 權限）→ 請空間管理員加你為成員 |
 | 「需要寫入權限」類錯誤 | token 沒勾「允許寫入」→ 重建一把勾選寫入的 token（既有 token 無法補加） |
 | 「頁面正由 ⋯ 編輯中」 | 對方持有軟性編輯鎖 → 等閒置釋放（5 分鐘）或請對方離開編輯器 |
 | 「版本不符」 | 有人先改過（樂觀鎖擋下覆蓋）→ 重新 `read_page` 取最新內容後再寫 |
 | `429` / 「請求過於頻繁」 | 單一 token 上限 120 次／分鐘 → 依 `retry-after` 秒數後重試 |
 | SSE 連線失敗 | 本部署僅支援 streamable HTTP（`/api/mcp`），不支援舊式 SSE |
-| `Non-HTTPS URLs are only allowed for localhost` | `mcp-remote` 拒絕非 localhost 的 `http://` → args 加 `--allow-http`（見步驟 2） |
 
 ---
 

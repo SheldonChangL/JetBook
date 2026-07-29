@@ -212,7 +212,16 @@
       "toolsWriteTitle": "寫入（token 需勾「允許寫入」）",
       "toolsWrite": "建立與更新頁面、搬移頁面、刪除頁面（進垃圾桶可還原）、建立與設定空間、調整空間成員、把外部圖片匯入為附件。寫入一律走和網頁編輯相同的管線：留版本快照、更新搜尋與 AI 索引、他人編輯中會被拒絕、全部進稽核日誌。",
       "securityTitle": "一人一把 token",
-      "securityBody": "AI 看到的內容完全等於 token 擁有者的權限。整組人共用一把（尤其管理者那把）等於把私有空間內容外洩給無權者。換電腦、離職或懷疑外流時，到個人設定按「撤銷」即刻失效。"
+      "securityBody": "AI 看到的內容完全等於 token 擁有者的權限。整組人共用一把（尤其管理者那把）等於把私有空間內容外洩給無權者。換電腦、離職或懷疑外流時，到個人設定按「撤銷」即刻失效。",
+      "troubleshootHeading": "接不上時怎麼查",
+      "troubleshootIntro": "先確認客戶端有沒有把 MCP 伺服器啟動起來，再看是不是權限問題。以下依症狀對應處置。",
+      "troubleshootWindows": "Windows：一連上就斷、log 出現「'C:\\Program' 不是內部或外部命令」——node 裝在含空白的路徑，設定必須用上面 Windows 那份（cmd /c npx）。若仍失敗，把 command 改成 C:\\PROGRA~1\\nodejs\\npx.cmd。",
+      "troubleshootMac": "macOS：log 出現 spawn npx ENOENT——從 Dock 啟動的 app 不繼承終端機的 PATH，Homebrew／nvm 裝的 node 找不到。把 command 換成絕對路徑（終端機執行 which npx）。",
+      "troubleshootLinux": "Linux：沒有官方 Claude Desktop，用 Claude Code 指令接入，再以 claude mcp list 確認 jetbook 已連線。",
+      "troubleshootHttp": "出現「Non-HTTPS URLs are only allowed for localhost」——JetBook 網址是 http:// 開頭時，設定必須帶 --allow-http（上方片段若偵測到純 HTTP 已自動加上）。",
+      "troubleshootAuth": "回 401——token 打錯、少了 Bearer 與空格、已過期或已撤銷，重建一把即可。要 AI 幫你寫頁面卻被拒，是 token 沒勾「允許寫入」（既有 token 無法補加，需重建）。",
+      "troubleshootLogs": "看 log：macOS 在 ~/Library/Logs/Claude/mcp-server-jetbook.log，Windows 在 %APPDATA%\\Claude\\logs\\mcp-server-jetbook.log。",
+      "troubleshootManual": "通用診斷：先在終端機手動跑一次 npx -y mcp-remote --version（Windows 用 cmd /c npx -y mcp-remote --version）。跑不起來就是 Node 環境問題，與 JetBook 無關。"
     },
     "more": {
       "heading": "更多",
@@ -222,15 +231,20 @@
   },
   "mcpSetup": {
     "endpointLabel": "MCP 端點",
-    "clientCodeTitle": "Claude Code（終端機執行）",
-    "clientDesktopTitle": "Claude Desktop（貼進 claude_desktop_config.json）",
-    "desktopHint": "存檔後重新啟動 Claude Desktop。",
+    "clientCodeTitle": "Claude Code（終端機執行，三平台通用）",
+    "codeHint": "接好後在終端機執行 claude mcp list 應看到 jetbook。Linux 建議用這條路徑。",
+    "clientDesktopMacTitle": "Claude Desktop（macOS）— 貼進 claude_desktop_config.json",
+    "desktopMacHint": "設定檔在 ~/Library/Application Support/Claude/claude_desktop_config.json；存檔後按 ⌘Q 完全結束 Claude Desktop 再開。若啟動失敗且 log 出現 spawn npx ENOENT，把 command 換成 npx 的絕對路徑（終端機執行 which npx 取得）。",
+    "clientDesktopWindowsTitle": "Claude Desktop（Windows）— 貼進 claude_desktop_config.json",
+    "desktopWindowsHint": "設定檔在 %APPDATA%\\Claude\\claude_desktop_config.json；存檔後從系統匣「結束」Claude Desktop 再開（關視窗不算）。這份刻意寫成 cmd /c npx：Windows 直接用 npx 會被包成未加引號的路徑，node 裝在 C:\\Program Files\\nodejs 時會啟動失敗。",
+    "linuxNote": "Linux 沒有官方 Claude Desktop，請用上方 Claude Code 指令接入；其他支援 MCP 的客戶端可套用 macOS 那份設定。",
     "placeholderNote": "把 jbk_xxxxxxxxxxxx 換成你自己的 token（在「個人設定 → API Token」建立，只會顯示一次）。",
     "httpNote": "本站目前為內網純 HTTP，設定已自動加上 --allow-http。此模式下 token 為明文傳輸，僅限受信任內網使用。",
     "copy": "複製",
     "copied": "已複製到剪貼簿",
     "copyFailed": "複製失敗，請點一下內容全選後手動複製",
-    "clickToSelect": "點一下全選，再按 ⌘C / Ctrl+C 複製"
+    "clickToSelect": "點一下全選，再按 ⌘C / Ctrl+C 複製",
+    "connectorNote": "Claude Desktop 也可以不裝 Node：Settings → Connectors → Add custom connector，填上方 MCP 端點，並加一個 header——名稱 Authorization、值 Bearer 加上你的 token。"
   },
   "emojiPicker": {
     "search": "搜尋 emoji（英文）",

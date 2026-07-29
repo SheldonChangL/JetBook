@@ -214,6 +214,18 @@ Next.js（App Router、TS strict）全端 + PostgreSQL 16/pgvector/pgroonga + Do
 - [x] `docs/guides/mcp-server.md` 全面重寫為任務導向（原本 11 個工具擠在單一 bullet）；README MCP 段落同步（原稱「三工具」已與實作不符）
 - [x] 驗證：lint ✅ typecheck ✅ 單元 563/563 ✅ next build ✅；瀏覽器實測 `/guide`、Dashboard 引導卡、建立 token→設定片段（`--allow-http` 自動補上）、modal 內部捲動、深色模式＋375px 無橫向溢出、點擊全選後備（選取 118 字元）。剪貼簿 API 複製在內嵌瀏覽器無 user activation 無法驗證（機制沿用既有 `copyText`，#276 已處理純 HTTP 後備）
 
+### MCP 接入跨平台修正（2026-07-28，#284）
+
+- 回饋來源：使用者在 Windows 依站內 `/guide#mcp` 的設定接 MCP，Claude Desktop log 為 `'C:\Program' 不是內部或外部命令` 後 `Server transport closed unexpectedly`，連線從未建立
+- [x] 根因＝我們發出的設定是 `"command": "npx"`。Claude Desktop 於 Windows 把 command 解析成絕對路徑後包進 `cmd.exe /c` 且**不加引號**，node 預設裝在 `C:\Program Files\nodejs`，cmd 只吃到 `C:\Program` 即失敗。與 token／權限無關，且**站內主要接入路徑在 Windows 上本來就不可用**
+- [x] 修正＝設定產生邏輯抽為純函式 `src/lib/mcp/setup-snippets.ts`（`buildMcpSnippets`），Claude Desktop 分 macOS（`npx`）與 Windows（`cmd` + `/c` + `npx`，讓 cmd 自己走 PATH、args 各元素獨立傳遞不受空白影響）兩份；`McpSetup` 改為消費該函式，`/guide` 與建立 token 完成畫面同步受益
+- [x] 站內 `/guide#mcp` 新增「接不上時怎麼查」七條：Windows 路徑引號（含 8.3 短路徑後備）、macOS GUI app 不繼承 shell PATH 的 `spawn npx ENOENT`、Linux 無官方 Claude Desktop 走 Claude Code、`--allow-http`、401／write scope、兩平台 log 檔位置、終端機手動跑一次的通用診斷
+- [x] `docs/guides/mcp-server.md`：步驟 2 改為「先挑路徑」對照表 ＋ A Claude Code／B 內建連接器（僅 HTTPS）／C macOS／D Windows 四份設定；疑難排解拆為 6.1 啟動失敗（分平台、對照 log 症狀）與 6.2 連上了但被拒。README MCP 段落同步
+- [x] 測試：單元 +8（`setup-snippets.test.ts`：Windows 必經 cmd /c、兩平台參數僅差前綴、純 HTTP 兩平台都補 `--allow-http`、HTTPS 不補、token 代入、Claude Code 不經 mcp-remote）；e2e +1（`guide-mcp-setup.spec.ts`：頁面實際送出兩份設定、Windows 那份不得是 `npx`、三平台排錯條目、i18n 缺鍵防呆）。**反向驗證**：把 Windows 設定改回 `npx` → 對應 2 條單元測試轉紅，改回即綠
+- [x] 踩到並修掉的測試基建問題：新增登入吃掉 IP 層 rate limit（5 次/分）額度，害後續 `unicode-slug` 被 429 擋下 → 本 spec 比照 #275 帶獨立 `x-forwarded-for`
+- [x] 品質閘門：lint ✅ typecheck ✅ 單元 571/571 ✅ next build ✅ Playwright 7/7（含 N-02 冒煙）✅；瀏覽器實測 `/guide#mcp` 1440 light／dark 與 375px，三份片段與排錯卡完整渲染、`--allow-http` 自動補上、`documentElement` 零橫向溢位、零 console error
+- [x] 未跑：`npm run test:integration`（本次 diff 未觸及 `src/lib` 的 DB 或權限路徑，新增模組為純字串產生）
+
 ### 尚未完成（v1 之後）
 - **UI Design v2 已完成**：#251／PR #252、#253／PR #254、#255／PR #256、#257／PR #258、#259／PR #260、#261／PR #262 六批與 #263／PR #264 編輯體驗迭代皆完成；#271 移除 Legacy fallback 後 Archive 為唯一 UI
 - **#93 M4 backlog**：變更請求、行內評論、webhooks（暫停）、PDF 匯出、KaTeX、多欄、snippets、內容分析等——其餘候選項依回饋再拆
@@ -225,7 +237,7 @@ Next.js（App Router、TS strict）全端 + PostgreSQL 16/pgvector/pgroonga + Do
 - Repo：https://github.com/SheldonChangL/JetBook（private）
 - Issues：#93 追蹤 M4 backlog；Archive Studio UI v2 由 #251／PR #252、#253／PR #254、#255／PR #256、#257／PR #258、#259／PR #260、#261／PR #262 六批交付，#263／PR #264 交付編輯體驗迭代；#265／PR #266 修正重複完成按鈕回歸；#269 修正 App Shell 雙側欄視覺
 - Milestones：M0 10/10 ✅／M1 42/42 ✅／M2 16/16 ✅／M3 23/23 ✅／M4 已交付 15 功能＋多項修復（backlog 追蹤 #93）
-- 工作流：branch `feature/issue-<n>-<slug>` → PR（Fixes #n）→ squash merge（使用者已授權 self-merge）；#275 e2e 覆蓋已由 PR #278 合併進 main，目前分支 `feature/issue-280-graph-mail`（#280 Email 改走 Microsoft Graph）；另有 PR #279（chore：`AGENTS.md` 不入 repo）待 merge
+- 工作流：branch `feature/issue-<n>-<slug>` → PR（Fixes #n）→ squash merge（使用者已授權 self-merge）；#280 Graph 寄信與 #282 站內使用說明已合併進 main，目前分支 `feature/issue-284-mcp-cross-platform-setup`（#284 MCP 接入跨平台修正）
 - 分支整理（2026-07-28）：本地累積 44 個分支，逐一以 PR 狀態核對後確認除 #280 外全部內容皆已在 main（PR #214 雖為 CLOSED 未合併，其成果已由 PR #217 重新落地）；殘留 worktree `agent-a7af93c204395bbc0` 已移除
 
 ## 已完成
