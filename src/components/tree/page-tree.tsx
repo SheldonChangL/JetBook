@@ -17,6 +17,8 @@ import { usePathname, useRouter } from "next/navigation";
 import { useTranslations } from "next-intl";
 import {
   ChevronRight,
+  ChevronsDownUp,
+  ChevronsUpDown,
   Copy,
   Ellipsis,
   ExternalLink,
@@ -46,6 +48,7 @@ import {
   updateExternalLink,
 } from "@/actions/page";
 import type { PageKind } from "@/lib/db/schema";
+import { collectParentIds, computeInitialExpanded } from "@/lib/pages/tree-expansion";
 import { Button } from "@/components/ui/button";
 import { Combobox } from "@/components/ui/combobox";
 import { EmptyState } from "@/components/ui/empty-state";
@@ -72,6 +75,17 @@ const MAX_IMPORT_BYTES = 2 * 1024 * 1024;
 /** .docx 前端大小保護（server 端 IMPORT_DOCX_MAX_BYTES 對齊） */
 const MAX_IMPORT_DOCX_BYTES = 50 * 1024 * 1024;
 
+/** 列首左內距（px）：第 0 層展開鈕的起點。 */
+const ROW_PADDING_LEFT = 4;
+/** 每層縮排（px）；展開鈕與縮排線都依此對齊。 */
+const INDENT_STEP = 16;
+/** 展開鈕寬度（px）：WCAG 2.5.8 最小 24×24 目標；高度取整列。 */
+const DISCLOSURE_WIDTH = 24;
+
+/** 頁面樹頭部 24×24 動作鈕（全部展開／新增／空間動作）共用樣式。 */
+const HEADER_BUTTON_CLASS =
+  "inline-flex size-6 items-center justify-center rounded-sm text-fg-secondary transition-colors hover:bg-hover hover:text-fg disabled:pointer-events-none disabled:text-fg-disabled";
+
 /** 外部連結 URL 前端驗證：僅接受 http/https 絕對網址（與 server 端一致）。 */
 function isHttpUrl(value: string): boolean {
   try {
@@ -96,6 +110,10 @@ export interface PageTreeProps {
  * hover 浮現 [＋新增][⋯選單]、WAI-ARIA 方向鍵導航（↑↓ 移動、←→ 收展）。
  * 三種節點型別（F-PAGE-04）：page＝內部連結頁；group＝不可點的分節標題（可含子節點）；
  * external_link＝以新分頁開啟目標 URL 的葉節點。
+ *
+ * 展開可發現性（#286）：首繪即逐層展開至列數上限、開啟父頁時連它自己一起展開、
+ * 展開鈕靜止就有容器與 24px 命中區、收合時顯示子頁數、縮排線標示從屬、
+ * 頭部提供「全部展開／全部收合」。
  */
 export function PageTree({ spaceId, spaceSlug, nodes, canEdit }: PageTreeProps) {
   const t = useTranslations("tree");
@@ -128,22 +146,21 @@ export function PageTree({ spaceId, spaceSlug, nodes, canEdit }: PageTreeProps) 
     [nodes, currentSlug],
   );
 
-  // --- 收合/展開；目前頁的祖先自動展開（lazy 初始值使 SSR 首繪即展開＋高亮） ---
-  const [expanded, setExpanded] = useState<Set<string>>(() => {
-    const init = new Set<string>();
-    if (currentId) {
-      let node = byId.get(currentId);
-      while (node?.parentId) {
-        init.add(node.parentId);
-        node = byId.get(node.parentId);
-      }
-    }
-    return init;
-  });
+  /** 可展開的節點（＝有子節點者）；用於「全部展開／收合」與展開狀態判斷。 */
+  const parentIds = useMemo(() => collectParentIds(nodes), [nodes]);
+
+  // --- 收合/展開（#286）：首繪逐層展開至列數上限，目前頁祖先鏈與自身必展 ---
+  // lazy 初始值為純函式且只依賴 props／pathname，SSR 與 CSR 得到相同結果（首繪即展開＋高亮）。
+  const [expanded, setExpanded] = useState<Set<string>>(() =>
+    computeInitialExpanded(nodes, currentId),
+  );
   useEffect(() => {
     if (!currentId) return;
     setExpanded((prev) => {
       const next = new Set(prev);
+      // 開啟有子頁面的父頁時連它自己一起展開：點標題這個最自然的動作就會揭露下一層，
+      // 使用者不必先發現 chevron（#286）。使用者手動收合後不會被這裡重新展開（deps 未變）。
+      if (parentIds.has(currentId)) next.add(currentId);
       let node = byId.get(currentId);
       while (node?.parentId) {
         next.add(node.parentId);
@@ -151,7 +168,7 @@ export function PageTree({ spaceId, spaceSlug, nodes, canEdit }: PageTreeProps) 
       }
       return next.size === prev.size ? prev : next;
     });
-  }, [currentId, byId]);
+  }, [currentId, byId, parentIds]);
 
   function toggle(id: string) {
     setExpanded((prev) => {
@@ -160,6 +177,12 @@ export function PageTree({ spaceId, spaceSlug, nodes, canEdit }: PageTreeProps) 
       else next.add(id);
       return next;
     });
+  }
+
+  /** 全部展開／全部收合：整棵樹已全展時按鈕轉為收合，語意隨狀態明示（#286）。 */
+  const allExpanded = parentIds.size > 0 && [...parentIds].every((id) => expanded.has(id));
+  function toggleAll() {
+    setExpanded(allExpanded ? new Set() : new Set(parentIds));
   }
 
   // --- 可見節點（DFS，respect expanded）與鍵盤導航（roving tabindex） ---
@@ -603,91 +626,110 @@ export function PageTree({ spaceId, spaceSlug, nodes, canEdit }: PageTreeProps) 
     <div className="archive-page-tree flex flex-col py-2">
       <div className="archive-page-tree-header flex h-8 items-center justify-between pl-3 pr-2">
         <span className="text-caption font-medium text-fg-tertiary">{t("label")}</span>
-        {canEdit ? (
-          <div className="flex items-center gap-0.5">
-            <Popover>
-              <PopoverTrigger asChild>
-                <button
-                  type="button"
-                  aria-label={t("addNode")}
-                  title={t("addNode")}
-                  disabled={pending}
-                  className="inline-flex size-6 items-center justify-center rounded-sm text-fg-secondary transition-colors hover:bg-hover hover:text-fg disabled:pointer-events-none disabled:text-fg-disabled"
-                >
-                  <Plus className="size-4" />
-                </button>
-              </PopoverTrigger>
-              <PopoverContent align="end" sideOffset={4} className="w-44 p-1">
-                <PopoverClose asChild>
-                  <MenuItem onClick={() => handleCreatePage(null)}>
-                    <FileText aria-hidden className="size-4" />
-                    {t("newPage")}
-                  </MenuItem>
-                </PopoverClose>
-                <PopoverClose asChild>
-                  <MenuItem onClick={() => setGroupModal({ parentId: null })}>
-                    <Folder aria-hidden className="size-4" />
-                    {t("newGroup")}
-                  </MenuItem>
-                </PopoverClose>
-                <PopoverClose asChild>
-                  <MenuItem
-                    onClick={() => {
-                      setExternalUrlError(null);
-                      setExternalModal({ mode: "create", parentId: null });
-                    }}
+        <div className="flex items-center gap-0.5">
+          {/* 全部展開／收合（#286）：文字標籤的入口比圖形符號更容易被第一次使用者理解；
+              純檢視動作，故不受 canEdit 限制。 */}
+          {parentIds.size > 0 ? (
+            <button
+              type="button"
+              aria-label={allExpanded ? t("collapseAll") : t("expandAll")}
+              title={allExpanded ? t("collapseAll") : t("expandAll")}
+              onClick={toggleAll}
+              className={HEADER_BUTTON_CLASS}
+            >
+              {allExpanded ? (
+                <ChevronsDownUp aria-hidden className="size-4" />
+              ) : (
+                <ChevronsUpDown aria-hidden className="size-4" />
+              )}
+            </button>
+          ) : null}
+          {canEdit ? (
+            <>
+              <Popover>
+                <PopoverTrigger asChild>
+                  <button
+                    type="button"
+                    aria-label={t("addNode")}
+                    title={t("addNode")}
+                    disabled={pending}
+                    className={HEADER_BUTTON_CLASS}
                   >
-                    <ExternalLink aria-hidden className="size-4" />
-                    {t("newExternalLink")}
-                  </MenuItem>
-                </PopoverClose>
-              </PopoverContent>
-            </Popover>
-            <Popover>
-              <PopoverTrigger asChild>
-                <button
-                  type="button"
-                  aria-label={t("spaceMenu")}
-                  title={t("spaceMenu")}
-                  disabled={pending}
-                  className="inline-flex size-6 items-center justify-center rounded-sm text-fg-secondary transition-colors hover:bg-hover hover:text-fg disabled:pointer-events-none disabled:text-fg-disabled"
-                >
-                  <Ellipsis className="size-4" />
-                </button>
-              </PopoverTrigger>
-              <PopoverContent align="end" sideOffset={4} className="w-48 p-1">
-                <PopoverClose asChild>
-                  <MenuItem onClick={() => fileInputRef.current?.click()}>
-                    <Upload aria-hidden className="size-4" />
-                    {t("importMarkdown")}
-                  </MenuItem>
-                </PopoverClose>
-                <PopoverClose asChild>
-                  <MenuItem onClick={() => docxInputRef.current?.click()}>
-                    <Upload aria-hidden className="size-4" />
-                    {t("importDocx")}
-                  </MenuItem>
-                </PopoverClose>
-              </PopoverContent>
-            </Popover>
-            {/* 隱藏 file input：由匯入選單觸發；只接受 Markdown 副檔名 */}
-            <input
-              ref={fileInputRef}
-              type="file"
-              accept=".md,.markdown,.mdown,.mkd,.mkdn,text/markdown"
-              className="hidden"
-              onChange={handleImportFile}
-            />
-            {/* 隱藏 file input：Word 匯入（M4-08） */}
-            <input
-              ref={docxInputRef}
-              type="file"
-              accept=".docx,application/vnd.openxmlformats-officedocument.wordprocessingml.document"
-              className="hidden"
-              onChange={handleImportDocx}
-            />
-          </div>
-        ) : null}
+                    <Plus className="size-4" />
+                  </button>
+                </PopoverTrigger>
+                <PopoverContent align="end" sideOffset={4} className="w-44 p-1">
+                  <PopoverClose asChild>
+                    <MenuItem onClick={() => handleCreatePage(null)}>
+                      <FileText aria-hidden className="size-4" />
+                      {t("newPage")}
+                    </MenuItem>
+                  </PopoverClose>
+                  <PopoverClose asChild>
+                    <MenuItem onClick={() => setGroupModal({ parentId: null })}>
+                      <Folder aria-hidden className="size-4" />
+                      {t("newGroup")}
+                    </MenuItem>
+                  </PopoverClose>
+                  <PopoverClose asChild>
+                    <MenuItem
+                      onClick={() => {
+                        setExternalUrlError(null);
+                        setExternalModal({ mode: "create", parentId: null });
+                      }}
+                    >
+                      <ExternalLink aria-hidden className="size-4" />
+                      {t("newExternalLink")}
+                    </MenuItem>
+                  </PopoverClose>
+                </PopoverContent>
+              </Popover>
+              <Popover>
+                <PopoverTrigger asChild>
+                  <button
+                    type="button"
+                    aria-label={t("spaceMenu")}
+                    title={t("spaceMenu")}
+                    disabled={pending}
+                    className={HEADER_BUTTON_CLASS}
+                  >
+                    <Ellipsis className="size-4" />
+                  </button>
+                </PopoverTrigger>
+                <PopoverContent align="end" sideOffset={4} className="w-48 p-1">
+                  <PopoverClose asChild>
+                    <MenuItem onClick={() => fileInputRef.current?.click()}>
+                      <Upload aria-hidden className="size-4" />
+                      {t("importMarkdown")}
+                    </MenuItem>
+                  </PopoverClose>
+                  <PopoverClose asChild>
+                    <MenuItem onClick={() => docxInputRef.current?.click()}>
+                      <Upload aria-hidden className="size-4" />
+                      {t("importDocx")}
+                    </MenuItem>
+                  </PopoverClose>
+                </PopoverContent>
+              </Popover>
+              {/* 隱藏 file input：由匯入選單觸發；只接受 Markdown 副檔名 */}
+              <input
+                ref={fileInputRef}
+                type="file"
+                accept=".md,.markdown,.mdown,.mkd,.mkdn,text/markdown"
+                className="hidden"
+                onChange={handleImportFile}
+              />
+              {/* 隱藏 file input：Word 匯入（M4-08） */}
+              <input
+                ref={docxInputRef}
+                type="file"
+                accept=".docx,application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+                className="hidden"
+                onChange={handleImportDocx}
+              />
+            </>
+          ) : null}
+        </div>
       </div>
 
       {nodes.length === 0 ? (
@@ -735,7 +777,7 @@ export function PageTree({ spaceId, spaceSlug, nodes, canEdit }: PageTreeProps) 
                     dragId === node.id && "opacity-50",
                     isDropInside && "bg-primary-tint ring-1 ring-inset ring-primary",
                   )}
-                  style={{ paddingLeft: 4 + level * 16 }}
+                  style={{ paddingLeft: ROW_PADDING_LEFT + level * INDENT_STEP }}
                   onDragOver={canEdit ? (e) => onRowDragOver(e, node) : undefined}
                   onDrop={canEdit ? (e) => onRowDrop(e, node) : undefined}
                 >
@@ -746,30 +788,50 @@ export function PageTree({ spaceId, spaceSlug, nodes, canEdit }: PageTreeProps) 
                         "pointer-events-none absolute inset-x-0 z-10 h-0.5 rounded-full bg-primary",
                         dropTarget.pos === "before" ? "-top-px" : "-bottom-px",
                       )}
-                      style={{ marginLeft: 4 + level * 16 }}
+                      style={{ marginLeft: ROW_PADDING_LEFT + level * INDENT_STEP }}
                     />
                   ) : null}
                   {isCurrent ? (
                     <span
                       aria-hidden
-                      className="absolute inset-y-1 left-0 w-0.5 rounded-full bg-primary"
+                      className="archive-tree-current-bar absolute inset-y-1 left-0 w-0.5 rounded-full bg-primary"
                     />
                   ) : null}
+                  {/* 層級縮排線（#286）：對齊各祖先的展開鈕中心，讓從屬關係靜止可讀。 */}
+                  {Array.from({ length: level }, (_, depth) => (
+                    <span
+                      key={depth}
+                      aria-hidden
+                      className="archive-tree-guide"
+                      style={{
+                        left: ROW_PADDING_LEFT + depth * INDENT_STEP + DISCLOSURE_WIDTH / 2,
+                      }}
+                    />
+                  ))}
                   {hasChildren ? (
                     <button
                       type="button"
                       tabIndex={-1}
-                      aria-label={isExpanded ? t("collapse") : t("expand")}
+                      aria-label={
+                        isExpanded
+                          ? t("collapseWithCount", { count: children.length })
+                          : t("expandWithCount", { count: children.length })
+                      }
+                      title={
+                        isExpanded
+                          ? t("collapseWithCount", { count: children.length })
+                          : t("expandWithCount", { count: children.length })
+                      }
                       onClick={() => toggle(node.id)}
-                      className="flex size-5 shrink-0 items-center justify-center rounded-xs text-fg-tertiary transition-colors hover:bg-hover hover:text-fg"
+                      className="archive-tree-disclosure relative z-[1] flex size-6 shrink-0 items-center justify-center rounded-xs text-fg-secondary transition-colors"
                     >
                       <ChevronRight
                         aria-hidden
-                        className={cn("size-3.5 transition-transform", isExpanded && "rotate-90")}
+                        className={cn("size-4 transition-transform", isExpanded && "rotate-90")}
                       />
                     </button>
                   ) : (
-                    <span aria-hidden className="size-5 shrink-0" />
+                    <span aria-hidden className="w-6 shrink-0" />
                   )}
 
                   {isGroup ? (
@@ -845,6 +907,21 @@ export function PageTree({ spaceId, spaceSlug, nodes, canEdit }: PageTreeProps) 
                       <span className="truncate">{node.title}</span>
                     </Link>
                   )}
+
+                  {/* 收合時顯示子頁數（#286）：靜止就看得到「裡面還有東西」，不必先 hover。
+                      數量已在展開鈕的 aria-label／title 中，故對輔助技術隱藏避免重複朗讀。 */}
+                  {hasChildren && !isExpanded ? (
+                    <span
+                      aria-hidden
+                      className={cn(
+                        "archive-tree-child-count ml-auto shrink-0",
+                        canEdit &&
+                          "group-focus-within:hidden group-hover:hidden group-has-[[data-state=open]]:hidden",
+                      )}
+                    >
+                      {children.length}
+                    </span>
+                  ) : null}
 
                   {canEdit ? (
                     <span className="ml-auto hidden shrink-0 items-center group-focus-within:flex group-hover:flex group-has-[[data-state=open]]:flex">
@@ -1028,7 +1105,9 @@ export function PageTree({ spaceId, spaceSlug, nodes, canEdit }: PageTreeProps) 
               inputMode="url"
               label={t("externalUrlLabel")}
               placeholder={t("externalUrlPlaceholder")}
-              defaultValue={externalModal?.mode === "edit" ? (externalModal.node.externalUrl ?? "") : ""}
+              defaultValue={
+                externalModal?.mode === "edit" ? (externalModal.node.externalUrl ?? "") : ""
+              }
               error={externalUrlError ?? undefined}
               onChange={() => externalUrlError && setExternalUrlError(null)}
               required
@@ -1100,7 +1179,9 @@ export function PageTree({ spaceId, spaceSlug, nodes, canEdit }: PageTreeProps) 
                   options={(spaceOptions ?? []).map((s) => ({ value: s.id, label: s.name }))}
                   value={selectedSpaceId}
                   onValueChange={setSelectedSpaceId}
-                  placeholder={spaceOptions === null ? t("targetSpaceLoading") : t("targetSpacePlaceholder")}
+                  placeholder={
+                    spaceOptions === null ? t("targetSpaceLoading") : t("targetSpacePlaceholder")
+                  }
                   searchPlaceholder={t("targetSpaceSearch")}
                   emptyText={t("targetSpaceEmpty")}
                   disabled={spaceOptions === null || spaceOptions.length === 0}
@@ -1113,11 +1194,7 @@ export function PageTree({ spaceId, spaceSlug, nodes, canEdit }: PageTreeProps) 
                   {t("cancel")}
                 </Button>
               </ModalClose>
-              <Button
-                loading={pending}
-                disabled={!selectedSpaceId}
-                onClick={handleCrossSpace}
-              >
+              <Button loading={pending} disabled={!selectedSpaceId} onClick={handleCrossSpace}>
                 {crossTarget?.mode === "copy" ? t("copyConfirm") : t("moveConfirm")}
               </Button>
             </div>

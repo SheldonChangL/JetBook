@@ -1893,11 +1893,57 @@ html.dark {
   background: transparent;
 }
 
-.archive-page-tree-row-inner:has([aria-current="page"]) > span[aria-hidden]:first-of-type {
+.archive-page-tree-row-inner:has([aria-current="page"]) > .archive-tree-current-bar {
   inset-block: 0;
   width: 3px;
   border-radius: 0;
   background: var(--archive-index);
+}
+
+/*
+ * 展開控制（#286）：原本 14px、tertiary、無容器的 chevron 被讀成項目符號而非按鈕。
+ * 靜止即給淡容器與 secondary 對比，列 hover 時整顆轉為紙色＋強邊框——與列本身的 hover
+ * 底色（--bg-hover）形成反差，才有「可點」的回饋（先前兩者同色，等於沒有回饋）。
+ */
+.archive-tree-disclosure {
+  border: 1px solid transparent;
+  background: var(--bg-hover);
+  color: var(--text-secondary);
+}
+
+.archive-page-tree-row-inner:hover .archive-tree-disclosure,
+.archive-page-tree-row-inner:focus-within .archive-tree-disclosure {
+  border-color: var(--border-strong);
+  background: var(--bg-raised);
+  color: var(--text-primary);
+}
+
+.archive-tree-disclosure:hover {
+  box-shadow: var(--shadow-sm);
+}
+
+/* 收合時的子頁數：靜止可見的「內有隱藏內容」訊號，沿用頭部的 mono 小字語彙。 */
+.archive-tree-child-count {
+  min-width: 18px;
+  padding-inline: 4px;
+  border: 1px solid var(--border-default);
+  border-radius: 999px;
+  color: var(--text-tertiary);
+  font-family: var(--font-mono);
+  font-size: 10px;
+  font-variant-numeric: tabular-nums;
+  line-height: 15px;
+  text-align: center;
+}
+
+/* 層級縮排線：上緣外推 2px 銜接列距，視覺上連回父列。 */
+.archive-tree-guide {
+  position: absolute;
+  top: -2px;
+  bottom: 0;
+  width: 1px;
+  background: var(--border-default);
+  pointer-events: none;
 }
 
 .archive-space-tree > :last-child a {
