@@ -226,6 +226,20 @@ Next.js（App Router、TS strict）全端 + PostgreSQL 16/pgvector/pgroonga + Do
 - [x] 品質閘門：lint ✅ typecheck ✅ 單元 571/571 ✅ next build ✅ Playwright 7/7（含 N-02 冒煙）✅；瀏覽器實測 `/guide#mcp` 1440 light／dark 與 375px，三份片段與排錯卡完整渲染、`--allow-http` 自動補上、`documentElement` 零橫向溢位、零 console error
 - [x] 未跑：`npm run test:integration`（本次 diff 未觸及 `src/lib` 的 DB 或權限路徑，新增模組為純字串產生）
 
+### 頁面樹展開可發現性（2026-07-29，#286）
+
+- 回饋來源：使用者截圖指出側欄「頁面的展開按鈕不直觀，很多使用者第一次都不知道可以展開」
+- [x] 診斷（非單一原因，五項疊加）：展開鈕 14px／tertiary／無容器／命中區僅 20px（低於 WCAG 2.5.8 的 24px）被讀成項目符號；它的 hover 底色與整列 hover 同為 `--bg-hover`＝幾乎沒有回饋；**點父頁只導航不展開**（原本只自動展開「當前頁祖先」，不含當前頁自己），使用者做完最自然的動作後看不到子頁面就推論「沒有子頁面」；靜止狀態沒有任何「內有隱藏內容」訊號；hover 才浮現的列尾三顆鈕又把視線帶走
+- [x] 修正一：新增純函式 `src/lib/pages/tree-expansion.ts`（`computeInitialExpanded`／`collectParentIds`）。首繪**逐層展開**——整層為單位，只要可見列數 ≤ 24（260px 側欄／34px 列高／900px 視窗約容 22 列）就展下一層，同層兄弟一致、不會半開；當前頁祖先鏈一律展開（即使超過上限）。純函式使 SSR 與 CSR 得到相同結果，首繪即展開且無 hydration 落差
+- [x] 修正二：開啟有子頁面的父頁時連它自己一起展開（GitBook／Confluence 行為）＝點標題就會揭露下一層；使用者手動收合後不會被重新展開（effect deps 未變）
+- [x] 修正三：展開鈕改 24×24 命中區、圖示 14→16px、靜止即有淡容器與 secondary 對比，列 hover 時轉為 `--bg-raised`＋`--border-strong`（與列的 hover 底色反差），`aria-label`／`title` 帶子頁數
+- [x] 修正四～六：收合時列尾顯示子頁數（靜止可見，hover 時讓位給既有動作鈕）；每層 1px 縮排線對齊各祖先展開鈕中心；頭部新增「全部展開／全部收合」單一按鈕（依整棵樹狀態切換語意，viewer 亦可用）
+- [x] 順帶修掉脆弱選擇器：目前頁左緣色條原本靠 `span[aria-hidden]:first-of-type` 命中，新增縮排線／拖放指示 span 會搶到 first-of-type → 改為具名 `.archive-tree-current-bar`
+- [x] 測試：單元 +11（`tree-expansion.test.ts`：小樹全展、超上限不展、只展放得下的整層、祖先鏈必展、當前頁自身展開、葉節點不多展、環不無限迴圈）；e2e +1（`page-tree-disclosure.spec.ts`：首繪即展開、命中區 ≥24×24、收合顯示子頁數、**點父頁即展開**、全部展開／收合、縮排線數量）。**反向驗證**：拿掉「點父頁即展開」→ 該條斷言轉紅；把首繪展開改回僅祖先（maxRows=0）→「首繪即展開」斷言轉紅，還原即綠
+- [x] 瀏覽器實測（本機 dev server＋真 Chromium，17 節點合成 fixture）：1440 light／dark 首繪展開、列 hover 的展開鈕狀態反差、全部收合的子頁數徽章、子頁為當前頁時左緣色條仍在、375px 零橫向溢位（`scrollWidth - clientWidth = 0`）；console 僅剩 1 條既有 hydration 警告（未改版程式碼跑同一腳本會出現 2 條，非本次引入）
+- [x] 品質閘門：lint ✅ typecheck ✅ 單元 582/582 ✅ 整合 304/304（含 N-04）✅ next build ✅ Playwright 8/8（含 N-02 冒煙）✅
+- [x] 文件同步：`docs/design/ui-design.md` §4.4 Tree 與 §4.5 補「展開可發現性」六條規格
+
 ### 尚未完成（v1 之後）
 - **UI Design v2 已完成**：#251／PR #252、#253／PR #254、#255／PR #256、#257／PR #258、#259／PR #260、#261／PR #262 六批與 #263／PR #264 編輯體驗迭代皆完成；#271 移除 Legacy fallback 後 Archive 為唯一 UI
 - **#93 M4 backlog**：變更請求、行內評論、webhooks（暫停）、PDF 匯出、KaTeX、多欄、snippets、內容分析等——其餘候選項依回饋再拆
@@ -237,7 +251,7 @@ Next.js（App Router、TS strict）全端 + PostgreSQL 16/pgvector/pgroonga + Do
 - Repo：https://github.com/SheldonChangL/JetBook（private）
 - Issues：#93 追蹤 M4 backlog；Archive Studio UI v2 由 #251／PR #252、#253／PR #254、#255／PR #256、#257／PR #258、#259／PR #260、#261／PR #262 六批交付，#263／PR #264 交付編輯體驗迭代；#265／PR #266 修正重複完成按鈕回歸；#269 修正 App Shell 雙側欄視覺
 - Milestones：M0 10/10 ✅／M1 42/42 ✅／M2 16/16 ✅／M3 23/23 ✅／M4 已交付 15 功能＋多項修復（backlog 追蹤 #93）
-- 工作流：branch `feature/issue-<n>-<slug>` → PR（Fixes #n）→ squash merge（使用者已授權 self-merge）；#280 Graph 寄信與 #282 站內使用說明已合併進 main，目前分支 `feature/issue-284-mcp-cross-platform-setup`（#284 MCP 接入跨平台修正）
+- 工作流：branch `feature/issue-<n>-<slug>` → PR（Fixes #n）→ squash merge（使用者已授權 self-merge）；#280 Graph 寄信、#282 站內使用說明、#284 MCP 跨平台設定已合併進 main，目前分支 `feature/issue-286-tree-disclosure-affordance`（#286 頁面樹展開可發現性）
 - 分支整理（2026-07-28）：本地累積 44 個分支，逐一以 PR 狀態核對後確認除 #280 外全部內容皆已在 main（PR #214 雖為 CLOSED 未合併，其成果已由 PR #217 重新落地）；殘留 worktree `agent-a7af93c204395bbc0` 已移除
 
 ## 已完成
