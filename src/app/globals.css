@@ -749,10 +749,15 @@ html.dark {
   }
   .prose-editor :where(table) {
     border-collapse: collapse;
-    table-layout: fixed;
+    /* 未拖曳過欄寬（colgroup 無明確 width）時以 auto 版面依內容分配欄寬，
+       避免「#」這類短欄佔掉半個版面；拖曳過的表格切回 fixed 以尊重結果。 */
+    table-layout: auto;
     width: 100%;
     margin: 0;
     overflow: hidden;
+  }
+  .prose-editor :where(table:has(col[style*="width"])) {
+    table-layout: fixed;
   }
   .prose-editor :where(table td, table th) {
     position: relative;
@@ -762,6 +767,9 @@ html.dark {
     vertical-align: top;
     text-align: left;
     box-sizing: border-box;
+    /* auto 版面下，長 URL 等不可斷字串會以全長計入欄寬而撐出橫向捲動；
+       body 的 break-word 不影響 min-content，需在儲存格用 anywhere。 */
+    overflow-wrap: anywhere;
   }
   .prose-editor :where(table th) {
     background: var(--bg-sidebar);
