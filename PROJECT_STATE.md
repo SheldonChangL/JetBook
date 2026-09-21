@@ -252,6 +252,18 @@ Next.js（App Router、TS strict）全端 + PostgreSQL 16/pgvector/pgroonga + Do
 - [x] 品質閘門：lint ✅ typecheck ✅ 單元 582/582 ✅ next build ✅ Playwright 9/9（含 N-02 冒煙）✅
 - [x] 瀏覽器實測：1440×704 修正前後對照截圖（修正前底部截斷無 footer、修正後列表可捲且 footer 在面板內）
 
+### 表格欄寬固定均分，短欄佔掉半版面（2026-09-21，#290）
+
+- 回饋來源：使用者截圖「編號欄只有兩三個字卻佔掉一半版面」——`#` 欄與長內容欄各半，內容欄被擠到頻繁換行
+- [x] 根因＝`.prose-editor` 對所有表格寫死 `table-layout: fixed`；閱讀端 `renderColgroup` 只在使用者拖曳過欄寬時才輸出 `<colgroup>`（無寬度回傳 null），無 colgroup ＋ fixed ＝ 瀏覽器等分每欄
+- [x] 修正＝`table-layout` 預設改 `auto`，另以 `:has(col[style*="width"])` 在 colgroup 帶明確寬度時切回 `fixed`，拖曳結果不被推翻（單一 CSS 規則，不動元件邏輯）
+- [x] 連帶修正：auto 版面會以長 URL 全長計算欄寬而撐出橫向捲動（`body` 的 `overflow-wrap: break-word` 不影響 min-content），儲存格補 `overflow-wrap: anywhere`；修正前表格 627px／容器 546px 觸發橫捲，修正後 64/481 無橫捲
+- [x] 量測（逐字複製 globals.css 規則的測試頁，覆蓋兩條渲染路徑實際 DOM 形狀，760px 與 320px 容器各一輪）：無 colgroup 2 欄 auto 64/481、4 欄 auto 64/64/64/353、colgroup 全寬度 fixed、僅部分寬度 fixed、編輯端 DOM（colgroup 無寬度＋inline min-width）維持 auto 未誤判、colspan 與單欄正常；320px 下無 colgroup 者全部收在容器內、無頁面級橫向捲動
+- [x] 品質閘門：lint ✅ typecheck ✅ 單元 582/582 ✅ next build ✅；已確認編譯後 CSS 保留 `table:has(col[style*=width]){table-layout:fixed}` 與 `overflow-wrap:anywhere`
+- [x] 版號 `0.1.0` → `0.1.1`
+- [ ] **未驗證**：編輯器真機拖曳互動（本機 Docker/PG 未啟動，dev server 於 env/DB fail-fast），編輯端情境改以其實際產生的 DOM 形狀靜態驗證
+- [ ] **已知行為變更（另開 issue）**：只拖曳過其中一欄時表格切回 `fixed`，未拖曳欄從依內容自適應改為均分剩餘空間，會有一次版面跳動；消除需在編輯端於首次拖曳時把所有欄 `colwidth` 一併寫入實測寬度。兩欄表格不受影響
+
 ### 尚未完成（v1 之後）
 - **UI Design v2 已完成**：#251／PR #252、#253／PR #254、#255／PR #256、#257／PR #258、#259／PR #260、#261／PR #262 六批與 #263／PR #264 編輯體驗迭代皆完成；#271 移除 Legacy fallback 後 Archive 為唯一 UI
 - **#93 M4 backlog**：變更請求、行內評論、webhooks（暫停）、PDF 匯出、KaTeX、多欄、snippets、內容分析等——其餘候選項依回饋再拆
@@ -263,7 +275,7 @@ Next.js（App Router、TS strict）全端 + PostgreSQL 16/pgvector/pgroonga + Do
 - Repo：https://github.com/SheldonChangL/JetBook（private）
 - Issues：#93 追蹤 M4 backlog；Archive Studio UI v2 由 #251／PR #252、#253／PR #254、#255／PR #256、#257／PR #258、#259／PR #260、#261／PR #262 六批交付，#263／PR #264 交付編輯體驗迭代；#265／PR #266 修正重複完成按鈕回歸；#269 修正 App Shell 雙側欄視覺
 - Milestones：M0 10/10 ✅／M1 42/42 ✅／M2 16/16 ✅／M3 23/23 ✅／M4 已交付 15 功能＋多項修復（backlog 追蹤 #93）
-- 工作流：branch `feature/issue-<n>-<slug>` → PR（Fixes #n）→ squash merge（使用者已授權 self-merge）；#280 Graph 寄信、#282 站內使用說明、#284 MCP 跨平台設定已合併進 main，#286 頁面樹展開可發現性已合併進 main（PR #287），目前分支 `feature/issue-288-command-palette-scroll`（#288 命令面板捲動）
+- 工作流：branch `feature/issue-<n>-<slug>` → PR（Fixes #n）→ squash merge（使用者已授權 self-merge）；#280 Graph 寄信、#282 站內使用說明、#284 MCP 跨平台設定已合併進 main，#286 頁面樹展開可發現性已合併進 main（PR #287），#288 命令面板捲動已合併進 main（PR #289），#290 表格欄寬依內容分配已合併進 main（PR #291，版號 0.1.1）；目前分支 `main`，無 active issue
 - 分支整理（2026-07-28）：本地累積 44 個分支，逐一以 PR 狀態核對後確認除 #280 外全部內容皆已在 main（PR #214 雖為 CLOSED 未合併，其成果已由 PR #217 重新落地）；殘留 worktree `agent-a7af93c204395bbc0` 已移除
 
 ## 已完成
